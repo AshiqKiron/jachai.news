@@ -1,0 +1,37 @@
+---
+description: Jachai News product context, architecture, and vocabulary
+alwaysApply: true
+---
+
+# Jachai News
+
+**Ground News for Bangladesh** — installable PWA that clusters the same story across Prothom Alo, Daily Star, bdnews24, BBC Bangla, and more. Compare framing, perspective lean, blindspots, and rumor flags. UI copy is **English + Bangla** where product-facing.
+
+## Repo layout
+
+| Path | Stack |
+|------|--------|
+| `backend/` | Python 3.11+, FastAPI, SQLAlchemy (async), PostgreSQL (`asyncpg`), RSS via `app/services/rss_parser.py`, AI via `app/services/ai_client.py` (Groq default, Gemini optional) |
+| `frontend/` | Next.js 15 App Router, React 19, TypeScript, Tailwind, PWA (`@ducanh2912/next-pwa`); optional Supabase auth in `src/lib/supabase.ts` |
+| Root `package.json` | `npm run dev:frontend`, `dev:backend`, `build:frontend`, `lint:frontend` |
+
+## Data on the frontend
+
+- **Live API**: `frontend/src/lib/api.ts` → `NEXT_PUBLIC_API_URL` (default `http://localhost:8000/api/v1`). Endpoints: `/articles`, `/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`.
+- **Demo fallback**: Rich story payloads in `frontend/src/lib/demo-data.ts`; `frontend/src/lib/stories.ts` merges API clusters with demo by slug and falls back to `DEMO_STORIES` when the API is down.
+- Prefer extending `stories.ts` / `api.ts` rather than fetching ad hoc in pages.
+
+## Product vocabulary
+
+- **Headline clash / cluster** — Same story, different framings (cluster or story detail view)
+- **Perspective** — `independent` \| `neutral` \| `establishment` \| `opposition` \| `international` (`frontend/src/lib/perspectives.ts`)
+- **Bias meter** — Source or cluster lean score
+- **Rumor badge** — Low corroboration or speculative coverage (`is_rumor` on articles)
+- **Blindspot** — Story marked one-sided (`isBlindspot` on demo `Story` type)
+- **Jachai Pro** — Paid tier; plans in `frontend/src/lib/subscription-plans.ts` (৳49/mo, ৳399/yr). Planned payment: bKash Tokenized Checkout API; planned DB for subs: Supabase (not backend Postgres). No live checkout yet.
+
+## Quality bar
+
+- Match existing naming and file layout; minimal diffs; no drive-by refactors
+- Type hints on Python public functions; strict TypeScript on frontend
+- Never commit secrets; backend env via `backend/app/core/config.py` and `backend/.env.example`; frontend via `frontend/.env.local` (API URL, optional Supabase keys)

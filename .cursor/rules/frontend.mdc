@@ -1,0 +1,43 @@
+---
+description: Next.js frontend conventions for Jachai News
+globs: frontend/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend
+
+## App Router
+
+- Pages: `frontend/src/app/` — `/`, `/browse`, `/story/[slug]`, `/blindspot`, `/bias`, `/rumors`, `/pro`, `/sign-in`, `/sign-up`, `/offline`
+- Layout: `layout.tsx` wires `ThemeProvider`, `SiteHeader`, `MobileNav`, `InstallPWA`; fonts Inter + Newsreader + Noto Sans Bengali
+- Shared UI: `frontend/src/components/`
+- Domain helpers: `frontend/src/lib/` (`api`, `stories`, `demo-data`, `perspectives`, `coverage`, `subscription-plans`, `supabase`)
+
+## Data fetching
+
+- Server components for listings and story pages; use `getTopStories`, `fetchClusters`, etc. from `lib/`
+- Graceful degradation: catch API errors and empty states (see home page demo banner when `fromApi` is false)
+- Client components for interactive UI (meters, tabs, modals, mobile nav, PWA install, theme toggle)
+
+## Auth & Pro
+
+- Supabase client: `lib/supabase.ts` — only active when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set
+- Sign-in / sign-up pages under `/sign-in`, `/sign-up`
+- Pro paywall UI: `PaywallModal` + plan copy from `subscription-plans.ts` (no live checkout yet)
+
+## PWA
+
+- `@ducanh2912/next-pwa` in Next config; service worker and install prompt in **production** builds only
+- Offline shell: `/offline`; `InstallPWA` in root layout
+
+## Types
+
+- API shapes: exported from `lib/api.ts`
+- Rich story UI: `Story`, `NewsSource` from `lib/demo-data.ts`
+- Do not duplicate types across components; import from `lib/`
+
+## UI notes
+
+- Light/dark via `next-themes` (`ThemeProvider`, `ThemeToggle`); zinc palette, `font-display` for headings
+- Keep BN strings alongside EN where the product already does
+- Product components: `StoryFeedCard`, `HeadlineClashCard`, `HeadlineCompare`, `BiasMeter`, `RumorBadge`, `PerspectiveComparison`, `CoverageBar`, `SourceFilterList`, `StoryTabs`

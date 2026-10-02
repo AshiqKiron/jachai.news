@@ -1,0 +1,37 @@
+---
+description: FastAPI backend conventions for Jachai News
+globs: backend/**/*.py
+alwaysApply: false
+---
+
+# Backend
+
+## Structure
+
+- Routes: `backend/app/api/` (`articles`, `clusters`, `bias`, `rumors`) mounted in `app/api/__init__.py`
+- Models: `app/models/` (`article`, `cluster`, `source`); Pydantic: `app/schemas/`
+- Business logic: `app/services/` (`rss_parser`, `ai_client`) — keep route handlers thin
+- Seed data: `app/data/bd_sources_seed.py`
+- Config: `app/core/config.py` (`Settings`, prefix `/api/v1`)
+- DB: `app/core/database.py`; tables created on startup in `app/main.py` lifespan
+- Health: `GET /health` (outside API prefix)
+
+## API surface
+
+- `GET /api/v1/articles`, `/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`
+- OpenAPI: `/docs` when server is running
+
+## Patterns
+
+- Use **async** endpoints and DB/HTTP for I/O-bound work
+- Add new resources as a router module + schema + model; register on `api_router`
+- AI calls go through `AIClient`; respect `settings.ai_provider` and optional API keys
+- Planned jobs: RSS ingest via `rss_parser`; cluster summaries via `ai_client.summarize_cluster`
+
+## Example route shape
+
+```python
+@router.get("", response_model=ArticleListResponse)
+async def list_articles(session: AsyncSession = Depends(get_session), limit: int = 12) -> ArticleListResponse:
+    ...
+```

@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Very light aqua — soft blue + green mix */
+  --color-ink-950: 236 253 249;
+  --color-ink-900: 255 255 255;
+  --color-ink-700: 204 230 220;
+  color-scheme: light;
+}
+
+.dark {
+  --color-ink-950: 15 23 42;
+  --color-ink-900: 30 41 59;
+  --color-ink-700: 51 65 85;
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-ink-950 text-black antialiased dark:text-slate-100;
+}
+
+a {
+  @apply text-accent hover:text-accent-dark transition-colors;
+}
+
+/* Light-mode remaps for existing dark-first utility classes */
+html:not(.dark) .text-zinc-50 {
+  @apply text-black;
+}
+
+html:not(.dark) .text-zinc-100 {
+  @apply text-black;
+}
+
+html:not(.dark) .text-zinc-200 {
+  @apply text-zinc-700;
+}
+
+html:not(.dark) .text-zinc-300 {
+  @apply text-zinc-600;
+}
+
+html:not(.dark) .text-zinc-400 {
+  @apply text-zinc-600;
+}
+
+html:not(.dark) .text-zinc-600 {
+  @apply text-zinc-500;
+}
+
+html:not(.dark) .border-zinc-800 {
+  @apply border-zinc-200;
+}
+
+html:not(.dark) .border-zinc-800\/80 {
+  border-color: rgb(228 228 231 / 0.8);
+}
+
+html:not(.dark) .border-zinc-800\/90 {
+  border-color: rgb(228 228 231 / 0.9);
+}
+
+html:not(.dark) .border-zinc-700 {
+  @apply border-zinc-300;
+}
+
+html:not(.dark) .divide-zinc-800 > :not([hidden]) ~ :not([hidden]) {
+  @apply divide-zinc-200;
+}
+
+html:not(.dark) .bg-zinc-800 {
+  @apply bg-zinc-200;
+}
+
+html:not(.dark) .bg-zinc-900\/40 {
+  background-color: rgb(255 255 255 / 0.82);
+}
+
+html:not(.dark) .bg-zinc-900\/50 {
+  background-color: rgb(255 255 255 / 0.88);
+}
+
+html:not(.dark) .bg-ink-900\/50,
+html:not(.dark) .bg-ink-900\/60,
+html:not(.dark) .bg-ink-900\/80 {
+  background-color: rgb(255 255 255 / 0.92);
+}
+
+html:not(.dark) .hover\:border-zinc-600:hover {
+  @apply border-zinc-400;
+}
+
+html:not(.dark) .hover\:border-zinc-700:hover {
+  @apply border-zinc-400;
+}
+
+html:not(.dark) .hover\:border-zinc-500:hover {
+  @apply border-zinc-500;
+}
+
+html:not(.dark) .hover\:bg-zinc-800:hover {
+  @apply bg-zinc-100;
+}
+
+html:not(.dark) .hover\:text-zinc-300:hover {
+  @apply text-zinc-700;
+}
+
+html:not(.dark) .group:hover .group-hover\:text-white {
+  @apply text-zinc-900;
+}
+
+html:not(.dark) .shadow-black\/20 {
+  --tw-shadow-color: rgb(0 0 0 / 0.08);
+}
+
+html:not(.dark) .shadow-black\/25 {
+  --tw-shadow-color: rgb(0 0 0 / 0.1);
+}
