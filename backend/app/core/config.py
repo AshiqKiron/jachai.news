@@ -15,5 +15,8 @@ class Settings(BaseSettings):
 
     rss_fetch_timeout_seconds: float = 15.0
 
+    # Optional — require X-Ingest-Key header on POST /api/v1/ingest
+    ingest_api_key: str | None = None
+
 
 settings = Settings()

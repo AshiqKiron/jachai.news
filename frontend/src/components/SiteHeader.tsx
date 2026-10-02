@@ -8,6 +8,7 @@ const nav = [
   { href: "/browse", label: "Browse" },
   { href: "/rumors", label: "Rumors" },
   { href: "/bias", label: "Bias" },
+  { href: "/pro", label: "Pro" },
 ];
 
 export function SiteHeader() {

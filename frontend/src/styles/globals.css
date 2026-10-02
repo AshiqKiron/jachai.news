@@ -18,7 +18,11 @@
 }
 
 body {
-  @apply bg-ink-950 text-black antialiased dark:text-slate-100;
+  @apply bg-ink-950 text-black antialiased font-medium dark:text-slate-100;
+}
+
+.font-display {
+  @apply font-semibold;
 }
 
 a {

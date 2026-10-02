@@ -3,60 +3,66 @@
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-type ThemeChoice = "light" | "dark" | "system";
+function MoonIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </svg>
+  );
+}
 
-const options: { value: ThemeChoice; label: string; title: string }[] = [
-  { value: "light", label: "Light", title: "Light mode" },
-  { value: "dark", label: "Dark", title: "Dark mode" },
-  { value: "system", label: "Auto", title: "Match system appearance" },
-];
+function SunIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+  );
+}
 
 export function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
-  const active: ThemeChoice =
-    theme === "light" || theme === "dark" || theme === "system" ? theme : "system";
-
   if (!mounted) {
     return (
-      <div
-        className="h-8 w-[7.25rem] rounded-lg border border-zinc-800/80 bg-ink-900/50"
-        aria-hidden
-      />
+      <div className="h-9 w-9 rounded-lg border border-zinc-800/80 bg-ink-900/50" aria-hidden />
     );
   }
 
+  const isDark = resolvedTheme === "dark";
+
   return (
-    <div
-      className="flex rounded-lg border border-zinc-800/80 bg-ink-900/50 p-0.5 text-[11px] font-medium"
-      role="group"
-      aria-label="Color theme"
+    <button
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800/80 bg-ink-900/50 text-zinc-400 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
-      {options.map((option) => {
-        const isActive = active === option.value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            title={option.title}
-            aria-pressed={isActive}
-            onClick={() => setTheme(option.value)}
-            className={`rounded-md px-2 py-1 transition-colors ${
-              isActive
-                ? "bg-zinc-800 text-zinc-50 shadow-sm"
-                : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-      <span className="sr-only">
-        Resolved appearance: {resolvedTheme === "dark" ? "dark" : "light"}
-      </span>
-    </div>
+      {isDark ? <SunIcon className="h-[1.125rem] w-[1.125rem]" /> : <MoonIcon className="h-[1.125rem] w-[1.125rem]" />}
+    </button>
   );
 }

@@ -1,0 +1,56 @@
+---
+description: Supabase auth, Pro subscriptions, and bKash schema for Jachai News
+globs: supabase/**
+alwaysApply: false
+---
+
+# Supabase
+
+Jachai uses Supabase for **auth**, **Pro entitlement**, and **planned bKash checkout** — not for articles/clusters (those live in backend PostgreSQL).
+
+## Layout
+
+- `supabase/config.toml` — local CLI project (`project_id = "jachai-news"`, Postgres 15)
+- `supabase/migrations/` — versioned SQL; initial migration: `20250301000000_init_profiles_subscriptions.sql`
+- Frontend types: `frontend/src/lib/database.types.ts` — **keep in sync** when migrations change
+
+## Apply schema
+
+- Linked project: `supabase db push`
+- Or paste migration SQL into the Supabase dashboard SQL editor
+- Local dev: `supabase start` then `supabase db reset` / push as needed
+
+Regenerate TS types after schema changes:
+
+```bash
+npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
+```
+
+(Use `--project-id` for remote when not using local.)
+
+## Tables & enums
+
+| Object | Purpose |
+|--------|---------|
+| `public.profiles` | One row per `auth.users`; `locale` `en` \| `bn`; auto-created via `handle_new_user` trigger |
+| `public.subscriptions` | One row per user (`user_id` unique); `subscription_plan` monthly/yearly; `subscription_status` trialing/active/past_due/canceled/expired |
+| `public.bkash_agreements` | Tokenized checkout agreement IDs per user (planned) |
+| `public.payment_transactions` | bKash (default provider) charges linked to `subscription_id`; `metadata` jsonb |
+
+## Row Level Security
+
+- RLS enabled on all four public tables
+- **Anon/authenticated users**: SELECT own rows only (`auth.uid()` = `id` or `user_id`); users may UPDATE own `profiles`
+- **No client INSERT** on subscriptions, agreements, or payments — writes are for **service role** (Edge Functions, server route with `SUPABASE_SERVICE_ROLE_KEY`), not `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+## Frontend wiring
+
+- Client: `frontend/src/lib/supabase.ts` — `createClient<Database>(...)` when URL + anon key are set in `.env.local`
+- Entitlements (not wired yet): read `subscriptions` where `status` in (`active`, `trialing`) and `current_period_end` > now; until then `hasProAccess()` in `subscription-access.ts` uses `NEXT_PUBLIC_MOCK_PRO`
+- Pricing/feature copy stays in `subscription-plans.ts` and `subscription-features.ts` (not in DB)
+
+## Migrations conventions
+
+- One logical change per migration file; timestamp prefix `YYYYMMDDHHMMSS_name.sql`
+- Prefer explicit RLS policies and comments on tables intended for service-role writes
+- Do not store news/RSS/cluster data here; do not commit service role keys or bKash secrets

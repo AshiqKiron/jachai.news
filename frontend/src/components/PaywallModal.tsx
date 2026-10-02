@@ -1,5 +1,12 @@
 "use client";
 
+import Link from "next/link";
+
+import {
+  PRO_TIER_TAGLINE,
+  getFeatureRow,
+  type ProOnlyFeatureId,
+} from "@/lib/subscription-features";
 import {
   SUBSCRIPTION_PAYMENT_PROVIDER,
   SUBSCRIPTION_PLANS,
@@ -9,18 +16,29 @@ import {
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** When set, surfaces the matching matrix row in the modal. */
+  featureId?: ProOnlyFeatureId;
 };
 
-export function PaywallModal({ open, onClose }: Props) {
+export function PaywallModal({ open, onClose, featureId }: Props) {
   if (!open) return null;
+
+  const feature = featureId ? getFeatureRow(featureId) : undefined;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-ink-900 p-6 shadow-2xl">
         <h2 className="font-display text-xl text-zinc-50">Jachai Pro</h2>
-        <p className="mt-2 text-sm text-zinc-400">
-          Unlock deeper bias timelines, exportable clash briefs, and rumor watchlists.
-        </p>
+        <p className="mt-2 text-sm text-zinc-400">{PRO_TIER_TAGLINE}</p>
+        {feature ? (
+          <p className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-300">
+            <span className="text-zinc-500">Unlock: </span>
+            {feature.name}
+            {feature.proNote ? (
+              <span className="mt-1 block text-xs text-zinc-500">{feature.proNote}</span>
+            ) : null}
+          </p>
+        ) : null}
 
         <ul className="mt-5 space-y-3">
           {SUBSCRIPTION_PLANS.map((plan) => (
@@ -51,7 +69,7 @@ export function PaywallModal({ open, onClose }: Props) {
           Payment: {SUBSCRIPTION_PAYMENT_PROVIDER} (checkout not enabled yet).
         </p>
 
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <button
             type="button"
             disabled
@@ -60,6 +78,13 @@ export function PaywallModal({ open, onClose }: Props) {
           >
             Subscribe with bKash
           </button>
+          <Link
+            href="/pro"
+            onClick={onClose}
+            className="rounded-lg border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 hover:bg-zinc-800"
+          >
+            Full matrix
+          </Link>
           <button
             type="button"
             onClick={onClose}

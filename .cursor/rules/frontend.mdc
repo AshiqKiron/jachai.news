@@ -11,19 +11,24 @@ alwaysApply: false
 - Pages: `frontend/src/app/` — `/`, `/browse`, `/story/[slug]`, `/blindspot`, `/bias`, `/rumors`, `/pro`, `/sign-in`, `/sign-up`, `/offline`
 - Layout: `layout.tsx` wires `ThemeProvider`, `SiteHeader`, `MobileNav`, `InstallPWA`; fonts Inter + Newsreader + Noto Sans Bengali
 - Shared UI: `frontend/src/components/`
-- Domain helpers: `frontend/src/lib/` (`api`, `stories`, `demo-data`, `perspectives`, `coverage`, `subscription-plans`, `supabase`)
+- Domain helpers: `frontend/src/lib/` (`api`, `stories`, `demo-data`, `perspectives`, `coverage`, **`subscription-plans`**, **`subscription-features`**, **`subscription-access`**, **`database.types`**, `supabase`)
 
 ## Data fetching
 
 - Server components for listings and story pages; use `getTopStories`, `fetchClusters`, etc. from `lib/`
+- Home feed uses **`FREE_DAILY_TOP_STORIES_LIMIT`** (10) from `subscription-features.ts` via `getTopStories`
 - Graceful degradation: catch API errors and empty states (see home page demo banner when `fromApi` is false)
 - Client components for interactive UI (meters, tabs, modals, mobile nav, PWA install, theme toggle)
 
-## Auth & Pro
+## Auth, Pro & gating
 
-- Supabase client: `lib/supabase.ts` — only active when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set
+- Supabase client: `lib/supabase.ts` — typed with `Database` from `database.types.ts`; only active when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set
 - Sign-in / sign-up pages under `/sign-in`, `/sign-up`
-- Pro paywall UI: `PaywallModal` + plan copy from `subscription-plans.ts` (no live checkout yet)
+- **Free vs Pro matrix**: `lib/subscription-features.ts` (`SUBSCRIPTION_FEATURE_MATRIX`, `PRO_ONLY_FEATURE_IDS`, `featureRequiresPro`, `getFeatureRow`)
+- **Entitlement check**: `lib/subscription-access.ts` — `hasProAccess()` reads `NEXT_PUBLIC_MOCK_PRO` until Supabase subscription status is wired
+- **Browse** (`/browse`): server gate via `hasProAccess()`; free users see `BrowseProGate` + `PaywallModal`; Pro/mock-Pro loads full cluster/article browse
+- **Pro marketing**: `/pro` uses `FeatureMatrixTable`, plan cards from `subscription-plans.ts`, checkout still stubbed (`PaywallModal`)
+- Pricing/constants: `subscription-plans.ts`; bKash env vars documented in `frontend/.env.example` (server-only when integrated)
 
 ## PWA
 
@@ -34,10 +39,11 @@ alwaysApply: false
 
 - API shapes: exported from `lib/api.ts`
 - Rich story UI: `Story`, `NewsSource` from `lib/demo-data.ts`
+- Supabase: `lib/database.types.ts` — align with `supabase/migrations/`
 - Do not duplicate types across components; import from `lib/`
 
 ## UI notes
 
 - Light/dark via `next-themes` (`ThemeProvider`, `ThemeToggle`); zinc palette, `font-display` for headings
 - Keep BN strings alongside EN where the product already does
-- Product components: `StoryFeedCard`, `HeadlineClashCard`, `HeadlineCompare`, `BiasMeter`, `RumorBadge`, `PerspectiveComparison`, `CoverageBar`, `SourceFilterList`, `StoryTabs`
+- Product components: `StoryFeedCard`, `HeadlineClashCard`, `HeadlineCompare`, `BiasMeter`, `RumorBadge`, `PerspectiveComparison`, `CoverageBar`, `SourceFilterList`, `StoryTabs`, **`BrowseProGate`**, **`FeatureMatrixTable`**, `PaywallModal`

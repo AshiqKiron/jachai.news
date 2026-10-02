@@ -1,8 +1,10 @@
 import Link from "next/link";
 
+import { BrowseProGate } from "@/components/BrowseProGate";
 import { StoryFeedCard } from "@/components/StoryFeedCard";
 import { DEMO_STORIES, type Story } from "@/lib/demo-data";
 import { fetchArticles, fetchClusters } from "@/lib/api";
+import { hasProAccess } from "@/lib/subscription-access";
 
 export default async function BrowsePage({
   searchParams,
@@ -10,6 +12,20 @@ export default async function BrowsePage({
   searchParams: Promise<{ cluster?: string }>;
 }) {
   const { cluster: clusterSlug } = await searchParams;
+  const pro = hasProAccess();
+
+  if (!pro) {
+    return (
+      <div className="space-y-8 pb-4">
+        <header>
+          <h1 className="font-display text-3xl text-zinc-50">Browse</h1>
+          <p className="mt-2 text-zinc-400">Full search and historical clusters are part of Jachai Pro.</p>
+        </header>
+        <BrowseProGate />
+      </div>
+    );
+  }
+
   const [articlesData, clustersData] = await Promise.all([
     fetchArticles(24).catch(() => ({ items: [], total: 0 })),
     fetchClusters(24).catch(() => ({ items: [], total: 0 })),

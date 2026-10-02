@@ -1,10 +1,13 @@
 import Link from "next/link";
 
 import { StoryFeedCard } from "@/components/StoryFeedCard";
+import { FREE_DAILY_TOP_STORIES_LIMIT } from "@/lib/subscription-features";
+import { hasProAccess } from "@/lib/subscription-access";
 import { getTopStories } from "@/lib/stories";
 
 export default async function HomePage() {
-  const { stories, fromApi } = await getTopStories(8);
+  const { stories, fromApi } = await getTopStories(FREE_DAILY_TOP_STORIES_LIMIT);
+  const pro = hasProAccess();
 
   return (
     <div className="space-y-10 pb-4">
@@ -33,10 +36,18 @@ export default async function HomePage() {
 
       <section>
         <div className="mb-4 flex items-end justify-between">
-          <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">Top stories</h2>
-          <Link href="/browse" className="text-xs text-zinc-500 hover:text-zinc-300">
-            Browse all →
-          </Link>
+          <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">
+            Daily top {FREE_DAILY_TOP_STORIES_LIMIT}
+          </h2>
+          {pro ? (
+            <Link href="/browse" className="text-xs text-zinc-500 hover:text-zinc-300">
+              Browse all →
+            </Link>
+          ) : (
+            <Link href="/pro" className="text-xs text-accent/80 hover:text-accent">
+              Full archive · Pro →
+            </Link>
+          )}
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {stories.map((story) => (

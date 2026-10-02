@@ -8,30 +8,39 @@ alwaysApply: false
 
 ## Structure
 
-- Routes: `backend/app/api/` (`articles`, `clusters`, `bias`, `rumors`) mounted in `app/api/__init__.py`
-- Models: `app/models/` (`article`, `cluster`, `source`); Pydantic: `app/schemas/`
-- Business logic: `app/services/` (`rss_parser`, `ai_client`) — keep route handlers thin
+- Routes: `backend/app/api/` (`articles`, `clusters`, `bias`, `rumors`, **`ingest`**) mounted in `app/api/__init__.py`
+- Models: `app/models/` (`article`, `cluster`, `source`); Pydantic: `app/schemas/` (includes `ingest.py` → `IngestResponse`)
+- Business logic: `app/services/` — `rss_parser` (fetch/parse feeds), **`rss_ingestion`** (persist + cluster), `ai_client` — keep route handlers thin
 - Seed data: `app/data/bd_sources_seed.py`
-- Config: `app/core/config.py` (`Settings`, prefix `/api/v1`)
-- DB: `app/core/database.py`; tables created on startup in `app/main.py` lifespan
+- Config: `app/core/config.py` (`Settings`, prefix `/api/v1`, `ingest_api_key`, `rss_fetch_timeout_seconds`)
+- DB: `app/core/database.py` (`SessionLocal`, `get_db`); tables created on startup in `app/main.py` lifespan
+- CLI ingest: `backend/scripts/ingest_rss.py`; root `npm run ingest:backend`
 - Health: `GET /health` (outside API prefix)
 
 ## API surface
 
 - `GET /api/v1/articles`, `/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`
+- **`POST /api/v1/ingest`** — runs `run_rss_ingest`; if `INGEST_API_KEY` is set, require header `X-Ingest-Key`
 - OpenAPI: `/docs` when server is running
+
+## RSS ingestion
+
+- Entry point: `run_rss_ingest(session)` in `app/services/rss_ingestion.py`
+- Seeds/updates `Source` rows from `BD_SOURCE_SEED`, fetches each feed via `fetch_feed_items`, skips duplicate URLs, assigns articles to existing clusters by title similarity or creates new `Cluster` with unique slug
+- May call `ai_client.summarize_cluster` when a cluster gains multiple articles
+- Returns `IngestResult` counts + per-source error strings (ingest continues on fetch failures)
 
 ## Patterns
 
 - Use **async** endpoints and DB/HTTP for I/O-bound work
 - Add new resources as a router module + schema + model; register on `api_router`
 - AI calls go through `AIClient`; respect `settings.ai_provider` and optional API keys
-- Planned jobs: RSS ingest via `rss_parser`; cluster summaries via `ai_client.summarize_cluster`
+- Planned: scheduled ingest (cron/worker) reusing `run_rss_ingest`; deeper clustering jobs
 
 ## Example route shape
 
 ```python
 @router.get("", response_model=ArticleListResponse)
-async def list_articles(session: AsyncSession = Depends(get_session), limit: int = 12) -> ArticleListResponse:
+async def list_articles(session: AsyncSession = Depends(get_db), limit: int = 12) -> ArticleListResponse:
     ...
 ```
