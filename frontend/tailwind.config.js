@@ -11,9 +11,9 @@ module.exports = {
           700: "rgb(var(--color-ink-700) / <alpha-value>)",
         },
         accent: {
-          DEFAULT: "#2563eb",
-          muted: "#60a5fa",
-          dark: "#1d4ed8",
+          DEFAULT: "rgb(var(--color-accent) / <alpha-value>)",
+          muted: "rgb(var(--color-accent-muted) / <alpha-value>)",
+          dark: "rgb(var(--color-accent-dark) / <alpha-value>)",
         },
       },
       fontFamily: {

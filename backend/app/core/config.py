@@ -18,5 +18,21 @@ class Settings(BaseSettings):
     # Optional — require X-Ingest-Key header on POST /api/v1/ingest
     ingest_api_key: str | None = None
 
+    # Optional — require X-Admin-Key on GET /api/v1/admin/*
+    admin_api_key: str | None = None
+
+    # Monitoring (optional — all no-ops when unset)
+    sentry_dsn: str | None = None
+    sentry_environment: str = "development"
+    sentry_traces_sample_rate: float = 0.0
+
+    # Healthchecks.io ping URL for RSS ingest cron (e.g. https://hc-ping.com/<uuid>)
+    healthchecks_ingest_url: str | None = None
+
+    telegram_bot_token: str | None = None
+    telegram_chat_id: str | None = None
+    telegram_notify_ingest_success: bool = True
+    telegram_alert_on_sentry_error: bool = True
+
 
 settings = Settings()

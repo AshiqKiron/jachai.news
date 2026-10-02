@@ -8,10 +8,12 @@ alwaysApply: false
 
 ## App Router
 
-- Pages: `frontend/src/app/` — `/`, `/browse`, `/story/[slug]`, `/blindspot`, `/bias`, `/rumors`, `/pro`, `/sign-in`, `/sign-up`, `/offline`
+- Pages: `frontend/src/app/` — `/`, `/browse`, `/story/[slug]`, `/blindspot`, `/bias`, `/rumors`, `/pro`, `/sign-in`, `/sign-up`, `/offline`, **`/admin`**, **`/admin/login`** (internal; `admin/layout.tsx` sets `robots: noindex`)
 - Layout: `layout.tsx` wires `ThemeProvider`, `SiteHeader`, `MobileNav`, `InstallPWA`; fonts Inter + Newsreader + Noto Sans Bengali
 - Shared UI: `frontend/src/components/`
-- Domain helpers: `frontend/src/lib/` (`api`, `stories`, `demo-data`, `perspectives`, `coverage`, **`subscription-plans`**, **`subscription-features`**, **`subscription-access`**, **`database.types`**, `supabase`)
+- Domain helpers: `frontend/src/lib/` (`api`, `stories`, `demo-data`, `perspectives`, `coverage`, **`subscription-plans`**, **`subscription-features`**, **`subscription-access`**, **`database.types`**, `supabase`, **`admin-api`**, **`admin-auth`**, **`admin-types`**)
+- Route handlers: `frontend/src/app/api/admin/` — `login`, `logout`, `ingest` (server-only; never call backend admin/ingest from the browser with secrets)
+- `frontend/src/middleware.ts` — cookie gate for `/admin/*` except `/admin/login`
 
 ## Data fetching
 
@@ -19,6 +21,13 @@ alwaysApply: false
 - Home feed uses **`FREE_DAILY_TOP_STORIES_LIMIT`** (10) from `subscription-features.ts` via `getTopStories`
 - Graceful degradation: catch API errors and empty states (see home page demo banner when `fromApi` is false)
 - Client components for interactive UI (meters, tabs, modals, mobile nav, PWA install, theme toggle)
+
+## Admin ops (internal)
+
+- Set **`ADMIN_PASSWORD`** in `.env.local` (server-only) to enable login; optional **`ADMIN_SESSION_SECRET`** (defaults to password for signed cookie `jachai_admin`)
+- **`ADMIN_API_KEY`** must match backend when set — used server-side in `admin-api.ts` as `X-Admin-Key` for `/admin/overview`
+- **`INGEST_API_KEY`** (server-only) forwarded as `X-Ingest-Key` when triggering ingest from `AdminIngestPanel` via `POST /api/admin/ingest`
+- Prefer extending `admin-api.ts` / `admin-types.ts` for new ops endpoints; keep credentials out of client bundles
 
 ## Auth, Pro & gating
 
@@ -32,8 +41,15 @@ alwaysApply: false
 
 ## PWA
 
-- `@ducanh2912/next-pwa` in Next config; service worker and install prompt in **production** builds only
+- `@ducanh2912/next-pwa` in `next.config.ts` (wrapped with `withSentryConfig`); service worker and install prompt in **production** builds only
 - Offline shell: `/offline`; `InstallPWA` in root layout
+- Generated PWA assets under `frontend/public/` (e.g. `sw.js`) — do not hand-edit; rebuild after PWA config changes
+
+## Error monitoring (optional)
+
+- `@sentry/nextjs` — `instrumentation.ts` loads `sentry.server.config` / `sentry.edge.config`; browser SDK in `instrumentation-client.ts` at `frontend/` root
+- Env: `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE`; CI map upload via `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` (see `frontend/.env.example`)
+- Omit DSN locally — Sentry stays disabled with no runtime cost
 
 ## Types
 
@@ -46,4 +62,4 @@ alwaysApply: false
 
 - Light/dark via `next-themes` (`ThemeProvider`, `ThemeToggle`); zinc palette, `font-display` for headings
 - Keep BN strings alongside EN where the product already does
-- Product components: `StoryFeedCard`, `HeadlineClashCard`, `HeadlineCompare`, `BiasMeter`, `RumorBadge`, `PerspectiveComparison`, `CoverageBar`, `SourceFilterList`, `StoryTabs`, **`BrowseProGate`**, **`FeatureMatrixTable`**, `PaywallModal`
+- Product components: `StoryFeedCard`, `HeadlineClashCard`, `HeadlineCompare`, `BiasMeter`, `RumorBadge`, `PerspectiveComparison`, `CoverageBar`, `SourceFilterList`, `StoryTabs`, **`BrowseProGate`**, **`FeatureMatrixTable`**, `PaywallModal`, **`AdminIngestPanel`**, **`AdminLogoutButton`**

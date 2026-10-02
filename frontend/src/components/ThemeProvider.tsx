@@ -4,12 +4,22 @@ import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
 import type { ThemeProviderProps } from "next-themes";
 import { useEffect } from "react";
 
-/** Drop legacy "system" preference so new installs and old Auto users start on light. */
+const THEME_STORAGE_KEY = "theme";
+
+/** Drop legacy "system" preference so old Auto users stay on light with system disabled. */
 function MigrateSystemTheme() {
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    if (theme === "system") setTheme("light");
+    try {
+      const stored = localStorage.getItem(THEME_STORAGE_KEY);
+      if (stored === "system" || theme === "system") {
+        localStorage.setItem(THEME_STORAGE_KEY, "light");
+        setTheme("light");
+      }
+    } catch {
+      if (theme === "system") setTheme("light");
+    }
   }, [theme, setTheme]);
 
   return null;
@@ -21,6 +31,8 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       attribute="class"
       defaultTheme="light"
       enableSystem={false}
+      storageKey={THEME_STORAGE_KEY}
+      themes={["light", "dark"]}
       disableTransitionOnChange
       {...props}
     >

@@ -8,19 +8,21 @@ alwaysApply: false
 
 ## Structure
 
-- Routes: `backend/app/api/` (`articles`, `clusters`, `bias`, `rumors`, **`ingest`**) mounted in `app/api/__init__.py`
-- Models: `app/models/` (`article`, `cluster`, `source`); Pydantic: `app/schemas/` (includes `ingest.py` → `IngestResponse`)
-- Business logic: `app/services/` — `rss_parser` (fetch/parse feeds), **`rss_ingestion`** (persist + cluster), `ai_client` — keep route handlers thin
+- Routes: `backend/app/api/` (`articles`, `clusters`, `bias`, `rumors`, **`ingest`**, **`admin`**) mounted in `app/api/__init__.py`
+- Models: `app/models/` (`article`, `cluster`, `source`); Pydantic: `app/schemas/` (`ingest.py` → `IngestResponse`; **`admin.py`** → `AdminOverviewResponse`)
+- Business logic: `app/services/` — `rss_parser` (fetch/parse feeds), **`rss_ingestion`** (persist + cluster), `ai_client`, **`admin_stats`** (ops overview aggregates), **`ops_alerts`** (Healthchecks + Telegram) — keep route handlers thin
+- Monitoring: `app/core/sentry_init.py` — call `init_sentry()` from `main.py` (not inside lifespan)
 - Seed data: `app/data/bd_sources_seed.py`
-- Config: `app/core/config.py` (`Settings`, prefix `/api/v1`, `ingest_api_key`, `rss_fetch_timeout_seconds`)
+- Config: `app/core/config.py` (`Settings`, prefix `/api/v1`, `ingest_api_key`, **`admin_api_key`**, `rss_fetch_timeout_seconds`, optional `sentry_*`, `healthchecks_ingest_url`, `telegram_*`)
 - DB: `app/core/database.py` (`SessionLocal`, `get_db`); tables created on startup in `app/main.py` lifespan
-- CLI ingest: `backend/scripts/ingest_rss.py`; root `npm run ingest:backend`
+- CLI ingest: `backend/scripts/ingest_rss.py` (`notify_ingest_started` → run → `notify_ingest_finished` or `notify_ingest_failed`); root `npm run ingest:backend`
 - Health: `GET /health` (outside API prefix)
 
 ## API surface
 
 - `GET /api/v1/articles`, `/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`
-- **`POST /api/v1/ingest`** — runs `run_rss_ingest`; if `INGEST_API_KEY` is set, require header `X-Ingest-Key`
+- **`GET /api/v1/admin/overview`** — `get_admin_overview`; if `ADMIN_API_KEY` is set, require header `X-Admin-Key`
+- **`POST /api/v1/ingest`** — runs `run_rss_ingest`; if `INGEST_API_KEY` is set, require header `X-Ingest-Key`; on success/failure calls `notify_ingest_finished` / `notify_ingest_failed` from `ops_alerts`
 - OpenAPI: `/docs` when server is running
 
 ## RSS ingestion
@@ -35,7 +37,9 @@ alwaysApply: false
 - Use **async** endpoints and DB/HTTP for I/O-bound work
 - Add new resources as a router module + schema + model; register on `api_router`
 - AI calls go through `AIClient`; respect `settings.ai_provider` and optional API keys
-- Planned: scheduled ingest (cron/worker) reusing `run_rss_ingest`; deeper clustering jobs
+- Scheduled ingest: cron/worker should call CLI or `POST /api/v1/ingest` so Healthchecks/Telegram hooks run; reuse `run_rss_ingest` for logic only if you duplicate ops calls intentionally
+- `ops_alerts.notify_payment_webhook` — stub for future bKash webhook handlers
+- Planned: deeper clustering jobs
 
 ## Example route shape
 

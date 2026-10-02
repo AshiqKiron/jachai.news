@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ecfdf9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -47,6 +47,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="min-h-screen font-sans pb-20 md:pb-0">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("theme");if(t==="system")localStorage.setItem("theme","light")}catch(e){}`,
+          }}
+        />
         <ThemeProvider>
           <SiteHeader />
           <main className="mx-auto max-w-6xl px-4 py-8 md:py-10">{children}</main>

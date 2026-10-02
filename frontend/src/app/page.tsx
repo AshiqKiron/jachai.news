@@ -16,7 +16,7 @@ export default async function HomePage() {
         <h1 className="mt-3 font-display text-4xl leading-tight text-zinc-50 md:text-5xl">
           একই খবর, বিভিন্ন কণ্ঠ।
         </h1>
-        <p className="mt-4 text-lg text-zinc-400">
+        <p className="mt-4 text-lg leading-relaxed text-zinc-400">
           Jachai clusters headlines from Prothom Alo, Daily Star, bdnews24, and more — compare framing, spot blindspots,
           and read with context. Like Ground News, built for Bangladesh.
         </p>

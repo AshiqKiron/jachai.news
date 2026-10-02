@@ -10,6 +10,8 @@ You are working on **Jachai News**, a Bangladesh-focused news intelligence produ
 - `frontend/` — Next.js 15 App Router, TypeScript, Tailwind, optional Supabase auth (`src/lib/supabase.ts`, `database.types.ts`, `/sign-in`, `/sign-up`)
 - `supabase/` — migrations for profiles, Pro subscriptions, bKash records (news data stays in backend Postgres)
 - Root scripts: `npm run dev:frontend`, `dev:backend`, `ingest:backend`
+- **Admin ops (internal)**: backend `GET /api/v1/admin/overview` (`app/api/admin.py`, `admin_stats.py`); frontend password-gated `/admin` + `app/api/admin/*` (server-only `ADMIN_*` / `INGEST_API_KEY` — see `frontend.mdc`)
+- **Monitoring (optional)**: Sentry on backend (`app/core/sentry_init.py`) and frontend (`@sentry/nextjs`, `instrumentation.ts`); ingest cron pings via `app/services/ops_alerts.py` (Healthchecks.io + Telegram when env is set)
 
 ## Conventions
 

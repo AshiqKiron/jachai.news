@@ -1,7 +1,6 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 
 function MoonIcon({ className }: { className?: string }) {
   return (
@@ -41,23 +40,14 @@ function SunIcon({ className }: { className?: string }) {
 }
 
 export function ThemeToggle() {
-  const { setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
-  if (!mounted) {
-    return (
-      <div className="h-9 w-9 rounded-lg border border-zinc-800/80 bg-ink-900/50" aria-hidden />
-    );
-  }
-
-  const isDark = resolvedTheme === "dark";
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
 
   return (
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
+      suppressHydrationWarning
       className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800/80 bg-ink-900/50 text-zinc-400 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -16,7 +18,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-ink-900/90 backdrop-blur dark:bg-ink-900/80">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
         <Link href="/" className="font-display text-xl tracking-tight text-zinc-50">
-          Jachai<span className="text-accent">.</span>
+          Jachai<span className="text-accent dark:text-neutral-500">.</span>
           <span className="font-bengali text-lg">নিউজ</span>
         </Link>
         <div className="flex items-center gap-4 md:gap-6">

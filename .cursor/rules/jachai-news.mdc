@@ -27,6 +27,19 @@ alwaysApply: true
 - **Service**: `backend/app/services/rss_ingestion.py` — seed sources from `bd_sources_seed.py`, fetch feeds, dedupe by article URL, cluster by title Jaccard similarity (72h lookback, threshold ~0.42), optional AI cluster summary via `ai_client.summarize_cluster` when 2+ articles in a cluster.
 - **CLI**: `npm run ingest:backend` → `backend/scripts/ingest_rss.py` (requires `DATABASE_URL`; tables created on API startup).
 - **API**: `POST /api/v1/ingest` in `app/api/ingest.py`; optional `INGEST_API_KEY` env → require `X-Ingest-Key` header.
+- **Ops hooks**: `app/services/ops_alerts.py` — Healthchecks.io start/success/fail pings and optional Telegram summaries on ingest; wired from `ingest.py` and `scripts/ingest_rss.py`. All no-ops when env vars are unset.
+
+## Admin ops (internal)
+
+- **Backend**: `GET /api/v1/admin/overview` — counts, per-source article totals, recent clusters, AI/ingest key flags (`app/services/admin_stats.py`). When `ADMIN_API_KEY` is set, require header `X-Admin-Key` (same pattern as ingest).
+- **Frontend**: `/admin` operations dashboard (noindex); cookie session via `middleware.ts` + `lib/admin-auth.ts` (`ADMIN_PASSWORD`, optional `ADMIN_SESSION_SECRET`). Server-only proxies: `app/api/admin/login`, `logout`, `ingest` — overview/ingest call backend through `lib/admin-api.ts` with `ADMIN_API_KEY` / `INGEST_API_KEY` when configured. UI: `AdminIngestPanel`, `AdminLogoutButton`.
+- **Env**: document in `backend/.env.example` and `frontend/.env.example`; never expose admin secrets as `NEXT_PUBLIC_*`.
+
+## Monitoring (optional)
+
+- **Backend**: `app/core/sentry_init.py` (`init_sentry()` in `main.py` before app creation); `SENTRY_DSN` + related settings in `app/core/config.py`
+- **Frontend**: `@sentry/nextjs` — `instrumentation.ts`, `instrumentation-client.ts`, `sentry.server.config.ts` / `sentry.edge.config.ts`; `withSentryConfig` in `next.config.ts`; `NEXT_PUBLIC_SENTRY_*` in `frontend/.env.example`
+- **Secrets**: Never commit DSNs, Telegram tokens, or Healthchecks URLs; document new vars in `backend/.env.example` / `frontend/.env.example`
 
 ## Supabase (auth + Pro — planned checkout)
 

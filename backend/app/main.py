@@ -6,6 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import api_router
 from app.core.config import settings
 from app.core.database import Base, engine
+from app.core.sentry_init import init_sentry
+
+init_sentry()
 
 
 @asynccontextmanager

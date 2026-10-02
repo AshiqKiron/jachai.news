@@ -42,6 +42,7 @@ API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 | `GEMINI_API_KEY` | Optional — cluster summaries via Gemini |
 | `AI_PROVIDER` | `groq` (default) or `gemini` |
 | `INGEST_API_KEY` | Optional — require `X-Ingest-Key` on `POST /api/v1/ingest` |
+| `ADMIN_API_KEY` | Optional — require `X-Admin-Key` on `GET /api/v1/admin/overview` |
 
 ## Frontend
 
@@ -53,6 +54,16 @@ npm run dev
 ```
 
 App: [http://localhost:3000](http://localhost:3000)
+
+### Admin panel (internal)
+
+Password-protected dashboard at **`/admin`** — API health, DB counts, sources, recent clusters, and manual RSS ingest.
+
+| Variable | Where | Description |
+|----------|--------|-------------|
+| `ADMIN_PASSWORD` | Frontend (server) | Required in production; omit locally to open `/admin` without login |
+| `ADMIN_API_KEY` | Frontend + backend | Protects `GET /api/v1/admin/overview` (omit locally for open access) |
+| `INGEST_API_KEY` | Frontend (server) + backend | Optional; required for **Run ingest** when set on the API |
 
 The UI ships with **Bangladeshi demo stories** when the API is offline. Connect the API to replace them with live RSS clusters.
 
