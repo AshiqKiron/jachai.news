@@ -11,7 +11,7 @@ You are working on **Jachai News**, a Bangladesh-focused news intelligence produ
 - `supabase/` — migrations for profiles, Pro subscriptions, bKash records, user dossiers/alerts (news + verified claims stay in backend Postgres)
 - Root scripts: `npm run dev:frontend`, `dev:backend`, `ingest:backend`, **`worker:backend`**, **`worker:verification`**, **`stack:up`** / **`stack:down`** (`docker-compose.yml`: Postgres pgvector, Redis, API, worker)
 - **Claim verification**: `POST /api/v1/verify` (guardrailed submit), `/api/v1/verifications/*` (jobs, SSE/WS, list/search/detail); UI `/verify`, `/verify/[slug]`, `/verify/database` via `src/lib/verifications.ts`
-- **Admin ops (internal)**: backend `GET /api/v1/admin/overview` + source CRUD (`admin.py`, `admin_sources.py`); frontend password- or **Supabase admin**-gated `/admin` (+ `/admin/login`, `/admin/register`) + `app/api/admin/*` (server-only `ADMIN_*` / `INGEST_API_KEY` — see `frontend.mdc`)
+- **Admin ops (internal)**: backend `GET /api/v1/admin/overview` + RSS source add/soft-disable (`admin.py`, `admin_sources.py`; `sources.disabled`, migration `002_sources_disabled.sql`); frontend **`admin.jachai.news`** in production (`admin-host.ts`, local `/admin`) gated by legacy cookie or **Supabase admin**; `AdminDashboardPanel` → `GET /api/admin/overview`; other `app/api/admin/*` proxies use legacy cookie for backend calls (see `frontend.mdc`)
 - **Monitoring (optional)**: Sentry on backend (`app/core/sentry_init.py`) and frontend (`@sentry/nextjs`, `instrumentation.ts`); ingest cron pings via `app/services/ops_alerts.py` (Healthchecks.io + Telegram when env is set)
 
 ## Conventions
@@ -21,10 +21,12 @@ You are working on **Jachai News**, a Bangladesh-focused news intelligence produ
 - Async for I/O; config in `app/core/config.py`; API prefix `/api/v1`; optional `INGEST_API_KEY` / `ADMIN_API_KEY`; Redis-backed rate limits when `REDIS_URL` is set; never commit secrets
 
 ### Frontend
-- Pages under `frontend/src/app/`; components in `src/components/`
-- Fetch via `src/lib/api.ts` and `src/lib/stories.ts` (API + `demo-data.ts` fallback); verification via `src/lib/verifications.ts`
-- Pro tier: `subscription-features.ts` (matrix), `subscription-access.ts` (`NEXT_PUBLIC_MOCK_PRO`), `subscription-plans.ts` (pricing); browse gated for free users
-- Server components for feeds; client components for interactive meters/modals/tabs/PWA/theme/verify progress
+- Pages under `frontend/src/app/`; components in `src/components/`; route errors in `app/error.tsx` and `app/global-error.tsx`
+- Fetch via `api.ts` + `api-resilience.ts`, `stories.ts` (API + `demo-data.ts` fallback, `fromApi` + `ApiDegradedBanner`); verification via `verifications.ts` (`lookupVerifiedClaim` for slug detail)
+- Pro tier: `subscription-features.ts` (matrix), `subscription-entitlement.ts` + `subscription-access.ts` (Supabase `subscriptions` + `NEXT_PUBLIC_MOCK_PRO`), `subscription-plans.ts` (pricing); browse gated for free users
+- Home: static `/` + `HomeStoryGridClient` hydrates from `GET /api/feed/top` (`getTopStories`)
+- Server components for feeds; client components for interactive UI — wrap fragile client trees in `ClientErrorBoundary`
+- Reads degrade to demo when the API is down; writes (verify submit, admin) must surface real failures
 
 ## Product vocabulary
 
