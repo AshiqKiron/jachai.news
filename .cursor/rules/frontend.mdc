@@ -8,25 +8,28 @@ alwaysApply: false
 
 ## App Router
 
-- Pages: `frontend/src/app/` — `/`, `/browse`, `/story/[slug]`, `/blindspot`, `/bias`, `/rumors`, `/pro`, `/sign-in`, `/sign-up`, `/offline`, **`/admin`**, **`/admin/login`** (internal; `admin/layout.tsx` sets `robots: noindex`)
+- Pages: `frontend/src/app/` — `/`, `/browse`, `/story/[slug]`, `/blindspot`, `/bias`, `/rumors`, **`/verify`**, **`/verify/[slug]`**, **`/verify/database`**, `/pro`, `/sign-in`, `/sign-up`, `/offline`, **`/admin`**, **`/admin/login`**, **`/admin/register`** (internal; `admin/layout.tsx` sets `robots: noindex`)
 - Layout: `layout.tsx` wires `ThemeProvider`, `SiteHeader`, `MobileNav`, `InstallPWA`; fonts Inter + Newsreader + Noto Sans Bengali
 - Shared UI: `frontend/src/components/`
-- Domain helpers: `frontend/src/lib/` (`api`, `stories`, `demo-data`, `perspectives`, `coverage`, **`subscription-plans`**, **`subscription-features`**, **`subscription-access`**, **`database.types`**, `supabase`, **`admin-api`**, **`admin-auth`**, **`admin-types`**)
-- Route handlers: `frontend/src/app/api/admin/` — `login`, `logout`, `ingest` (server-only; never call backend admin/ingest from the browser with secrets)
-- `frontend/src/middleware.ts` — cookie gate for `/admin/*` except `/admin/login`
+- Domain helpers: `frontend/src/lib/` (`api`, `stories`, `demo-data`, `perspectives`, `coverage`, **`verifications`**, **`verification-progress`**, **`subscription-plans`**, **`subscription-features`**, **`subscription-access`**, **`database.types`**, `supabase`, **`supabase/middleware`**, **`security-headers`**, **`auth-errors`**, **`admin-api`**, **`admin-auth`**, **`admin-types`**)
+- Route handlers: `frontend/src/app/api/admin/` — `login`, `logout`, `ingest`, **`register`**, **`verify`**, **`sources`**, **`sources/[id]`** (server-only; never call backend admin/ingest with secrets from the browser)
+- Auth: `app/auth/callback/route.ts`, `app/api/auth/signout/route.ts`
+- `frontend/src/middleware.ts` — Supabase session refresh + cookie/Supabase gate for `/admin/*` (except login/register); applies `security-headers`
 
 ## Data fetching
 
-- Server components for listings and story pages; use `getTopStories`, `fetchClusters`, etc. from `lib/`
+- Server components for listings and story pages; use `getTopStories`, `fetchClusters`, `fetchVerifiedClaims`, etc. from `lib/`
 - Home feed uses **`FREE_DAILY_TOP_STORIES_LIMIT`** (10) from `subscription-features.ts` via `getTopStories`
 - Graceful degradation: catch API errors and empty states (see home page demo banner when `fromApi` is false)
-- Client components for interactive UI (meters, tabs, modals, mobile nav, PWA install, theme toggle)
+- Client components for interactive UI (meters, tabs, modals, mobile nav, PWA install, theme toggle, **`VerifyClaimForm`** job progress via SSE/WebSocket)
 
 ## Admin ops (internal)
 
-- Set **`ADMIN_PASSWORD`** in `.env.local` (server-only) to enable login; optional **`ADMIN_SESSION_SECRET`** (defaults to password for signed cookie `jachai_admin`)
-- **`ADMIN_API_KEY`** must match backend when set — used server-side in `admin-api.ts` as `X-Admin-Key` for `/admin/overview`
-- **`INGEST_API_KEY`** (server-only) forwarded as `X-Ingest-Key` when triggering ingest from `AdminIngestPanel` via `POST /api/admin/ingest`
+- **Legacy**: **`ADMIN_PASSWORD`** + optional **`ADMIN_SESSION_SECRET`** → signed cookie `jachai_admin`
+- **Supabase admin**: **`ADMIN_EMAILS`** allowlist and/or `app_metadata.role === "admin"`; login flow uses `POST /api/admin/verify`
+- **Bootstrap**: **`ADMIN_REGISTRATION_CODE`** + **`SUPABASE_SERVICE_ROLE_KEY`** for `POST /api/admin/register` and `/admin/register`
+- **`ADMIN_API_KEY`** must match backend when set — `admin-api.ts` sends `X-Admin-Key` for overview and source CRUD
+- **`INGEST_API_KEY`** forwarded as `X-Ingest-Key` from `AdminIngestPanel` via `POST /api/admin/ingest` (polls async ingest jobs when API returns 202)
 - Prefer extending `admin-api.ts` / `admin-types.ts` for new ops endpoints; keep credentials out of client bundles
 
 ## Auth, Pro & gating
@@ -54,6 +57,7 @@ alwaysApply: false
 ## Types
 
 - API shapes: exported from `lib/api.ts`
+- Verification: `VerifiedClaim`, job event types from `lib/verifications.ts`
 - Rich story UI: `Story`, `NewsSource` from `lib/demo-data.ts`
 - Supabase: `lib/database.types.ts` — align with `supabase/migrations/`
 - Do not duplicate types across components; import from `lib/`
@@ -62,4 +66,4 @@ alwaysApply: false
 
 - Light/dark via `next-themes` (`ThemeProvider`, `ThemeToggle`); zinc palette, `font-display` for headings
 - Keep BN strings alongside EN where the product already does
-- Product components: `StoryFeedCard`, `HeadlineClashCard`, `HeadlineCompare`, `BiasMeter`, `RumorBadge`, `PerspectiveComparison`, `CoverageBar`, `SourceFilterList`, `StoryTabs`, **`BrowseProGate`**, **`FeatureMatrixTable`**, `PaywallModal`, **`AdminIngestPanel`**, **`AdminLogoutButton`**
+- Product components: `StoryFeedCard`, `HeadlineClashCard`, `HeadlineCompare`, `BiasMeter`, `RumorBadge`, `PerspectiveComparison`, `CoverageBar`, `SourceFilterList`, `StoryTabs`, **`VerifyClaimForm`**, **`ClaimSearch`**, **`BrowseProGate`**, **`FeatureMatrixTable`**, `PaywallModal`, **`AdminIngestPanel`**, **`AdminSourcesPanel`**, **`AdminLogoutButton`**, **`AuthNav`**, **`SignInForm`**, **`SignUpForm`** (`components/auth/`)

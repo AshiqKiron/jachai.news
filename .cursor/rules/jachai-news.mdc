@@ -5,34 +5,43 @@ alwaysApply: true
 
 # Jachai News
 
-**Ground News for Bangladesh** — installable PWA that clusters the same story across Prothom Alo, Daily Star, bdnews24, BBC Bangla, and more. Compare framing, perspective lean, blindspots, and rumor flags. UI copy is **English + Bangla** where product-facing.
+**Ground News for Bangladesh** — installable PWA that clusters the same story across Prothom Alo, Daily Star, bdnews24, BBC Bangla, and more. Compare framing, perspective lean, blindspots, rumor flags, and **verify claims** with AI-assisted fact-checking. UI copy is **English + Bangla** where product-facing.
 
 ## Repo layout
 
 | Path | Stack |
 |------|--------|
-| `backend/` | Python 3.11+, FastAPI, SQLAlchemy (async), PostgreSQL (`asyncpg`), RSS via `app/services/rss_parser.py`, ingestion pipeline in `app/services/rss_ingestion.py`, AI via `app/services/ai_client.py` (Groq default, Gemini optional) |
-| `frontend/` | Next.js 15 App Router, React 19, TypeScript, Tailwind, PWA (`@ducanh2912/next-pwa`); optional Supabase auth in `src/lib/supabase.ts` |
-| `supabase/` | Migrations for profiles, Pro subscriptions, bKash agreement/payment tables (RLS); see `.cursor/rules/supabase.mdc` |
-| Root `package.json` | `npm run dev:frontend`, `dev:backend`, `build:frontend`, `lint:frontend`, **`ingest:backend`** |
+| `backend/` | Python 3.11+, FastAPI, SQLAlchemy (async), PostgreSQL (`asyncpg`, **pgvector** + FTS for claims), optional **Redis** + **Celery** (`ingest`, `verification` queues), RSS via `app/services/rss_parser.py`, ingestion in `app/services/rss_ingestion.py`, AI via `app/services/ai_client.py` (Groq default, Gemini optional) |
+| `frontend/` | Next.js 15 App Router, React 19, TypeScript, Tailwind, PWA (`@ducanh2912/next-pwa`); optional Supabase auth in `src/lib/supabase.ts` + `src/lib/supabase/middleware.ts` |
+| `supabase/` | Migrations for profiles, Pro subscriptions, bKash tables, user dossiers/alerts (RLS); see `.cursor/rules/supabase.mdc` |
+| Root `package.json` | `dev:frontend`, `dev:backend`, `build:frontend`, `lint:frontend`, **`ingest:backend`**, **`worker:backend`**, **`worker:verification`**, **`stack:up`** / **`stack:down`** |
+| `docker-compose.yml` | Local stack: Postgres (pgvector), Redis, API, Celery worker |
 
 ## Data on the frontend
 
-- **Live API**: `frontend/src/lib/api.ts` → `NEXT_PUBLIC_API_URL` (default `http://localhost:8000/api/v1`). Endpoints: `/articles`, `/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`.
+- **Live API**: `frontend/src/lib/api.ts` → `NEXT_PUBLIC_API_URL` (default `http://localhost:8000/api/v1`). News: `/articles`, `/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`.
+- **Verification**: `frontend/src/lib/verifications.ts` → `POST /verify`, `/verifications`, `/verifications/jobs/{id}`, SSE `/events`, WebSocket `/ws`, `/verifications/{slug}`, `/verifications/search`; progress helper `verification-progress.ts`.
 - **Demo fallback**: Rich story payloads in `frontend/src/lib/demo-data.ts`; `frontend/src/lib/stories.ts` merges API clusters with demo by slug and falls back to `DEMO_STORIES` when the API is down.
-- Prefer extending `stories.ts` / `api.ts` rather than fetching ad hoc in pages.
+- Prefer extending `stories.ts` / `api.ts` / `verifications.ts` rather than fetching ad hoc in pages.
 
 ## RSS ingestion (backend)
 
 - **Service**: `backend/app/services/rss_ingestion.py` — seed sources from `bd_sources_seed.py`, fetch feeds, dedupe by article URL, cluster by title Jaccard similarity (72h lookback, threshold ~0.42), optional AI cluster summary via `ai_client.summarize_cluster` when 2+ articles in a cluster.
-- **CLI**: `npm run ingest:backend` → `backend/scripts/ingest_rss.py` (requires `DATABASE_URL`; tables created on API startup).
-- **API**: `POST /api/v1/ingest` in `app/api/ingest.py`; optional `INGEST_API_KEY` env → require `X-Ingest-Key` header.
+- **CLI**: `npm run ingest:backend` → `backend/scripts/ingest_rss.py` (requires `DATABASE_URL`; ORM tables + SQL migrations on API startup).
+- **API**: `POST /api/v1/ingest` in `app/api/ingest.py`; optional `INGEST_API_KEY` env → require `X-Ingest-Key` header; async via Celery when `REDIS_URL` + `INGEST_ASYNC_ENABLED`.
 - **Ops hooks**: `app/services/ops_alerts.py` — Healthchecks.io start/success/fail pings and optional Telegram summaries on ingest; wired from `ingest.py` and `scripts/ingest_rss.py`. All no-ops when env vars are unset.
+
+## Claim verification (backend + UI)
+
+- **Submit (product)**: `POST /api/v1/verify` (`app/api/verify.py`) — sanitize text/URL, `ai_guardrails`, semantic cache hit → instant result; else queue job (`verification_jobs` + Celery `verification` queue or `BackgroundTasks`).
+- **API surface**: `app/api/verifications.py` — create/list/search/get by slug, job status, **SSE** (`/jobs/{id}/events`) and **WebSocket** (`/jobs/{id}/ws`) for progress.
+- **Pipeline**: `verification_submit`, `verification_runner`, `verification_pipeline`, `semantic_cache`, `embeddings`; SQL extras in `backend/migrations/001_verified_claims_pgvector_fts.sql` via `db_extensions.apply_sql_migrations`.
+- **Frontend**: `/verify` (`VerifyClaimForm`), `/verify/[slug]`, `/verify/database` (`ClaimSearch`); nav link in `SiteHeader`.
 
 ## Admin ops (internal)
 
-- **Backend**: `GET /api/v1/admin/overview` — counts, per-source article totals, recent clusters, AI/ingest key flags (`app/services/admin_stats.py`). When `ADMIN_API_KEY` is set, require header `X-Admin-Key` (same pattern as ingest).
-- **Frontend**: `/admin` operations dashboard (noindex); cookie session via `middleware.ts` + `lib/admin-auth.ts` (`ADMIN_PASSWORD`, optional `ADMIN_SESSION_SECRET`). Server-only proxies: `app/api/admin/login`, `logout`, `ingest` — overview/ingest call backend through `lib/admin-api.ts` with `ADMIN_API_KEY` / `INGEST_API_KEY` when configured. UI: `AdminIngestPanel`, `AdminLogoutButton`.
+- **Backend**: `GET /api/v1/admin/overview` — counts, per-source stats, recent clusters (`admin_stats.py`). `POST/DELETE /api/v1/admin/sources` — add/remove RSS sources (`admin_sources.py`). When `ADMIN_API_KEY` is set, require header `X-Admin-Key`.
+- **Frontend**: `/admin` operations dashboard (noindex); auth via legacy cookie (`ADMIN_PASSWORD` + `admin-auth.ts`) **or** Supabase user with `app_metadata.role=admin` / `ADMIN_EMAILS` allowlist. Public: `/admin/login`, `/admin/register` (`ADMIN_REGISTRATION_CODE`). Server proxies: `app/api/admin/login`, `logout`, `ingest`, `register`, `verify`, `sources` — backend calls through `lib/admin-api.ts` with `ADMIN_API_KEY` / `INGEST_API_KEY`. UI: `AdminIngestPanel`, `AdminSourcesPanel`, `AdminLogoutButton`.
 - **Env**: document in `backend/.env.example` and `frontend/.env.example`; never expose admin secrets as `NEXT_PUBLIC_*`.
 
 ## Monitoring (optional)
@@ -43,9 +52,9 @@ alwaysApply: true
 
 ## Supabase (auth + Pro — planned checkout)
 
-- **Schema**: `supabase/migrations/20250301000000_init_profiles_subscriptions.sql` — `profiles`, `subscriptions` (monthly/yearly, status enum), `bkash_agreements`, `payment_transactions`; RLS for user read-own; writes intended for service role / Edge Functions.
+- **Schema**: `20250301000000_init_profiles_subscriptions.sql` — `profiles`, `subscriptions`, `bkash_agreements`, `payment_transactions`; `20250302000000_security_rls_hardening.sql` — `saved_dossiers`, `custom_alerts`, explicit deny policies on billing writes.
 - **Types**: `frontend/src/lib/database.types.ts` (keep in sync with migrations; regenerate with Supabase CLI when schema changes).
-- **News data** stays in backend PostgreSQL; subscription/payment state in Supabase only.
+- **News + verified claims** stay in backend PostgreSQL; subscription/payment and user research metadata in Supabase.
 
 ## Product vocabulary
 
@@ -54,6 +63,7 @@ alwaysApply: true
 - **Bias meter** — Source or cluster lean score
 - **Rumor badge** — Low corroboration or speculative coverage (`is_rumor` on articles)
 - **Blindspot** — Story marked one-sided (`isBlindspot` on demo `Story` type)
+- **Verified claim** — User-submitted claim with AI verdict + analysis (`verified_claims`, `/verify/[slug]`)
 - **Jachai Pro** — Paid tier; pricing in `frontend/src/lib/subscription-plans.ts` (৳49/mo, ৳399/yr). **Feature matrix** (free vs Pro): `frontend/src/lib/subscription-features.ts` — source of truth for gating copy and `PRO_ONLY_FEATURE_IDS`. **Entitlements**: `frontend/src/lib/subscription-access.ts` (`hasProAccess()`; `NEXT_PUBLIC_MOCK_PRO=true` for local Pro UI until Supabase checkout ships). Planned payment: bKash Tokenized Checkout API; no live checkout yet.
 
 ## Quality bar

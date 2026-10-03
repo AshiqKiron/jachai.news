@@ -8,21 +8,27 @@ alwaysApply: false
 
 ## Structure
 
-- Routes: `backend/app/api/` (`articles`, `clusters`, `bias`, `rumors`, **`ingest`**, **`admin`**) mounted in `app/api/__init__.py`
-- Models: `app/models/` (`article`, `cluster`, `source`); Pydantic: `app/schemas/` (`ingest.py` → `IngestResponse`; **`admin.py`** → `AdminOverviewResponse`)
-- Business logic: `app/services/` — `rss_parser` (fetch/parse feeds), **`rss_ingestion`** (persist + cluster), `ai_client`, **`admin_stats`** (ops overview aggregates), **`ops_alerts`** (Healthchecks + Telegram) — keep route handlers thin
+- Routes: `backend/app/api/` (`articles`, `clusters`, `bias`, `rumors`, **`ingest`**, **`admin`**, **`verify`**, **`verifications`**) mounted in `app/api/__init__.py`
+- Models: `app/models/` (`article`, `cluster`, `source`, **`verified_claim`**); Pydantic: `app/schemas/` (`ingest.py`, **`admin.py`**, **`verify.py`**, **`verification.py`**)
+- Business logic: `app/services/` — `rss_parser`, **`rss_ingestion`**, `ai_client`, **`admin_stats`**, **`admin_sources`**, **`ops_alerts`**, **`verification_*`** (submit, runner, pipeline, jobs, job_stream, fetch, slug), **`semantic_cache`**, **`embeddings`**, **`ai_guardrails`**, **`ai_input_sanitizer`**, **`object_storage`**, **`ingest_queue`**, **`db_extensions`** — keep route handlers thin
+- Workers: `app/workers/` — `celery_app`, `ingest_tasks`, verification tasks; queues `ingest` + `verification`
 - Monitoring: `app/core/sentry_init.py` — call `init_sentry()` from `main.py` (not inside lifespan)
+- Rate limits: `app/core/rate_limit.py`, `app/middleware/rate_limit_middleware.py` — Redis when `REDIS_URL` set; tiered limits for verify (anon/auth/Pro JWT), ingest, admin
 - Seed data: `app/data/bd_sources_seed.py`
-- Config: `app/core/config.py` (`Settings`, prefix `/api/v1`, `ingest_api_key`, **`admin_api_key`**, `rss_fetch_timeout_seconds`, optional `sentry_*`, `healthchecks_ingest_url`, `telegram_*`)
-- DB: `app/core/database.py` (`SessionLocal`, `get_db`); tables created on startup in `app/main.py` lifespan
-- CLI ingest: `backend/scripts/ingest_rss.py` (`notify_ingest_started` → run → `notify_ingest_finished` or `notify_ingest_failed`); root `npm run ingest:backend`
+- Config: `app/core/config.py` (`Settings`, prefix `/api/v1`, `ingest_api_key`, `admin_api_key`, pool modes, `redis_url`, `ingest_async_enabled`, rate limits, semantic cache, optional `sentry_*`, `healthchecks_*`, `telegram_*`, object storage)
+- DB: `app/core/database.py` (`SessionLocal`, `get_db`); ORM `create_all` + **`apply_sql_migrations`** (`backend/migrations/*.sql`, pgvector/FTS) in `app/main.py` lifespan
+- CLI: `backend/scripts/ingest_rss.py` (`npm run ingest:backend`); optional `backend/scripts/verification_worker.py` for local verification queue debugging
 - Health: `GET /health` (outside API prefix)
+- Local stack: `docker-compose.yml` — Postgres pgvector, Redis, API, worker
 
 ## API surface
 
 - `GET /api/v1/articles`, `/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`
-- **`GET /api/v1/admin/overview`** — `get_admin_overview`; if `ADMIN_API_KEY` is set, require header `X-Admin-Key`
-- **`POST /api/v1/ingest`** — runs `run_rss_ingest`; if `INGEST_API_KEY` is set, require header `X-Ingest-Key`; on success/failure calls `notify_ingest_finished` / `notify_ingest_failed` from `ops_alerts`
+- **`GET /api/v1/admin/overview`**, **`POST /api/v1/admin/sources`**, **`DELETE /api/v1/admin/sources/{id}`** — `X-Admin-Key` when `ADMIN_API_KEY` is set
+- **`POST /api/v1/ingest`** — Celery (`ingest` queue) when `REDIS_URL` + `INGEST_ASYNC_ENABLED`; else inline; **202** + `job_id` when queued; **`GET /api/v1/ingest/jobs/{job_id}`**; `X-Ingest-Key` when `INGEST_API_KEY` is set
+- **`POST /api/v1/verify`** — guardrailed user submit (`VerifyResponse`; may return cache hit, blocked guardrail, or `job_id`)
+- **`POST /api/v1/verifications`** — create with semantic cache; **`GET /jobs/{job_id}`**, **`GET /jobs/{job_id}/events`** (SSE), **`WebSocket /jobs/{job_id}/ws`**
+- **`GET /api/v1/verifications`**, **`GET /verifications/search?q=`**, **`GET /verifications/{slug}`** (completed claims only)
 - OpenAPI: `/docs` when server is running
 
 ## RSS ingestion
@@ -32,14 +38,21 @@ alwaysApply: false
 - May call `ai_client.summarize_cluster` when a cluster gains multiple articles
 - Returns `IngestResult` counts + per-source error strings (ingest continues on fetch failures)
 
+## Verification
+
+- Prefer **`submit_verify_request`** for `/verify`; **`create_verification`** + job watchers for `/verifications`
+- Persist rows in `VerifiedClaim`; embeddings via raw SQL (`embedding` vector column); full-text `search_vector` for `/search`
+- Celery task when broker available; else `BackgroundTasks` + `execute_verification_job`
+- Input: always through sanitizer + guardrails; respect rate limits on verify routes
+
 ## Patterns
 
 - Use **async** endpoints and DB/HTTP for I/O-bound work
 - Add new resources as a router module + schema + model; register on `api_router`
 - AI calls go through `AIClient`; respect `settings.ai_provider` and optional API keys
-- Scheduled ingest: cron/worker should call CLI or `POST /api/v1/ingest` so Healthchecks/Telegram hooks run; reuse `run_rss_ingest` for logic only if you duplicate ops calls intentionally
+- Scheduled ingest: cron/worker should call CLI or `POST /api/v1/ingest` so Healthchecks/Telegram hooks run
 - `ops_alerts.notify_payment_webhook` — stub for future bKash webhook handlers
-- Planned: deeper clustering jobs
+- New SQL that ORM cannot express: add idempotent file under `backend/migrations/` and run via `db_extensions`
 
 ## Example route shape
 

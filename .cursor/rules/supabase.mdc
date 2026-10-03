@@ -6,12 +6,14 @@ alwaysApply: false
 
 # Supabase
 
-Jachai uses Supabase for **auth**, **Pro entitlement**, and **planned bKash checkout** — not for articles/clusters (those live in backend PostgreSQL).
+Jachai uses Supabase for **auth**, **Pro entitlement**, **user research metadata**, and **planned bKash checkout** — not for articles/clusters or verified claims (those live in backend PostgreSQL).
 
 ## Layout
 
 - `supabase/config.toml` — local CLI project (`project_id = "jachai-news"`, Postgres 15)
-- `supabase/migrations/` — versioned SQL; initial migration: `20250301000000_init_profiles_subscriptions.sql`
+- `supabase/migrations/` — versioned SQL:
+  - `20250301000000_init_profiles_subscriptions.sql` — profiles, subscriptions, bKash tables
+  - `20250302000000_security_rls_hardening.sql` — `saved_dossiers`, `custom_alerts`, explicit deny INSERT/UPDATE/DELETE on billing tables for anon/authenticated
 - Frontend types: `frontend/src/lib/database.types.ts` — **keep in sync** when migrations change
 
 ## Apply schema
@@ -36,16 +38,22 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 | `public.subscriptions` | One row per user (`user_id` unique); `subscription_plan` monthly/yearly; `subscription_status` trialing/active/past_due/canceled/expired |
 | `public.bkash_agreements` | Tokenized checkout agreement IDs per user (planned) |
 | `public.payment_transactions` | bKash (default provider) charges linked to `subscription_id`; `metadata` jsonb |
+| `public.saved_dossiers` | Per-user research notes + source URLs (full CRUD for owner) |
+| `public.custom_alerts` | Per-user saved search/alert queries (full CRUD for owner) |
 
 ## Row Level Security
 
-- RLS enabled on all four public tables
-- **Anon/authenticated users**: SELECT own rows only (`auth.uid()` = `id` or `user_id`); users may UPDATE own `profiles`
-- **No client INSERT** on subscriptions, agreements, or payments — writes are for **service role** (Edge Functions, server route with `SUPABASE_SERVICE_ROLE_KEY`), not `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- RLS enabled on all public tables above
+- **Profiles**: users SELECT/UPDATE own row
+- **Subscriptions / bKash / payments**: users SELECT own rows only; **no client INSERT/UPDATE/DELETE** (explicit deny policies in hardening migration) — writes for **service role** only
+- **Dossiers / alerts**: users full CRUD on own rows (`auth.uid() = user_id`)
+- Never use `NEXT_PUBLIC_SUPABASE_ANON_KEY` for subscription writes or admin bootstrap; use server routes with `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Frontend wiring
 
 - Client: `frontend/src/lib/supabase.ts` — `createClient<Database>(...)` when URL + anon key are set in `.env.local`
+- Session refresh: `lib/supabase/middleware.ts` from root `middleware.ts`
+- Admin bootstrap: `POST /api/admin/register` sets `app_metadata.role=admin` when registration code + service role are configured
 - Entitlements (not wired yet): read `subscriptions` where `status` in (`active`, `trialing`) and `current_period_end` > now; until then `hasProAccess()` in `subscription-access.ts` uses `NEXT_PUBLIC_MOCK_PRO`
 - Pricing/feature copy stays in `subscription-plans.ts` and `subscription-features.ts` (not in DB)
 
@@ -53,4 +61,4 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 
 - One logical change per migration file; timestamp prefix `YYYYMMDDHHMMSS_name.sql`
 - Prefer explicit RLS policies and comments on tables intended for service-role writes
-- Do not store news/RSS/cluster data here; do not commit service role keys or bKash secrets
+- Do not store news/RSS/cluster/verification data here; do not commit service role keys or bKash secrets
