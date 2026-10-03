@@ -36,6 +36,11 @@ export type SourceBias = {
   bias_score: number | null;
 };
 
+export type NewsSourceRef = {
+  source_id: number;
+  name: string;
+};
+
 async function apiGet<T>(path: string): Promise<T> {
   const result = await fetchJsonSafe<T>(`${apiBase()}${path}`, { next: { revalidate: 60 } });
   if (!result.ok) {
@@ -52,8 +57,10 @@ export async function tryApiGet<T>(path: string, timeoutMs = API_LISTING_TIMEOUT
   return result.ok ? result.data : null;
 }
 
-export function fetchArticles(limit = 12) {
-  return apiGet<{ items: Article[]; total: number }>(`/articles?limit=${limit}`);
+export function fetchArticles(limit = 12, sourceId?: number) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (sourceId !== undefined) params.set("source_id", String(sourceId));
+  return apiGet<{ items: Article[]; total: number }>(`/articles?${params.toString()}`);
 }
 
 export function fetchClusters(limit = 12) {
@@ -74,10 +81,19 @@ export async function tryFetchClusterBySlug(slug: string): Promise<ClusterDetail
 
 export async function fetchArticlesFeed(
   limit = 12,
+  sourceId?: number,
 ): Promise<{ items: Article[]; total: number; fromApi: boolean }> {
-  const data = await tryApiGet<{ items: Article[]; total: number }>(`/articles?limit=${limit}`);
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (sourceId !== undefined) params.set("source_id", String(sourceId));
+  const data = await tryApiGet<{ items: Article[]; total: number }>(`/articles?${params.toString()}`);
   if (!data) return { items: [], total: 0, fromApi: false };
   return { items: data.items ?? [], total: data.total ?? 0, fromApi: true };
+}
+
+export async function fetchCustomSourcesFeed(): Promise<{ items: NewsSourceRef[]; fromApi: boolean }> {
+  const data = await tryApiGet<{ items: NewsSourceRef[] }>("/sources?custom_only=true");
+  if (!data) return { items: [], fromApi: false };
+  return { items: data.items ?? [], fromApi: true };
 }
 
 export async function fetchBiasOverviewFeed(): Promise<{ sources: SourceBias[]; fromApi: boolean }> {

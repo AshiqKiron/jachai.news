@@ -31,7 +31,7 @@ services:
   api:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "3001:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/jachai
       REDIS_URL: redis://redis:6379/0

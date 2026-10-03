@@ -1,13 +1,17 @@
 import { unstable_cache } from "next/cache";
 
-import type { Article, Cluster, ClusterDetail } from "@/lib/api";
 import {
   fetchArticlesFeed,
   fetchBiasOverviewFeed,
   fetchClusters,
+  fetchCustomSourcesFeed,
   fetchRumors,
   tryApiGet,
   tryFetchClusterBySlug,
+  type Article,
+  type Cluster,
+  type ClusterDetail,
+  type NewsSourceRef,
   type SourceBias,
 } from "@/lib/api";
 import { BD_SOURCES, DEMO_RUMOR_ARTICLES, DEMO_STORIES, getStoryBySlug, type Story } from "@/lib/demo-data";
@@ -143,4 +147,44 @@ export async function getLatestArticlesFeed(
   const feed = await fetchArticlesFeed(limit);
   if (feed.fromApi) return feed;
   return { items: [], total: 0, fromApi: false };
+}
+
+export type CustomSourceFeedBlock = {
+  source: NewsSourceRef;
+  articles: Article[];
+};
+
+const CUSTOM_SOURCE_ARTICLE_LIMIT = 6;
+
+async function loadCustomSourceFeedsUncached(
+  perSourceLimit = CUSTOM_SOURCE_ARTICLE_LIMIT,
+): Promise<{ blocks: CustomSourceFeedBlock[]; fromApi: boolean }> {
+  const { items: sources, fromApi } = await fetchCustomSourcesFeed();
+  if (!fromApi || sources.length === 0) {
+    return { blocks: [], fromApi: false };
+  }
+
+  const blocks: CustomSourceFeedBlock[] = [];
+  for (const source of sources) {
+    const feed = await fetchArticlesFeed(perSourceLimit, source.source_id);
+    if (feed.items.length > 0) {
+      blocks.push({ source, articles: feed.items });
+    }
+  }
+
+  return { blocks, fromApi: blocks.length > 0 };
+}
+
+export const CUSTOM_SOURCE_FEEDS_CACHE_TAG = "home-custom-source-feeds";
+
+const getCustomSourceFeedsCached = unstable_cache(
+  async (perSourceLimit: number) => loadCustomSourceFeedsUncached(perSourceLimit),
+  ["home-custom-source-feeds"],
+  { revalidate: 60, tags: [CUSTOM_SOURCE_FEEDS_CACHE_TAG] },
+);
+
+export async function getCustomSourceFeeds(
+  perSourceLimit = CUSTOM_SOURCE_ARTICLE_LIMIT,
+): Promise<{ blocks: CustomSourceFeedBlock[]; fromApi: boolean }> {
+  return getCustomSourceFeedsCached(perSourceLimit);
 }

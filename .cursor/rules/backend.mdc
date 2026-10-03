@@ -8,8 +8,8 @@ alwaysApply: false
 
 ## Structure
 
-- Routes: `backend/app/api/` (`articles`, `clusters`, `bias`, `rumors`, **`ingest`**, **`admin`**, **`verify`**, **`verifications`**) mounted in `app/api/__init__.py`
-- Models: `app/models/` (`article`, `cluster`, `source`, **`verified_claim`**); Pydantic: `app/schemas/` (`ingest.py`, **`admin.py`**, **`verify.py`**, **`verification.py`**)
+- Routes: `backend/app/api/` (`articles`, **`sources`**, `clusters`, `bias`, `rumors`, **`ingest`**, **`admin`**, **`verify`**, **`verifications`**) mounted in `app/api/__init__.py`
+- Models: `app/models/` (`article`, `cluster`, `source`, **`verified_claim`**); Pydantic: `app/schemas/` (`ingest.py`, **`source.py`**, **`admin.py`**, **`verify.py`**, **`verification.py`**)
 - Business logic: `app/services/` — `rss_parser`, **`rss_ingestion`**, `ai_client`, **`admin_stats`**, **`admin_sources`**, **`ops_alerts`**, **`verification_*`** (submit, runner, pipeline, jobs, job_stream, fetch, slug), **`semantic_cache`**, **`embeddings`**, **`ai_guardrails`**, **`ai_input_sanitizer`**, **`object_storage`**, **`ingest_queue`**, **`db_extensions`** — keep route handlers thin
 - Workers: `app/workers/` — `celery_app`, `ingest_tasks`, verification tasks; queues `ingest` + `verification`
 - Monitoring: `app/core/sentry_init.py` — call `init_sentry()` from `main.py` (not inside lifespan)
@@ -23,8 +23,10 @@ alwaysApply: false
 
 ## API surface
 
-- `GET /api/v1/articles`, `/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`
-- **`GET /api/v1/admin/overview`**, **`POST /api/v1/admin/sources`**, **`DELETE /api/v1/admin/sources/{id}`** — `X-Admin-Key` when `ADMIN_API_KEY` is set; overview lists all sources with **`disabled`** flag; DELETE **soft-disables** seed sources or any source with articles (hard-deletes only empty custom sources); POST re-enables when the same name was disabled
+- `GET /api/v1/articles` (optional **`source_id`** — non-disabled source only), **`GET /api/v1/sources`** (optional **`custom_only=true`** — admin-added feeds excluding `BD_SOURCE_SEED` names; omits disabled rows)
+- `GET /api/v1/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`
+- **`GET /api/v1/admin/overview`**, **`POST /api/v1/admin/sources`**, **`DELETE /api/v1/admin/sources/{id}`** — `X-Admin-Key` when `ADMIN_API_KEY` is set; overview lists all sources with **`disabled`** flag; DELETE runs **`_purge_source_articles`** (articles + orphan clusters), then **soft-disables** seed names or **hard-deletes** custom sources; POST re-enables when the same name was disabled
+- **`GET /api/v1/bias`** — omits **`disabled`** sources (same filter as public `/sources`)
 - **`POST /api/v1/ingest`** — Celery (`ingest` queue) when `REDIS_URL` + `INGEST_ASYNC_ENABLED`; else inline; **202** + `job_id` when queued; **`GET /api/v1/ingest/jobs/{job_id}`**; `X-Ingest-Key` when `INGEST_API_KEY` is set
 - **`POST /api/v1/verify`** — guardrailed user submit (`VerifyResponse`; may return cache hit, blocked guardrail, or `job_id`)
 - **`POST /api/v1/verifications`** — create with semantic cache; **`GET /jobs/{job_id}`**, **`GET /jobs/{job_id}/events`** (SSE), **`WebSocket /jobs/{job_id}/ws`**
@@ -43,7 +45,7 @@ alwaysApply: false
 - Prefer **`submit_verify_request`** for `/verify`; **`create_verification`** + job watchers for `/verifications`
 - Persist rows in `VerifiedClaim`; embeddings via raw SQL (`embedding` vector column); full-text `search_vector` for `/search`
 - Celery task when broker available; else `BackgroundTasks` + `execute_verification_job`
-- Input: always through **`ai_input_sanitizer`** + **`ai_guardrails`** (`assess_user_content` — injection/heuristic blocks before LLM); respect rate limits on verify routes
+- Input: always through **`ai_input_sanitizer`** (NFKC, invisible/control strip, length caps, URL safety) + **`ai_guardrails`** (`assess_user_content` — injection pattern density, role markers, repeat runs); respect rate limits on verify routes. Frontend mirrors basic claim checks in **`claim-input.ts`** before POST
 
 ## Patterns
 

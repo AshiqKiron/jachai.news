@@ -1,18 +1,34 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { deleteAdminRoute, postAdminRoute } from "@/lib/admin-proxy-client";
 import { buildRssSourcePayload, validateRssSourceInput } from "@/lib/admin-input";
 import type { AdminSourceStat } from "@/lib/admin-types";
+import { isCustomRssSource } from "@/lib/seed-source-names";
 
 type Props = {
   sources: AdminSourceStat[];
+  /** Home: only admin-added feeds; compact copy for the public homepage. */
+  variant?: "admin" | "home";
+  onFeedsChanged?: () => void;
 };
 
-export function AdminSourcesPanel({ sources }: Props) {
-  const router = useRouter();
+function refreshAdminDashboard() {
+  window.dispatchEvent(new CustomEvent("jachai:admin-refresh"));
+}
+
+function refreshHomeCustomFeeds() {
+  window.dispatchEvent(new CustomEvent("jachai:custom-feeds-refresh"));
+}
+
+function notifyFeedsChanged(onFeedsChanged?: () => void) {
+  refreshAdminDashboard();
+  refreshHomeCustomFeeds();
+  onFeedsChanged?.();
+}
+
+export function AdminSourcesPanel({ sources, variant = "admin", onFeedsChanged }: Props) {
   const [name, setName] = useState("");
   const [feedUrl, setFeedUrl] = useState("");
   const [biasScore, setBiasScore] = useState("");
@@ -21,8 +37,11 @@ export function AdminSourcesPanel({ sources }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const activeSources = sources.filter((source) => !source.disabled);
-  const disabledSources = sources.filter((source) => source.disabled);
+  const scopedSources =
+    variant === "home" ? sources.filter((source) => isCustomRssSource(source.name)) : sources;
+  const activeSources = scopedSources.filter((source) => !source.disabled);
+  const disabledSources = scopedSources.filter((source) => source.disabled);
+  const isHome = variant === "home";
 
   async function handleAdd(event: React.FormEvent) {
     event.preventDefault();
@@ -42,8 +61,12 @@ export function AdminSourcesPanel({ sources }: Props) {
       setName("");
       setFeedUrl("");
       setBiasScore("");
-      setMessage(`Added ${payload.name} to the ingest list.`);
-      router.refresh();
+      setMessage(
+        isHome
+          ? `Added ${payload.name}. Run ingest to pull headlines onto the homepage.`
+          : `Added ${payload.name} to the ingest list.`,
+      );
+      notifyFeedsChanged(onFeedsChanged);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add source.");
     } finally {
@@ -53,7 +76,7 @@ export function AdminSourcesPanel({ sources }: Props) {
 
   async function handleRemove(source: AdminSourceStat) {
     const confirmRemove = window.confirm(
-      `Remove "${source.name}" from RSS ingest? Existing articles stay in the database.`,
+      `Remove "${source.name}" from RSS ingest? All articles from this feed will be deleted from Jachai.`,
     );
     if (!confirmRemove) return;
 
@@ -62,8 +85,8 @@ export function AdminSourcesPanel({ sources }: Props) {
     setMessage(null);
     try {
       await deleteAdminRoute(`/api/admin/sources/${source.source_id}`);
-      setMessage(`Removed ${source.name} from ingest.`);
-      router.refresh();
+      setMessage(`Removed ${source.name} from ingest and deleted its articles.`);
+      notifyFeedsChanged(onFeedsChanged);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not remove source.");
     } finally {
@@ -74,10 +97,13 @@ export function AdminSourcesPanel({ sources }: Props) {
   return (
     <section className="space-y-4">
       <div className="rounded-xl border border-zinc-800 bg-ink-900/50 p-5">
-        <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">Add RSS feed</h2>
+        <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">
+          {isHome ? "Add RSS feed to homepage" : "Add RSS feed"}
+        </h2>
         <p className="mt-2 text-sm text-zinc-400">
-          New feeds are included on the next ingest run. Re-adding a disabled outlet with the same name
-          turns it back on.
+          {isHome
+            ? "Feeds you add here appear below after the next ingest run (Admin → Run ingest)."
+            : "New feeds are included on the next ingest run. Re-adding a disabled outlet with the same name turns it back on."}
         </p>
         <form onSubmit={handleAdd} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block text-sm">
@@ -129,7 +155,7 @@ export function AdminSourcesPanel({ sources }: Props) {
 
       <div>
         <h2 className="mb-3 text-sm font-medium uppercase tracking-widest text-zinc-500">
-          Active feeds ({activeSources.length})
+          {isHome ? "Your feeds" : "Active feeds"} ({activeSources.length})
         </h2>
         <div className="overflow-x-auto rounded-xl border border-zinc-800">
           <table className="min-w-full text-left text-sm">
@@ -189,7 +215,7 @@ export function AdminSourcesPanel({ sources }: Props) {
                   <span className="text-zinc-300">{source.name}</span>
                   <span className="ml-2 text-xs text-zinc-600">not ingested</span>
                 </div>
-                <span className="text-xs">{source.article_count} articles kept</span>
+                <span className="text-xs">re-add by name to ingest again</span>
               </li>
             ))}
           </ul>

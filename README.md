@@ -28,10 +28,10 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # edit keys as needed
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 3001
 ```
 
-API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+API docs: [http://localhost:3001/docs](http://localhost:3001/docs) (or from repo root: `npm run dev:backend`)
 
 ### Environment
 
@@ -53,7 +53,9 @@ API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 ```bash
 cd frontend
 npm install
-echo "NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1" > .env.local
+# Browser uses same-origin /api/v1; SSR hits FastAPI on :3001 (see frontend/.env.example)
+echo "NEXT_PUBLIC_API_URL=/api/v1" > .env.local
+echo "API_URL=http://127.0.0.1:3001/api/v1" >> .env.local
 npm run dev
 ```
 
@@ -99,7 +101,7 @@ Stateless API, Redis-backed Celery workers (RSS ingest + verification jobs), and
 
 ```bash
 npm run stack:up
-# API: http://localhost:8000  |  start workers are included as `worker` service
+# API: http://localhost:3001  |  start workers are included as `worker` service
 npm run stack:down
 ```
 
@@ -120,7 +122,7 @@ Large exports and assets go through `app/services/object_storage.py` (Supabase S
 
 ```bash
 docker build -t jachai-api ./backend
-docker run --rm -p 8000:8000 -e DATABASE_URL=postgresql+asyncpg://... jachai-api
+docker run --rm -p 3001:8000 -e DATABASE_URL=postgresql+asyncpg://... jachai-api
 ```
 
 ## RSS ingestion
@@ -132,9 +134,9 @@ Seed sources from `backend/app/data/bd_sources_seed.py`, fetch feeds, dedupe by 
 npm run ingest:backend
 
 # Or trigger via API
-curl -X POST http://localhost:8000/api/v1/ingest
+curl -X POST http://localhost:3001/api/v1/ingest
 # With INGEST_API_KEY set in backend .env:
-curl -X POST -H "X-Ingest-Key: your-key" http://localhost:8000/api/v1/ingest
+curl -X POST -H "X-Ingest-Key: your-key" http://localhost:3001/api/v1/ingest
 ```
 
 Logic lives in `backend/app/services/rss_ingestion.py` (uses `rss_parser.py`).

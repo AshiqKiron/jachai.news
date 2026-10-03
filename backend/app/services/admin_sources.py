@@ -1,11 +1,12 @@
 from urllib.parse import urlparse
 
 from fastapi import HTTPException, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.data.bd_sources_seed import BD_SOURCE_SEED
 from app.models.article import Article
+from app.models.cluster import Cluster
 from app.models.source import Source
 from app.schemas.admin import AdminSourceCreate, AdminSourceStat
 
@@ -66,27 +67,19 @@ async def create_admin_source(session: AsyncSession, payload: AdminSourceCreate)
     return await _source_stat(session, source)
 
 
+async def _purge_source_articles(session: AsyncSession, source_id: int) -> None:
+    await session.execute(delete(Article).where(Article.source_id == source_id))
+    await session.execute(
+        delete(Cluster).where(~exists(select(1).where(Article.cluster_id == Cluster.id)))
+    )
+
+
 async def remove_admin_source(session: AsyncSession, source_id: int) -> AdminSourceStat:
     source = await session.get(Source, source_id)
     if source is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source not found.")
 
-    article_count = (
-        await session.scalar(
-            select(func.count()).select_from(Article).where(Article.source_id == source.id)
-        )
-        or 0
-    )
-
-    if source.name in _SEED_NAMES or article_count > 0:
-        source.disabled = True
-        await session.commit()
-        await session.refresh(source)
-        return await _source_stat(session, source)
-
-    await session.execute(delete(Source).where(Source.id == source.id))
-    await session.commit()
-    return AdminSourceStat(
+    snapshot = AdminSourceStat(
         source_id=source.id,
         name=source.name,
         feed_url=source.feed_url,
@@ -94,3 +87,15 @@ async def remove_admin_source(session: AsyncSession, source_id: int) -> AdminSou
         article_count=0,
         disabled=True,
     )
+
+    await _purge_source_articles(session, source.id)
+
+    if source.name in _SEED_NAMES:
+        source.disabled = True
+        await session.commit()
+        await session.refresh(source)
+        return await _source_stat(session, source)
+
+    await session.execute(delete(Source).where(Source.id == source.id))
+    await session.commit()
+    return snapshot

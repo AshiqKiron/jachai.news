@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { HomeArchiveLink, HomeStoriesSectionTitle } from "@/components/HomeArchiveLink";
+import { HomeCustomSourceFeedsClient } from "@/components/HomeCustomSourceFeedsClient";
 import { HomeStoryGridClient } from "@/components/HomeStoryGridClient";
 
 export const dynamic = "force-static";
@@ -32,6 +33,8 @@ export default function HomePage() {
         </div>
         <HomeStoryGridClient />
       </section>
+
+      <HomeCustomSourceFeedsClient />
     </div>
   );
 }

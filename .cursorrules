@@ -11,7 +11,8 @@ You are working on **Jachai News**, a Bangladesh-focused news intelligence produ
 - `supabase/` — migrations for profiles, Pro subscriptions, bKash records, user dossiers/alerts (news + verified claims stay in backend Postgres)
 - Root scripts: `npm run dev:frontend`, `dev:backend`, `ingest:backend`, **`worker:backend`**, **`worker:verification`**, **`stack:up`** / **`stack:down`** (`docker-compose.yml`: Postgres pgvector, Redis, API, worker)
 - **Claim verification**: `POST /api/v1/verify` (guardrailed submit), `/api/v1/verifications/*` (jobs, SSE/WS, list/search/detail); UI `/verify`, `/verify/[slug]`, `/verify/database` via `src/lib/verifications.ts`
-- **Admin ops (internal)**: backend `GET /api/v1/admin/overview` + RSS source add/soft-disable (`admin.py`, `admin_sources.py`; `sources.disabled`, migration `002_sources_disabled.sql`); frontend **`admin.jachai.news`** in production (`admin-host.ts`, local `/admin`) gated by legacy cookie or **Supabase admin**; `AdminDashboardPanel` → `GET /api/admin/overview`; other `app/api/admin/*` proxies use legacy cookie for backend calls (see `frontend.mdc`)
+- **Public sources**: `GET /api/v1/sources` (optional `custom_only`) + `GET /api/v1/articles?source_id=` for home custom-feed blocks; no admin key
+- **Admin ops (internal)**: backend `GET /api/v1/admin/overview` + RSS source add/remove (`admin.py` → `admin_stats` / `admin_sources`; DELETE purges articles/orphan clusters then soft-disables seed or deletes custom; `sources.disabled`, migration `002_sources_disabled.sql`); frontend **`admin.jachai.news`** in production (`admin-host.ts`, local `/admin`) gated by legacy cookie or **Supabase admin**; `AdminDashboardPanel` → `GET /api/admin/overview`; legacy **`jachai_admin`** cookie required for `app/api/admin/*` proxies (see `frontend.mdc`); home **`HomeCustomSourceFeedsClient`** embeds **`AdminSourcesPanel`** when legacy overview fetch succeeds
 - **Monitoring (optional)**: Sentry on backend (`app/core/sentry_init.py`) and frontend (`@sentry/nextjs`, `instrumentation.ts`); ingest cron pings via `app/services/ops_alerts.py` (Healthchecks.io + Telegram when env is set)
 
 ## Conventions
@@ -24,7 +25,7 @@ You are working on **Jachai News**, a Bangladesh-focused news intelligence produ
 - Pages under `frontend/src/app/`; components in `src/components/`; route errors in `app/error.tsx` and `app/global-error.tsx`
 - Fetch via `api.ts` + `api-resilience.ts`, `stories.ts` (API + `demo-data.ts` fallback, `fromApi` + `ApiDegradedBanner`); verification via `verifications.ts` (`lookupVerifiedClaim` for slug detail)
 - Pro tier: `subscription-features.ts` (matrix), `subscription-entitlement.ts` + `subscription-access.ts` (Supabase `subscriptions` + `NEXT_PUBLIC_MOCK_PRO`), `subscription-plans.ts` (pricing); browse gated for free users
-- Home: static `/` + `HomeStoryGridClient` hydrates from `GET /api/feed/top` (`getTopStories`)
+- Home: static `/` + `HomeStoryGridClient` hydrates from `GET /api/feed/top` (`getTopStories`); `HomeCustomSourceFeedsClient` from `GET /api/feed/custom-sources` (admin-added RSS via backend `GET /sources?custom_only=true` + per-source articles)
 - Server components for feeds; client components for interactive UI — wrap fragile client trees in `ClientErrorBoundary`
 - Reads degrade to demo when the API is down; writes (verify submit, admin) must surface real failures
 

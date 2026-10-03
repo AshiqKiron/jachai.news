@@ -4,6 +4,7 @@ import withPWAInit from "@ducanh2912/next-pwa";
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
+import { DEV_BACKEND_ORIGIN } from "./src/lib/api-base";
 import { securityHeaders } from "./src/lib/security-headers";
 
 const withPWA = withPWAInit({
@@ -15,7 +16,10 @@ const withPWA = withPWAInit({
   },
 });
 
-const backendOrigin = (process.env.API_URL ?? "http://127.0.0.1:8000/api/v1").replace(/\/api\/v1\/?$/, "");
+const backendOrigin = (process.env.API_URL ?? `${DEV_BACKEND_ORIGIN}/api/v1`).replace(
+  /\/api\/v1\/?$/,
+  "",
+);
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
