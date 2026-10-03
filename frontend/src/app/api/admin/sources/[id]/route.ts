@@ -1,10 +1,8 @@
-import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 import { ADMIN_COOKIE_NAME, verifyAdminSession } from "@/lib/admin-auth";
 import { removeAdminSource } from "@/lib/admin-api";
-import { CUSTOM_SOURCE_FEEDS_CACHE_TAG } from "@/lib/stories";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -22,7 +20,6 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   try {
     const result = await removeAdminSource(sourceId);
-    revalidateTag(CUSTOM_SOURCE_FEEDS_CACHE_TAG);
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not remove source.";

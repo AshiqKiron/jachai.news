@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { PaywallModal } from "@/components/PaywallModal";
-import { FREE_DAILY_TOP_STORIES_LIMIT, getFeatureRow } from "@/lib/subscription-features";
+import { getFeatureRow } from "@/lib/subscription-features";
 
 export function BrowseProGate() {
   const [open, setOpen] = useState(false);
@@ -19,12 +19,12 @@ export function BrowseProGate() {
       <p className="mt-2 max-w-xl text-sm text-zinc-400">
         Free accounts see the{" "}
         <Link href="/" className="text-zinc-200 underline decoration-zinc-600 underline-offset-2">
-          daily top {FREE_DAILY_TOP_STORIES_LIMIT}
+          top news
         </Link>{" "}
         on the home feed. Jachai Pro unlocks the full historical archive and search.
       </p>
       <p className="mt-1 font-bengali text-sm text-zinc-500">
-        ফ্রি: আজকের শীর্ষ {FREE_DAILY_TOP_STORIES_LIMIT} · Pro: পুরো ডাটাবেস
+        ফ্রি: শীর্ষ খবর · Pro: পুরো ডাটাবেস
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
         <button

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { AdminSourcesPanel } from "@/components/AdminSourcesPanel";
+import { AdminUsersPanel } from "@/components/admin/AdminUsersPanel";
 import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
 import type { AdminOverview } from "@/lib/admin-api";
 import { collectAdminIssues, countIssuesBySeverity, type AdminIssue } from "@/lib/admin-issues";
@@ -14,6 +15,7 @@ const TABS = [
   { id: "overview", label: "Overview" },
   { id: "general", label: "General" },
   { id: "system", label: "System" },
+  { id: "users", label: "Users" },
   { id: "issues", label: "Issues" },
 ] as const;
 
@@ -187,7 +189,7 @@ export function AdminDashboardPanel({
             </p>
           ) : null}
 
-          <section className="grid gap-4 lg:grid-cols-3">
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <button
               type="button"
               onClick={() => goToTab("general")}
@@ -214,6 +216,19 @@ export function AdminDashboardPanel({
               </p>
               <p className="mt-1 text-xs text-zinc-500">
                 Env: {systemInfo.nodeEnv} · Supabase {systemInfo.supabaseConfigured ? "on" : "off"}
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => goToTab("users")}
+              className="rounded-xl border border-zinc-800 bg-ink-900/50 p-5 text-left text-sm text-zinc-300 transition hover:border-zinc-700"
+            >
+              <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">Users</h2>
+              <p className="mt-2 text-zinc-100">
+                {systemInfo.supabaseConfigured ? "Supabase accounts" : "Not configured"}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                Create/delete users · Free/Pro plan · email & sign-up date.
               </p>
             </button>
             <button
@@ -280,6 +295,10 @@ export function AdminDashboardPanel({
                   {systemInfo.serverApiUrlOverridden ? " (API_URL override)" : " (default dev)"}
                 </li>
                 <li>Supabase auth: {systemInfo.supabaseConfigured ? "configured" : "not configured"}</li>
+                <li>
+                  Supabase service role:{" "}
+                  {systemInfo.supabaseServiceRoleConfigured ? "set (user admin)" : "not set"}
+                </li>
                 <li>Mock Pro (local): {systemInfo.mockProEnabled ? "enabled" : "off"}</li>
                 <li>
                   Frontend admin key: {systemInfo.adminApiKeyConfigured ? "set" : "not set"}
@@ -335,6 +354,12 @@ export function AdminDashboardPanel({
         </div>
       ) : null}
 
+      {tab === "users" ? (
+        <ClientErrorBoundary title="Users panel could not load">
+          <AdminUsersPanel supabaseConfigured={systemInfo.supabaseConfigured} />
+        </ClientErrorBoundary>
+      ) : null}
+
       {tab === "issues" ? (
         <div className="space-y-4">
           {issues.length === 0 ? (
@@ -355,7 +380,13 @@ export function AdminDashboardPanel({
                   <p className="mt-2 opacity-90">{issue.detail}</p>
                   <button
                     type="button"
-                    onClick={() => goToTab(issue.relatedTab === "overview" ? "overview" : issue.relatedTab)}
+                    onClick={() =>
+                      goToTab(
+                        issue.relatedTab === "overview"
+                          ? "overview"
+                          : issue.relatedTab,
+                      )
+                    }
                     className="mt-3 text-xs text-accent hover:underline"
                   >
                     Open {issue.relatedTab} tab

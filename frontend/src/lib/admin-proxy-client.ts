@@ -46,3 +46,16 @@ export async function getAdminRoute<T>(path: string): Promise<T> {
   }
   return result.data;
 }
+
+export async function patchAdminRoute<T>(path: string, body: unknown): Promise<T> {
+  const result = await fetchJsonSafe<T>(path, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    timeoutMs: API_WRITE_TIMEOUT_MS,
+  });
+  if (!result.ok) {
+    throw new Error(requestErrorMessage(result.error, "Request failed."));
+  }
+  return result.data;
+}

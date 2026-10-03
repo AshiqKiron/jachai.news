@@ -5,30 +5,17 @@ import { useState } from "react";
 import { deleteAdminRoute, postAdminRoute } from "@/lib/admin-proxy-client";
 import { buildRssSourcePayload, validateRssSourceInput } from "@/lib/admin-input";
 import type { AdminSourceStat } from "@/lib/admin-types";
-import { isCustomRssSource } from "@/lib/seed-source-names";
-
 type Props = {
   sources: AdminSourceStat[];
-  /** Home: only admin-added feeds; compact copy for the public homepage. */
-  variant?: "admin" | "home";
   onFeedsChanged?: () => void;
 };
 
-function refreshAdminDashboard() {
-  window.dispatchEvent(new CustomEvent("jachai:admin-refresh"));
-}
-
-function refreshHomeCustomFeeds() {
-  window.dispatchEvent(new CustomEvent("jachai:custom-feeds-refresh"));
-}
-
 function notifyFeedsChanged(onFeedsChanged?: () => void) {
-  refreshAdminDashboard();
-  refreshHomeCustomFeeds();
+  window.dispatchEvent(new CustomEvent("jachai:admin-refresh"));
   onFeedsChanged?.();
 }
 
-export function AdminSourcesPanel({ sources, variant = "admin", onFeedsChanged }: Props) {
+export function AdminSourcesPanel({ sources, onFeedsChanged }: Props) {
   const [name, setName] = useState("");
   const [feedUrl, setFeedUrl] = useState("");
   const [biasScore, setBiasScore] = useState("");
@@ -37,11 +24,8 @@ export function AdminSourcesPanel({ sources, variant = "admin", onFeedsChanged }
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const scopedSources =
-    variant === "home" ? sources.filter((source) => isCustomRssSource(source.name)) : sources;
-  const activeSources = scopedSources.filter((source) => !source.disabled);
-  const disabledSources = scopedSources.filter((source) => source.disabled);
-  const isHome = variant === "home";
+  const activeSources = sources.filter((source) => !source.disabled);
+  const disabledSources = sources.filter((source) => source.disabled);
 
   async function handleAdd(event: React.FormEvent) {
     event.preventDefault();
@@ -61,11 +45,7 @@ export function AdminSourcesPanel({ sources, variant = "admin", onFeedsChanged }
       setName("");
       setFeedUrl("");
       setBiasScore("");
-      setMessage(
-        isHome
-          ? `Added ${payload.name}. Run ingest to pull headlines onto the homepage.`
-          : `Added ${payload.name} to the ingest list.`,
-      );
+      setMessage(`Added ${payload.name} to the ingest list.`);
       notifyFeedsChanged(onFeedsChanged);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add source.");
@@ -97,13 +77,10 @@ export function AdminSourcesPanel({ sources, variant = "admin", onFeedsChanged }
   return (
     <section className="space-y-4">
       <div className="rounded-xl border border-zinc-800 bg-ink-900/50 p-5">
-        <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">
-          {isHome ? "Add RSS feed to homepage" : "Add RSS feed"}
-        </h2>
+        <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">Add RSS feed</h2>
         <p className="mt-2 text-sm text-zinc-400">
-          {isHome
-            ? "Feeds you add here appear below after the next ingest run (Admin → Run ingest)."
-            : "New feeds are included on the next ingest run. Re-adding a disabled outlet with the same name turns it back on."}
+          New feeds are included on the next ingest run. Re-adding a disabled outlet with the same name turns it back
+          on.
         </p>
         <form onSubmit={handleAdd} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block text-sm">
@@ -155,7 +132,7 @@ export function AdminSourcesPanel({ sources, variant = "admin", onFeedsChanged }
 
       <div>
         <h2 className="mb-3 text-sm font-medium uppercase tracking-widest text-zinc-500">
-          {isHome ? "Your feeds" : "Active feeds"} ({activeSources.length})
+          Active feeds ({activeSources.length})
         </h2>
         <div className="overflow-x-auto rounded-xl border border-zinc-800">
           <table className="min-w-full text-left text-sm">

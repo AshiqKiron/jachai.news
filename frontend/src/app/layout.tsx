@@ -5,6 +5,7 @@ import { InstallPWA } from "@/components/InstallPWA";
 import { MobileNav } from "@/components/MobileNav";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { DEV_UNREGISTER_STALE_SERVICE_WORKER_SCRIPT } from "@/lib/chunk-load-error";
 import "@/styles/globals.css";
 
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -46,6 +47,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${sans.variable} ${display.variable} ${bengali.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {process.env.NODE_ENV === "development" ? (
+          <script dangerouslySetInnerHTML={{ __html: DEV_UNREGISTER_STALE_SERVICE_WORKER_SCRIPT }} />
+        ) : null}
+      </head>
       <body className="min-h-screen font-sans pb-20 md:pb-0">
         <script
           dangerouslySetInnerHTML={{

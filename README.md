@@ -4,13 +4,89 @@
 
 Stack: FastAPI backend (RSS + clustering) and Next.js App Router frontend with offline shell.
 
+## Architecture
+
+Jachai splits **news intelligence** (clusters, articles, verified claims) in **backend PostgreSQL** from **user accounts and billing** in **Supabase**. The Next.js app talks to FastAPI for feeds and verification, and to Supabase for auth and Pro entitlements.
+
+```mermaid
+flowchart LR
+  subgraph sources [RSS sources]
+    PA[Prothom Alo / Daily Star / bdnews24 / BBC Bangla / …]
+  end
+
+  subgraph backend [Backend FastAPI]
+    API[REST /api/v1]
+    ING[rss_ingestion + clustering]
+    VER[verify pipeline + semantic cache]
+    API --> ING
+    API --> VER
+  end
+
+  subgraph workers [Optional Celery + Redis]
+    W1[ingest queue]
+    W2[verification queue]
+  end
+
+  subgraph data [Data]
+    PG[(PostgreSQL + pgvector / FTS)]
+    SB[(Supabase: profiles, subscriptions)]
+  end
+
+  subgraph frontend [Next.js PWA]
+    UI[App Router + service worker]
+    PROXY[/api rewrite + feed routes]
+  end
+
+  PA --> ING
+  ING --> PG
+  VER --> PG
+  ING -.-> W1
+  VER -.-> W2
+  W1 --> PG
+  W2 --> PG
+  UI --> PROXY
+  PROXY --> API
+  UI --> SB
+```
+
+### Components
+
+| Area | Path | Role |
+|------|------|------|
+| API | `backend/` | FastAPI, async SQLAlchemy, `/api/v1` — articles, clusters, sources, bias, rumors, verify, admin |
+| Ingestion | `backend/app/services/rss_ingestion.py`, `rss_parser.py` | Seed feeds, dedupe by URL, cluster by title similarity (~72h, Jaccard); optional AI cluster summary |
+| Verification | `backend/app/api/verify.py`, `verifications.py`, `verification_*` services | Submit claims, queue jobs, SSE/WebSocket progress, pgvector semantic cache + FTS search |
+| Workers | Celery (`ingest`, `verification` queues) | Async RSS ingest and heavy verify steps when `REDIS_URL` is set |
+| Web app | `frontend/` | Next.js 15 App Router, React 19, Tailwind, PWA; English + Bangla product copy |
+| Auth / Pro | `supabase/migrations/`, `frontend/src/lib/supabase.ts` | Profiles, subscriptions, bKash tables (checkout planned); RLS on user metadata |
+| Ops | `docker-compose.yml`, `docs/DEPLOYMENT.md` | Local Postgres (pgvector), Redis, API, worker; production release playbook |
+
+### Request paths (frontend)
+
+- **Browser API**: `NEXT_PUBLIC_API_URL` (default same-origin `/api/v1` via Next rewrite).
+- **Server components**: `API_URL` → `http://127.0.0.1:3001/api/v1` in dev.
+- **Home**: static shell → `GET /api/feed/top` (`getTopStories`). Custom RSS is managed in `/admin` and ingests into clusters like seed feeds.
+- **Resilience**: `demo-data.ts` + `stories.ts` merge API clusters with demo stories; `ApiDegradedBanner` when the API is down. Writes (verify submit, admin) require a live API.
+
+### Admin (internal)
+
+Production dashboard on **`admin.jachai.news`** (local: `/admin`). Backend `GET /api/v1/admin/overview` and source add/remove; frontend proxies under `app/api/admin/*` with legacy `jachai_admin` cookie (see [Admin panel](#admin-panel-internal) below).
+
+### Monitoring (optional)
+
+Sentry on backend (`SENTRY_DSN`) and frontend (`@sentry/nextjs`). Ingest cron can ping Healthchecks.io and Telegram via `ops_alerts.py` when env vars are set.
+
 ## Structure
 
 ```
-jachai-news/
-├── .cursorrules          # Cursor project context
-├── backend/              # Python FastAPI & RSS scraper
-├── frontend/             # Next.js App Router UI
+jachai.news/
+├── backend/              # FastAPI, SQLAlchemy, Celery tasks, RSS + verification
+├── frontend/             # Next.js App Router, PWA, Supabase client
+├── supabase/             # Migrations (profiles, Pro, dossiers/alerts)
+├── docs/                 # DEPLOYMENT.md and ops notes
+├── docker-compose.yml    # Postgres (pgvector), Redis, API, worker
+├── package.json          # dev:frontend, dev:backend, stack:up, ingest:backend, workers
+├── .cursor/rules/        # Detailed Cursor project rules
 └── README.md
 ```
 
@@ -149,6 +225,10 @@ npm run worker:backend
 ```
 
 Cron / Healthchecks should call `POST /api/v1/ingest` (queued when `REDIS_URL` is set) or `npm run ingest:backend -- --queue`.
+
+## Production releases
+
+Safe deploy order, migrations, PWA notes, rollback, and a pre-ship checklist: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 
 ## Roadmap hooks
 

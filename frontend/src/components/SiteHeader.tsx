@@ -10,11 +10,6 @@ import { adminSurfacePath, isAdminAppSurface } from "@/lib/admin-host";
 
 const nav = [
   { href: "/", label: "Home" },
-  { href: "/blindspot", label: "Blindspot" },
-  { href: "/browse", label: "Browse" },
-  { href: "/rumors", label: "Rumors" },
-  { href: "/verify", label: "Verify" },
-  { href: "/bias", label: "Bias" },
   { href: "/pro", label: "Pro" },
 ];
 

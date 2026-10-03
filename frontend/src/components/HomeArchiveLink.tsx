@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { FREE_DAILY_TOP_STORIES_LIMIT } from "@/lib/subscription-features";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { isActiveProSubscription } from "@/lib/subscription-entitlement";
 
@@ -53,17 +52,13 @@ export function HomeArchiveLink() {
     );
   }
 
-  return (
-    <Link href="/pro" className="text-xs text-accent/80 hover:text-accent">
-      Full archive · Pro →
-    </Link>
-  );
+  return null;
 }
 
 export function HomeStoriesSectionTitle() {
   return (
     <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">
-      Daily top {FREE_DAILY_TOP_STORIES_LIMIT}
+      Top news
     </h2>
   );
 }

@@ -1,10 +1,8 @@
-import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 import { ADMIN_COOKIE_NAME, verifyAdminSession } from "@/lib/admin-auth";
 import { createAdminSource } from "@/lib/admin-api";
-import { CUSTOM_SOURCE_FEEDS_CACHE_TAG } from "@/lib/stories";
 
 export async function POST(request: Request) {
   const session = (await cookies()).get(ADMIN_COOKIE_NAME)?.value;
@@ -31,7 +29,6 @@ export async function POST(request: Request) {
       feed_url,
       bias_score: typeof body.bias_score === "number" ? body.bias_score : null,
     });
-    revalidateTag(CUSTOM_SOURCE_FEEDS_CACHE_TAG);
     return NextResponse.json(result, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not add source.";

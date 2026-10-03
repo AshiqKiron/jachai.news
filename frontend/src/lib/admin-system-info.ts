@@ -11,6 +11,7 @@ export type AdminSystemInfo = {
   mockProEnabled: boolean;
   adminApiKeyConfigured: boolean;
   ingestApiKeyConfigured: boolean;
+  supabaseServiceRoleConfigured: boolean;
 };
 
 export function buildAdminSystemInfo(): AdminSystemInfo {
@@ -23,5 +24,6 @@ export function buildAdminSystemInfo(): AdminSystemInfo {
     mockProEnabled: process.env.NEXT_PUBLIC_MOCK_PRO === "true",
     adminApiKeyConfigured: Boolean(process.env.ADMIN_API_KEY?.length),
     ingestApiKeyConfigured: Boolean(process.env.INGEST_API_KEY?.length),
+    supabaseServiceRoleConfigured: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.length),
   };
 }

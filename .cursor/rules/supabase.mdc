@@ -54,6 +54,7 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 - **Clients**: `lib/supabase/client.ts` (browser), `server.ts` (cookie session in RSC/routes), `service.ts` (service role, server-only), `config.ts` (`isSupabaseConfigured`); re-exported from `lib/supabase.ts`
 - Session refresh: `lib/supabase/middleware.ts` from root `middleware.ts` (browse + auth paths + `sb-*` cookies)
 - Admin bootstrap: `POST /api/admin/register` sets `app_metadata.role=admin` when registration code + service role are configured
+- **Admin Users tab** (`lib/admin-users.ts`, server-only): `auth.admin.listUsers` / create / delete; reads `profiles` + `subscriptions`; **`setAdminUserPlan`** upserts active `subscriptions` rows for manual Pro grants — never expose service role to the browser (proxies under `/api/admin/users*` with legacy admin cookie)
 - **Pro entitlements**: server `getProAccessState()` in `subscription-access.ts` SELECTs own `subscriptions` row (RLS); `subscription-entitlement.ts` implements `isActiveProSubscription`; type helper `SubscriptionEntitlementRow` in `database.types.ts`. Override locally with `NEXT_PUBLIC_MOCK_PRO=true`
 - Pricing/feature copy stays in `subscription-plans.ts` and `subscription-features.ts` (not in DB)
 

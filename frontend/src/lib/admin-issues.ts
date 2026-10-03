@@ -8,7 +8,7 @@ export type AdminIssue = {
   severity: AdminIssueSeverity;
   title: string;
   detail: string;
-  relatedTab: "general" | "system" | "overview";
+  relatedTab: "general" | "system" | "overview" | "users";
 };
 
 const STALE_ARTICLE_HOURS = 72;
@@ -148,6 +148,15 @@ export function collectAdminIssues(input: {
       title: "Supabase auth not configured",
       detail: "NEXT_PUBLIC_SUPABASE_URL and anon key are missing. Sign-in and Pro billing will not work until configured.",
       relatedTab: "system",
+    });
+  } else if (!systemInfo.supabaseServiceRoleConfigured) {
+    issues.push({
+      id: "supabase-service-role-missing",
+      severity: "warning",
+      title: "Supabase service role key missing",
+      detail:
+        "Set SUPABASE_SERVICE_ROLE_KEY on the Next server to list, create, and delete users from the Users tab.",
+      relatedTab: "users",
     });
   }
 
