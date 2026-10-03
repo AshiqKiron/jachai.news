@@ -1,7 +1,11 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+import { resolveApiBase } from "@/lib/api-base";
+import { API_FETCH_TIMEOUT_MS, API_LISTING_TIMEOUT_MS, fetchJsonSafe } from "@/lib/api-resilience";
 
-/** Fail fast when the backend is down so SSR can fall back to demo data. */
-const API_FETCH_TIMEOUT_MS = 2_500;
+function apiBase(): string {
+  return resolveApiBase();
+}
+
+export { API_FETCH_TIMEOUT_MS };
 
 export type Article = {
   id: number;
@@ -22,6 +26,10 @@ export type Cluster = {
   created_at: string;
 };
 
+export type ClusterDetail = Cluster & {
+  articles: Article[];
+};
+
 export type SourceBias = {
   source_id: number;
   name: string;
@@ -29,14 +37,19 @@ export type SourceBias = {
 };
 
 async function apiGet<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    next: { revalidate: 60 },
-    signal: AbortSignal.timeout(API_FETCH_TIMEOUT_MS),
-  });
-  if (!response.ok) {
-    throw new Error(`API ${path} failed: ${response.status}`);
+  const result = await fetchJsonSafe<T>(`${apiBase()}${path}`, { next: { revalidate: 60 } });
+  if (!result.ok) {
+    throw new Error(`API ${path} failed: ${result.status ?? "network"}`);
   }
-  return response.json() as Promise<T>;
+  return result.data;
+}
+
+export async function tryApiGet<T>(path: string, timeoutMs = API_LISTING_TIMEOUT_MS): Promise<T | null> {
+  const result = await fetchJsonSafe<T>(`${apiBase()}${path}`, {
+    next: { revalidate: 60 },
+    timeoutMs,
+  });
+  return result.ok ? result.data : null;
 }
 
 export function fetchArticles(limit = 12) {
@@ -53,4 +66,22 @@ export function fetchRumors(limit = 12) {
 
 export function fetchBiasOverview() {
   return apiGet<{ sources: SourceBias[] }>("/bias");
+}
+
+export async function tryFetchClusterBySlug(slug: string): Promise<ClusterDetail | null> {
+  return tryApiGet<ClusterDetail>(`/clusters/${encodeURIComponent(slug)}`);
+}
+
+export async function fetchArticlesFeed(
+  limit = 12,
+): Promise<{ items: Article[]; total: number; fromApi: boolean }> {
+  const data = await tryApiGet<{ items: Article[]; total: number }>(`/articles?limit=${limit}`);
+  if (!data) return { items: [], total: 0, fromApi: false };
+  return { items: data.items ?? [], total: data.total ?? 0, fromApi: true };
+}
+
+export async function fetchBiasOverviewFeed(): Promise<{ sources: SourceBias[]; fromApi: boolean }> {
+  const data = await tryApiGet<{ sources: SourceBias[] }>("/bias");
+  if (!data) return { sources: [], fromApi: false };
+  return { sources: data.sources ?? [], fromApi: true };
 }

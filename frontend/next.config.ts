@@ -15,9 +15,17 @@ const withPWA = withPWAInit({
   },
 });
 
+const backendOrigin = (process.env.API_URL ?? "http://127.0.0.1:8000/api/v1").replace(/\/api\/v1\/?$/, "");
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, ".."),
+  async rewrites() {
+    return [
+      { source: "/api/v1/:path*", destination: `${backendOrigin}/api/v1/:path*` },
+      { source: "/backend-health", destination: `${backendOrigin}/health` },
+    ];
+  },
   async headers() {
     const base = Object.entries(securityHeaders()).map(([key, value]) => ({
       key,

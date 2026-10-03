@@ -1,7 +1,7 @@
-import type { SubscriptionEntitlementRow, SubscriptionStatus } from "@/lib/database.types";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { cache } from "react";
 
-const ACTIVE_STATUSES: ReadonlySet<SubscriptionStatus> = new Set(["active", "trialing"]);
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { isActiveProSubscription } from "@/lib/subscription-entitlement";
 
 export type ProAccessSource = "mock" | "subscription" | "none";
 
@@ -11,23 +11,13 @@ export type ProAccessState = {
   userId: string | null;
 };
 
-/** Pure check — active/trialing and current period not expired. */
-export function isActiveProSubscription(
-  subscription: SubscriptionEntitlementRow | null | undefined,
-): boolean {
-  if (!subscription) return false;
-  if (!ACTIVE_STATUSES.has(subscription.status)) return false;
-
-  const periodEnd = new Date(subscription.current_period_end);
-  if (Number.isNaN(periodEnd.getTime())) return false;
-  return periodEnd.getTime() > Date.now();
-}
+export { isActiveProSubscription } from "@/lib/subscription-entitlement";
 
 /**
  * Pro entitlement via Supabase RLS (`subscriptions` SELECT own row) using the
  * HTTP-only session refreshed in middleware. Falls back to NEXT_PUBLIC_MOCK_PRO locally.
  */
-export async function getProAccessState(): Promise<ProAccessState> {
+export const getProAccessState = cache(async (): Promise<ProAccessState> => {
   if (process.env.NEXT_PUBLIC_MOCK_PRO === "true") {
     return { isPro: true, source: "mock", userId: null };
   }
@@ -62,7 +52,7 @@ export async function getProAccessState(): Promise<ProAccessState> {
     source: isPro ? "subscription" : "none",
     userId: user.id,
   };
-}
+});
 
 export async function hasProAccess(): Promise<boolean> {
   const state = await getProAccessState();

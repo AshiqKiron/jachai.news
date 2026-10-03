@@ -1,3 +1,4 @@
+import type { Article } from "@/lib/api";
 import type { Factuality, Perspective } from "@/lib/perspectives";
 
 export type NewsSource = {
@@ -325,3 +326,27 @@ export function getStoryBySlug(slug: string): Story | undefined {
 export function getBlindspotStories(): Story[] {
   return DEMO_STORIES.filter((s) => s.isBlindspot);
 }
+
+/** Shown on /rumors when the API is empty or unreachable. */
+export const DEMO_RUMOR_ARTICLES: Article[] = [
+  {
+    id: 9001,
+    source_id: 0,
+    cluster_id: null,
+    title: "Social posts claim nationwide mobile network shutdown — outlets have not confirmed",
+    url: "https://www.thedailystar.net/",
+    excerpt: "Treat as unverified until multiple independent sources report the same restriction.",
+    published_at: "2026-10-02T08:00:00Z",
+    is_rumor: true,
+  },
+  {
+    id: 9002,
+    source_id: 0,
+    cluster_id: null,
+    title: "ভাইরাল পোস্টে ‘জরুরি নগদ বোনাস’ লিংক — কোনো ব্যাংক এমন ঘোষণা দেয়নি",
+    url: "https://www.prothomalo.com/",
+    excerpt: "ফ্যাক্টচেক করুন; শেয়ার করার আগে সরকারি বা প্রতিষ্ঠানের সাইট যাচাই করুন।",
+    published_at: "2026-10-01T14:30:00Z",
+    is_rumor: true,
+  },
+];

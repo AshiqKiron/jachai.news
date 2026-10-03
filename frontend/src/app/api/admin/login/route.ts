@@ -4,20 +4,23 @@ import {
   ADMIN_COOKIE_NAME,
   adminSessionToken,
   isAdminPasswordConfigured,
+  legacyAdminUsername,
+  verifyLegacyAdminCredentials,
 } from "@/lib/admin-auth";
 
 export async function POST(request: Request) {
   if (!isAdminPasswordConfigured()) {
     return NextResponse.json(
-      { error: "ADMIN_PASSWORD is not configured on the server." },
+      { error: "Admin credentials are not configured on the server." },
       { status: 503 },
     );
   }
 
-  const body = (await request.json()) as { password?: string };
+  const body = (await request.json()) as { username?: string; password?: string };
+  const username = (body.username ?? legacyAdminUsername()).trim();
   const password = body.password ?? "";
-  if (password !== process.env.ADMIN_PASSWORD) {
-    return NextResponse.json({ error: "Invalid password." }, { status: 401 });
+  if (!verifyLegacyAdminCredentials(username, password)) {
+    return NextResponse.json({ error: "Invalid username or password." }, { status: 401 });
   }
 
   const response = NextResponse.json({ ok: true });

@@ -61,11 +61,13 @@ App: [http://localhost:3000](http://localhost:3000)
 
 ### Admin panel (internal)
 
-Password-protected dashboard at **`/admin`** — API health, DB counts, sources, recent clusters, and manual RSS ingest.
+Password-protected dashboard at **`https://admin.jachai.news`** (local dev: **`/admin`**). The main site redirects `/admin` to the admin subdomain in production. API health, DB counts, sources, recent clusters, and manual RSS ingest.
+
+Add **`admin.jachai.news`** as a domain on your frontend host (same Next.js deployment as `jachai.news`). Optional env: `ADMIN_HOST`, `NEXT_PUBLIC_SITE_URL`.
 
 | Variable | Where | Description |
 |----------|--------|-------------|
-| `ADMIN_PASSWORD` | Frontend (server) | Required in production; omit locally to open `/admin` without login |
+| `ADMIN_PASSWORD` | Frontend (server) | Ops sign-in cookie; set locally to use legacy admin login |
 | `ADMIN_API_KEY` | Frontend + backend | Protects `GET /api/v1/admin/overview` (omit locally for open access) |
 | `INGEST_API_KEY` | Frontend (server) + backend | Optional; required for **Run ingest** when set on the API |
 

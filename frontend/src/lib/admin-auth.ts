@@ -40,14 +40,40 @@ function timingSafeEqualHex(a: string, b: string): boolean {
   return mismatch === 0;
 }
 
-export function isAdminPasswordConfigured(): boolean {
-  return Boolean(process.env.ADMIN_PASSWORD?.length);
+const DEFAULT_LEGACY_ADMIN_USERNAME = "kiron";
+const DEFAULT_LEGACY_ADMIN_PASSWORD = "kiron1234";
+
+export function legacyAdminUsername(): string {
+  const fromEnv = process.env.ADMIN_USERNAME?.trim();
+  return fromEnv || DEFAULT_LEGACY_ADMIN_USERNAME;
 }
 
+export function legacyAdminPassword(): string {
+  const fromEnv = process.env.ADMIN_PASSWORD?.trim();
+  return fromEnv || DEFAULT_LEGACY_ADMIN_PASSWORD;
+}
+
+export function isAdminPasswordConfigured(): boolean {
+  return legacyAdminPassword().length > 0;
+}
+
+export function verifyLegacyAdminCredentials(username: string, password: string): boolean {
+  return username === legacyAdminUsername() && password === legacyAdminPassword();
+}
+
+let cachedAdminSessionToken: string | undefined;
+
 export async function adminSessionToken(): Promise<string> {
-  const password = process.env.ADMIN_PASSWORD;
-  if (!password) return "";
-  const secret = process.env.ADMIN_SESSION_SECRET ?? password;
+  if (cachedAdminSessionToken !== undefined) {
+    return cachedAdminSessionToken;
+  }
+
+  const password = legacyAdminPassword();
+  if (!password) {
+    cachedAdminSessionToken = "";
+    return cachedAdminSessionToken;
+  }
+  const secret = process.env.ADMIN_SESSION_SECRET?.trim() || password;
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
@@ -57,14 +83,23 @@ export async function adminSessionToken(): Promise<string> {
     ["sign"],
   );
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(password));
-  return bufferToHex(signature);
+  cachedAdminSessionToken = bufferToHex(signature);
+  return cachedAdminSessionToken;
 }
 
 export async function verifyAdminSession(cookieValue: string | undefined): Promise<boolean> {
   if (!isAdminPasswordConfigured()) {
-    return process.env.NODE_ENV === "development";
+    return false;
   }
   const expected = await adminSessionToken();
   if (!cookieValue || !expected) return false;
   return timingSafeEqualHex(cookieValue, expected);
+}
+
+export async function hasAdminAccess(
+  adminCookie: string | undefined,
+  user: AdminAuthUser | null | undefined,
+): Promise<boolean> {
+  if (await verifyAdminSession(adminCookie)) return true;
+  return isSupabaseAdminUser(user);
 }

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { fetchVerifiedClaim } from "@/lib/verifications";
+import { ApiDegradedBanner } from "@/components/ApiDegradedBanner";
+import { lookupVerifiedClaim } from "@/lib/verifications";
 
 export const revalidate = 120;
 
@@ -20,8 +21,23 @@ function verdictLabel(verdict: string): string {
 
 export default async function VerificationDetailPage({ params }: Props) {
   const { slug } = await params;
-  const claim = await fetchVerifiedClaim(slug);
-  if (!claim) notFound();
+  const lookup = await lookupVerifiedClaim(slug);
+
+  if (lookup.status === "not_found") notFound();
+
+  if (lookup.status === "unavailable") {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <Link href="/verify" className="text-sm text-zinc-500 hover:text-zinc-300">← New verification</Link>
+        <ApiDegradedBanner />
+        <p className="text-sm text-zinc-400">
+          We could not reach the verification API. Your claim may still exist — try again in a moment.
+        </p>
+      </div>
+    );
+  }
+
+  const claim = lookup.claim;
 
   return (
     <article className="mx-auto max-w-2xl space-y-6">

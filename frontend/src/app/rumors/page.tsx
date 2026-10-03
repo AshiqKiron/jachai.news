@@ -1,12 +1,13 @@
 import Link from "next/link";
 
+import { ApiDegradedBanner } from "@/components/ApiDegradedBanner";
 import { RumorBadge } from "@/components/RumorBadge";
-import { fetchRumors } from "@/lib/api";
+import { getRumorsFeed } from "@/lib/stories";
 
 export const revalidate = 120;
 
 export default async function RumorsPage() {
-  const data = await fetchRumors(30).catch(() => ({ items: [], total: 0 }));
+  const { items, fromApi } = await getRumorsFeed(30);
 
   return (
     <div className="space-y-8">
@@ -18,15 +19,16 @@ export default async function RumorsPage() {
         <Link href="/verify" className="mt-3 inline-block text-sm text-accent hover:underline">
           Submit a claim for verification →
         </Link>
+        {!fromApi ? <div className="mt-4"><ApiDegradedBanner compact /></div> : null}
       </header>
 
       <ul className="space-y-4">
-        {data.items.length === 0 ? (
+        {items.length === 0 ? (
           <li className="rounded-xl border border-dashed border-zinc-800 p-8 text-sm text-zinc-500">
             No flagged rumors in the index.
           </li>
         ) : (
-          data.items.map((article) => (
+          items.map((article) => (
             <li key={article.id} className="rounded-xl border border-zinc-800 bg-ink-900/40 p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <RumorBadge />

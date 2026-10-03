@@ -1,3 +1,4 @@
+import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
 import { SignUpForm } from "@/components/auth/SignUpForm";
 
 export default function SignUpPage() {
@@ -10,7 +11,9 @@ export default function SignUpPage() {
       <p className="text-sm text-zinc-400">
         Create a free account. Pro checkout and entitlements will use this login later.
       </p>
-      <SignUpForm />
+      <ClientErrorBoundary title="Sign-up form could not load">
+        <SignUpForm />
+      </ClientErrorBoundary>
     </div>
   );
 }

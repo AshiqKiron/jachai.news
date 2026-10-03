@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import { formatAuthError } from "@/lib/auth-errors";
+import { normalizeEmail, safeAuthRedirectPath, validateSignInCredentials } from "@/lib/auth-input";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 import { authFormClassName, authInputClassName, authSubmitClassName } from "./auth-form-styles";
@@ -12,7 +13,7 @@ import { authFormClassName, authInputClassName, authSubmitClassName } from "./au
 export function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/";
+  const next = safeAuthRedirectPath(searchParams.get("next"), "/");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,10 +27,19 @@ export function SignInForm() {
       setError("Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
       return;
     }
+    const validation = validateSignInCredentials(email, password);
+    if (!validation.ok) {
+      setError(validation.message);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: normalizeEmail(email),
+        password,
+      });
       if (signInError) throw signInError;
       router.push(next);
       router.refresh();

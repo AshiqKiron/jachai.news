@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import { authFormClassName, authInputClassName, authSubmitClassName } from "@/components/auth/auth-form-styles";
+import { adminSurfacePath } from "@/lib/admin-host";
+import { postAdminRoute } from "@/lib/admin-proxy-client";
+import { normalizeEmail, validateAdminRegistration } from "@/lib/auth-input";
 
 export function AdminRegisterForm() {
   const router = useRouter();
@@ -18,29 +21,27 @@ export function AdminRegisterForm() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
+    const validation = validateAdminRegistration(email, password, displayName, registrationCode);
+    if (!validation.ok) {
+      setError(validation.message);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setNotice(null);
     try {
-      const response = await fetch("/api/admin/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          displayName,
-          registrationCode,
-        }),
+      const data = await postAdminRoute<{ notice?: string }>("/api/admin/register", {
+        email: normalizeEmail(email),
+        password,
+        displayName,
+        registrationCode,
       });
-      const data = (await response.json()) as { error?: string; notice?: string };
-      if (!response.ok) {
-        throw new Error(typeof data.error === "string" ? data.error : "Registration failed.");
-      }
       if (data.notice) {
         setNotice(data.notice);
         return;
       }
-      router.push("/admin/login");
+      router.push(adminSurfacePath("login", typeof window !== "undefined" ? window.location.hostname : undefined));
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");
@@ -102,7 +103,10 @@ export function AdminRegisterForm() {
       </button>
       <p className="text-center text-sm text-zinc-500">
         Already registered?{" "}
-        <Link href="/admin/login" className="text-accent hover:underline">
+        <Link
+          href={adminSurfacePath("login", typeof window !== "undefined" ? window.location.hostname : undefined)}
+          className="text-accent hover:underline"
+        >
           Sign in
         </Link>
       </p>

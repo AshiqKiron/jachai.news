@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { validateClaimSubmission } from "@/lib/claim-input";
 import { subscribeVerificationJob } from "@/lib/verification-progress";
 import { submitVerification } from "@/lib/verifications";
 
@@ -31,6 +32,12 @@ export function VerifyClaimForm() {
     setStatusMessage(null);
     unsubscribeRef.current?.();
     unsubscribeRef.current = null;
+    const validation = validateClaimSubmission(text, url);
+    if (!validation.ok) {
+      setError(validation.message);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await submitVerification({

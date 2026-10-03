@@ -1,4 +1,13 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+import { absolutePublicApiBase, resolveApiBase } from "@/lib/api-base";
+import { API_WRITE_TIMEOUT_MS, fetchJsonSafe, parseApiErrorBody } from "@/lib/api-resilience";
+
+function apiBase(): string {
+  return resolveApiBase();
+}
+
+function clientApiBase(): string {
+  return absolutePublicApiBase();
+}
 
 export type VerifiedClaim = {
   id: number;
@@ -33,53 +42,78 @@ export type VerificationJobEvent = {
   message?: string | null;
 };
 
+export type VerifiedClaimLookup =
+  | { status: "ok"; claim: VerifiedClaim }
+  | { status: "not_found" }
+  | { status: "unavailable" };
+
 export async function submitVerification(body: { text?: string; url?: string }): Promise<VerifySubmitResponse> {
-  const response = await fetch(`${API_BASE}/verify`, {
+  const result = await fetchJsonSafe<VerifySubmitResponse>(`${clientApiBase()}/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    timeoutMs: API_WRITE_TIMEOUT_MS,
   });
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `Verify failed: ${response.status}`);
+  if (!result.ok) {
+    const message =
+      result.error instanceof Error
+        ? result.error.message
+        : parseApiErrorBody("", "Could not submit claim.");
+    throw new Error(message);
   }
-  return response.json() as Promise<VerifySubmitResponse>;
+  return result.data;
 }
 
 export function verificationEventsUrl(jobId: string): string {
-  return `${API_BASE}/verifications/jobs/${jobId}/events`;
+  return `${clientApiBase()}/verifications/jobs/${jobId}/events`;
 }
 
 export function verificationWebSocketUrl(jobId: string): string {
-  const wsBase = API_BASE.replace(/^http/i, (scheme) => (scheme.toLowerCase() === "https" ? "wss" : "ws"));
+  const wsBase = clientApiBase().replace(/^http/i, (scheme) => (scheme.toLowerCase() === "https" ? "wss" : "ws"));
   return `${wsBase}/verifications/jobs/${jobId}/ws`;
 }
 
-export async function fetchVerifiedClaim(slug: string): Promise<VerifiedClaim | null> {
-  const response = await fetch(`${API_BASE}/verifications/${slug}`, {
+export async function lookupVerifiedClaim(slug: string): Promise<VerifiedClaimLookup> {
+  const result = await fetchJsonSafe<VerifiedClaim>(`${apiBase()}/verifications/${slug}`, {
     next: { revalidate: 120 },
   });
-  if (response.status === 404) return null;
-  if (!response.ok) throw new Error(`Verification fetch failed: ${response.status}`);
-  return response.json() as Promise<VerifiedClaim>;
+  if (result.ok) return { status: "ok", claim: result.data };
+  if (result.status === 404) return { status: "not_found" };
+  return { status: "unavailable" };
+}
+
+/** @deprecated Prefer lookupVerifiedClaim for not-found vs offline handling */
+export async function fetchVerifiedClaim(slug: string): Promise<VerifiedClaim | null> {
+  const lookup = await lookupVerifiedClaim(slug);
+  return lookup.status === "ok" ? lookup.claim : null;
 }
 
 export async function fetchVerifiedClaims(limit = 20): Promise<{ items: VerifiedClaim[]; total: number }> {
-  const response = await fetch(`${API_BASE}/verifications?limit=${limit}`, {
-    next: { revalidate: 120 },
-  });
-  if (!response.ok) throw new Error(`Verifications list failed: ${response.status}`);
-  return response.json() as Promise<{ items: VerifiedClaim[]; total: number }>;
+  const { items, total } = await fetchVerifiedClaimsFeed(limit);
+  return { items, total };
+}
+
+export async function fetchVerifiedClaimsFeed(
+  limit = 20,
+): Promise<{ items: VerifiedClaim[]; total: number; fromApi: boolean }> {
+  const result = await fetchJsonSafe<{ items: VerifiedClaim[]; total: number }>(
+    `${apiBase()}/verifications?limit=${limit}`,
+    { next: { revalidate: 120 } },
+  );
+  if (!result.ok) return { items: [], total: 0, fromApi: false };
+  return { ...result.data, fromApi: true };
 }
 
 export async function searchVerifiedClaims(
   query: string,
   limit = 20,
-): Promise<{ items: VerifiedClaim[]; total: number; query: string }> {
-  const response = await fetch(
-    `${API_BASE}/verifications/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+): Promise<{ items: VerifiedClaim[]; total: number; query: string; fromApi: boolean }> {
+  const result = await fetchJsonSafe<{ items: VerifiedClaim[]; total: number; query: string }>(
+    `${apiBase()}/verifications/search?q=${encodeURIComponent(query)}&limit=${limit}`,
     { next: { revalidate: 60 } },
   );
-  if (!response.ok) throw new Error(`Verification search failed: ${response.status}`);
-  return response.json() as Promise<{ items: VerifiedClaim[]; total: number; query: string }>;
+  if (!result.ok) {
+    return { items: [], total: 0, query, fromApi: false };
+  }
+  return { ...result.data, fromApi: true };
 }

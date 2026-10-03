@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ApiDegradedBanner } from "@/components/ApiDegradedBanner";
+import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
 import { CoverageBar } from "@/components/CoverageBar";
 import { StoryTabs } from "@/components/StoryTabs";
 import { enrichArticles } from "@/lib/coverage";
-import { DEMO_STORIES, getStoryBySlug } from "@/lib/demo-data";
+import { DEMO_STORIES } from "@/lib/demo-data";
 import { PERSPECTIVE_META } from "@/lib/perspectives";
-import { fetchClusters } from "@/lib/api";
+import { resolveStoryBySlug } from "@/lib/stories";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -18,34 +20,11 @@ export async function generateStaticParams() {
 
 export default async function StoryPage({ params }: Props) {
   const { slug } = await params;
-  let story = getStoryBySlug(slug);
+  const resolved = await resolveStoryBySlug(slug);
 
-  if (!story) {
-    try {
-      const data = await fetchClusters(50);
-      const cluster = data.items.find((c) => c.slug === slug);
-      if (cluster) {
-        story = {
-          slug: cluster.slug,
-          title: cluster.title,
-          titleBn: cluster.title,
-          summary: cluster.summary ?? "",
-          summaryBn: cluster.summary ?? "",
-          category: "News",
-          categoryBn: "সংবাদ",
-          isBlindspot: false,
-          perspectiveSummaries: {},
-          articles: [],
-          updatedAt: cluster.created_at,
-        };
-      }
-    } catch {
-      /* demo only */
-    }
-  }
+  if (!resolved) notFound();
 
-  if (!story) notFound();
-
+  const { story, fromApi } = resolved;
   const articles = enrichArticles(story);
 
   return (
@@ -53,6 +32,10 @@ export default async function StoryPage({ params }: Props) {
       <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-300">
         ← Top stories
       </Link>
+
+      {fromApi && story.articles.length === 0 ? (
+        <ApiDegradedBanner compact />
+      ) : null}
 
       <header className="max-w-3xl space-y-4">
         <p className="text-xs uppercase tracking-widest text-zinc-500">
@@ -71,7 +54,9 @@ export default async function StoryPage({ params }: Props) {
         ) : null}
       </header>
 
-      <StoryTabs story={story} articles={articles} />
+      <ClientErrorBoundary title="Story coverage could not load">
+        <StoryTabs story={story} articles={articles} />
+      </ClientErrorBoundary>
     </div>
   );
 }

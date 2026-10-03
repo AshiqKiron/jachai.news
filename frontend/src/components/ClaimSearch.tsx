@@ -11,6 +11,7 @@ export function ClaimSearch() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [apiUnreachable, setApiUnreachable] = useState(false);
 
   async function onSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -18,16 +19,12 @@ export function ClaimSearch() {
     if (q.length < 2) return;
     setLoading(true);
     setSearched(true);
-    try {
-      const data = await searchVerifiedClaims(q);
-      setResults(data.items);
-      setTotal(data.total);
-    } catch {
-      setResults([]);
-      setTotal(0);
-    } finally {
-      setLoading(false);
-    }
+    setApiUnreachable(false);
+    const data = await searchVerifiedClaims(q);
+    setResults(data.items);
+    setTotal(data.total);
+    setApiUnreachable(!data.fromApi);
+    setLoading(false);
   }
 
   return (
@@ -48,10 +45,13 @@ export function ClaimSearch() {
           {loading ? "…" : "Search"}
         </button>
       </form>
-      {searched && (
+      {searched && !apiUnreachable && (
         <p className="text-xs text-zinc-500">
           {total} match{total === 1 ? "" : "es"}
         </p>
+      )}
+      {apiUnreachable && (
+        <p className="text-xs text-amber-200/90">Search is unavailable — the verification API may be offline.</p>
       )}
       <ul className="space-y-2">
         {results.map((item) => (

@@ -1,12 +1,15 @@
 import Link from "next/link";
 
+import { ApiDegradedBanner } from "@/components/ApiDegradedBanner";
 import { ClaimSearch } from "@/components/ClaimSearch";
-import { fetchVerifiedClaims } from "@/lib/verifications";
+import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
+import { fetchVerifiedClaimsFeed } from "@/lib/verifications";
 
 export const revalidate = 120;
 
 export default async function VerifyDatabasePage() {
-  const data = await fetchVerifiedClaims(30).catch(() => ({ items: [], total: 0 }));
+  const data = await fetchVerifiedClaimsFeed(30);
+  const fromApi = data.fromApi;
 
   return (
     <div className="space-y-8">
@@ -19,9 +22,12 @@ export default async function VerifyDatabasePage() {
         <Link href="/verify" className="mt-3 inline-block text-sm text-accent hover:underline">
           Submit a new claim →
         </Link>
+        {!fromApi ? <div className="mt-4"><ApiDegradedBanner /></div> : null}
       </header>
 
-      <ClaimSearch />
+      <ClientErrorBoundary title="Claim search could not load">
+        <ClaimSearch />
+      </ClientErrorBoundary>
 
       <ul className="space-y-3">
         {data.items.length === 0 ? (

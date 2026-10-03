@@ -1,6 +1,12 @@
+import { unstable_cache } from "next/cache";
+
+import { SERVER_API_BASE, serverApiOrigin } from "@/lib/api-base";
+import { API_LISTING_TIMEOUT_MS, fetchJsonSafe } from "@/lib/api-resilience";
 import type { AdminSourceStat, IngestResponse } from "@/lib/admin-types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const API_BASE = SERVER_API_BASE;
+const ADMIN_OVERVIEW_REVALIDATE_SEC = 15;
+const ADMIN_HEALTH_TIMEOUT_MS = 500;
 
 function adminHeaders(): HeadersInit {
   const headers: HeadersInit = { Accept: "application/json" };
@@ -30,17 +36,23 @@ export type AdminOverview = {
   gemini_configured: boolean;
 };
 
+async function fetchAdminOverviewUncached(): Promise<AdminOverview | null> {
+  const result = await fetchJsonSafe<AdminOverview>(`${API_BASE}/admin/overview`, {
+    headers: adminHeaders(),
+    next: { revalidate: ADMIN_OVERVIEW_REVALIDATE_SEC },
+    timeoutMs: API_LISTING_TIMEOUT_MS,
+  });
+  return result.ok ? result.data : null;
+}
+
+const getAdminOverviewCached = unstable_cache(
+  fetchAdminOverviewUncached,
+  ["admin-overview"],
+  { revalidate: ADMIN_OVERVIEW_REVALIDATE_SEC },
+);
+
 export async function fetchAdminOverview(): Promise<AdminOverview | null> {
-  try {
-    const response = await fetch(`${API_BASE}/admin/overview`, {
-      headers: adminHeaders(),
-      cache: "no-store",
-    });
-    if (!response.ok) return null;
-    return (await response.json()) as AdminOverview;
-  } catch {
-    return null;
-  }
+  return getAdminOverviewCached();
 }
 
 function ingestHeaders(): HeadersInit {
@@ -137,12 +149,23 @@ export async function removeAdminSource(sourceId: number): Promise<AdminSourceSt
   return (await response.json()) as AdminSourceStat;
 }
 
-export async function fetchApiHealth(): Promise<boolean> {
-  const base = API_BASE.replace(/\/api\/v1\/?$/, "");
+async function fetchApiHealthUncached(): Promise<boolean> {
+  const base = serverApiOrigin();
   try {
-    const response = await fetch(`${base}/health`, { cache: "no-store" });
+    const response = await fetch(`${base}/health`, {
+      next: { revalidate: ADMIN_OVERVIEW_REVALIDATE_SEC },
+      signal: AbortSignal.timeout(ADMIN_HEALTH_TIMEOUT_MS),
+    });
     return response.ok;
   } catch {
     return false;
   }
+}
+
+const getApiHealthCached = unstable_cache(fetchApiHealthUncached, ["api-health"], {
+  revalidate: ADMIN_OVERVIEW_REVALIDATE_SEC,
+});
+
+export async function fetchApiHealth(): Promise<boolean> {
+  return getApiHealthCached();
 }

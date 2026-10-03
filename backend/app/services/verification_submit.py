@@ -28,7 +28,8 @@ async def submit_verify_request(
 
     if raw_text:
         try:
-            sanitized = sanitize_plain_text(raw_text)
+            min_chars = 1 if source_url else 12
+            sanitized = sanitize_plain_text(raw_text, min_chars=min_chars)
         except InputValidationError as exc:
             raise exc
         truncated = sanitized.truncated

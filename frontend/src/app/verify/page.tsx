@@ -1,3 +1,4 @@
+import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
 import { VerifyClaimForm } from "@/components/VerifyClaimForm";
 
 export const revalidate = 300;
@@ -13,7 +14,9 @@ export default function VerifyPage() {
         </p>
         <p className="mt-1 font-bengali text-sm text-zinc-500">দ্রুত যাচাই — একই দাবি আবার এলে ক্যাশ থেকে উত্তর।</p>
       </header>
-      <VerifyClaimForm />
+      <ClientErrorBoundary title="Verification form could not load">
+        <VerifyClaimForm />
+      </ClientErrorBoundary>
     </div>
   );
 }

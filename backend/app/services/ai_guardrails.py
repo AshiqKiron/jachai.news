@@ -20,10 +20,20 @@ _INJECTION_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
         r"output\s+(only\s+)?(json|yaml)\s+with\s+verdict\s*:\s*verified",
         r"pretend\s+you\s+are",
         r"new\s+system\s+prompt",
+        r"forget\s+(everything|all|prior)",
+        r"act\s+as\s+(a\s+)?(developer|admin|system)",
+        r"reveal\s+(the\s+)?(system|hidden)\s+prompt",
+        r"<\s*assistant\s*>",
+        r"<\s*developer\s*>",
+        r"\\n\s*system\s*:",
+        r"base64\s+decode",
+        r"execute\s+(this\s+)?(code|script|command)",
     )
 )
 
 _SUSPICIOUS_DENSITY_THRESHOLD = 3
+_MAX_REPEAT_CHAR_RUN = 80
+_MAX_ROLE_MARKERS = 6
 
 
 @dataclass(frozen=True)
@@ -47,6 +57,13 @@ def assess_user_content(text: str) -> GuardrailResult:
     # Excessive role-play markers
     if text.count("```") > 8:
         reasons.append("Excessive code-fence markers.")
+
+    role_markers = text.lower().count("system:") + text.lower().count("assistant:") + text.lower().count("user:")
+    if role_markers > _MAX_ROLE_MARKERS:
+        reasons.append("Too many chat-role markers.")
+
+    if re.search(r"(.)\1{" + str(_MAX_REPEAT_CHAR_RUN - 1) + r",}", text):
+        reasons.append("Excessive repeated characters.")
 
     allowed = len(reasons) == 0
     return GuardrailResult(allowed=allowed, reasons=tuple(reasons))

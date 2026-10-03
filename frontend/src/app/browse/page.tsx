@@ -1,10 +1,11 @@
 import Link from "next/link";
 
+import { ApiDegradedBanner } from "@/components/ApiDegradedBanner";
 import { BrowseProGate } from "@/components/BrowseProGate";
 import { StoryFeedCard } from "@/components/StoryFeedCard";
-import { DEMO_STORIES, type Story } from "@/lib/demo-data";
-import { fetchArticles, fetchClusters } from "@/lib/api";
+import { DEMO_STORIES } from "@/lib/demo-data";
 import { hasProAccess } from "@/lib/subscription-access";
+import { getBrowseClusters, getLatestArticlesFeed } from "@/lib/stories";
 
 export default async function BrowsePage({
   searchParams,
@@ -26,24 +27,23 @@ export default async function BrowsePage({
     );
   }
 
-  const [articlesData, clustersData] = await Promise.all([
-    fetchArticles(24).catch(() => ({ items: [], total: 0 })),
-    fetchClusters(24).catch(() => ({ items: [], total: 0 })),
-  ]);
+  const [articlesFeed, clustersFeed] = await Promise.all([getLatestArticlesFeed(24), getBrowseClusters(24)]);
 
+  const { stories, fromApi: clustersFromApi } = clustersFeed;
+  const { items: articleItems, fromApi: articlesFromApi } = articlesFeed;
   const demoBySlug = new Map(DEMO_STORIES.map((s) => [s.slug, s]));
-  const stories: Story[] =
-    clustersData.items.length > 0
-      ? clustersData.items.map((c) => demoBySlug.get(c.slug)).filter((s): s is Story => Boolean(s))
-      : DEMO_STORIES;
-
-  const activeStory = clusterSlug ? demoBySlug.get(clusterSlug) : undefined;
+  const activeStory = clusterSlug ? stories.find((s) => s.slug === clusterSlug) ?? demoBySlug.get(clusterSlug) : undefined;
 
   return (
     <div className="space-y-8 pb-4">
       <header>
         <h1 className="font-display text-3xl text-zinc-50">Browse</h1>
         <p className="mt-2 text-zinc-400">Story clusters and latest ingested articles.</p>
+        {!clustersFromApi || !articlesFromApi ? (
+          <div className="mt-4">
+            <ApiDegradedBanner compact />
+          </div>
+        ) : null}
       </header>
 
       {activeStory ? (
@@ -59,17 +59,17 @@ export default async function BrowsePage({
       <section>
         <h2 className="mb-3 text-sm font-medium uppercase tracking-widest text-zinc-500">Clusters</h2>
         <div className="grid gap-4 md:grid-cols-2">
-          {(stories.length ? stories : DEMO_STORIES).map((story) => (
+          {stories.map((story) => (
             <StoryFeedCard key={story.slug} story={story} />
           ))}
         </div>
       </section>
 
-      {articlesData.items.length > 0 ? (
+      {articleItems.length > 0 ? (
         <section>
           <h2 className="mb-3 text-sm font-medium uppercase tracking-widest text-zinc-500">Latest articles (API)</h2>
           <ul className="divide-y divide-zinc-800 rounded-xl border border-zinc-800">
-            {articlesData.items.map((article) => (
+            {articleItems.map((article) => (
               <li key={article.id} className="px-4 py-3">
                 <a href={article.url} target="_blank" rel="noreferrer" className="font-medium text-zinc-100">
                   {article.title}

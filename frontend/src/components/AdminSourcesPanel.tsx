@@ -3,31 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { deleteAdminRoute, postAdminRoute } from "@/lib/admin-proxy-client";
+import { buildRssSourcePayload, validateRssSourceInput } from "@/lib/admin-input";
 import type { AdminSourceStat } from "@/lib/admin-types";
 
 type Props = {
   sources: AdminSourceStat[];
 };
-
-function parseApiError(payload: unknown, fallback: string): string {
-  if (payload && typeof payload === "object" && "error" in payload) {
-    const error = (payload as { error?: unknown }).error;
-    if (typeof error === "string") return error;
-  }
-  if (typeof payload === "string" && payload.length > 0) {
-    try {
-      const parsed = JSON.parse(payload) as { detail?: unknown };
-      if (typeof parsed.detail === "string") return parsed.detail;
-      if (Array.isArray(parsed.detail)) {
-        const first = parsed.detail[0] as { msg?: string } | undefined;
-        if (first?.msg) return first.msg;
-      }
-    } catch {
-      return payload.slice(0, 200);
-    }
-  }
-  return fallback;
-}
 
 export function AdminSourcesPanel({ sources }: Props) {
   const router = useRouter();
@@ -44,37 +26,18 @@ export function AdminSourcesPanel({ sources }: Props) {
 
   async function handleAdd(event: React.FormEvent) {
     event.preventDefault();
+    const validation = validateRssSourceInput(name, feedUrl, biasScore);
+    if (!validation.ok) {
+      setError(validation.message);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setMessage(null);
     try {
-      const payload: { name: string; feed_url: string; bias_score?: number } = {
-        name: name.trim(),
-        feed_url: feedUrl.trim(),
-      };
-      if (biasScore.trim() !== "") {
-        const parsed = Number.parseFloat(biasScore);
-        if (!Number.isFinite(parsed) || parsed < -1 || parsed > 1) {
-          throw new Error("Bias score must be between -1 and 1.");
-        }
-        payload.bias_score = parsed;
-      }
-
-      const response = await fetch("/api/admin/sources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const raw = await response.text();
-      let data: unknown = null;
-      try {
-        data = raw ? JSON.parse(raw) : null;
-      } catch {
-        data = raw;
-      }
-      if (!response.ok) {
-        throw new Error(parseApiError(data, "Could not add source."));
-      }
+      const payload = buildRssSourcePayload(name, feedUrl, biasScore);
+      await postAdminRoute("/api/admin/sources", payload);
 
       setName("");
       setFeedUrl("");
@@ -98,11 +61,7 @@ export function AdminSourcesPanel({ sources }: Props) {
     setError(null);
     setMessage(null);
     try {
-      const response = await fetch(`/api/admin/sources/${source.source_id}`, { method: "DELETE" });
-      const data = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(parseApiError(data, "Could not remove source."));
-      }
+      await deleteAdminRoute(`/api/admin/sources/${source.source_id}`);
       setMessage(`Removed ${source.name} from ingest.`);
       router.refresh();
     } catch (err) {

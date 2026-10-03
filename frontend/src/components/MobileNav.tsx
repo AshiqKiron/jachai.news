@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { isAdminAppSurface } from "@/lib/admin-host";
+
 const items = [
   { href: "/", label: "হোম", en: "Home" },
   { href: "/blindspot", label: "Blindspot", en: "Blindspot" },
@@ -12,6 +14,10 @@ const items = [
 
 export function MobileNav() {
   const pathname = usePathname();
+  const host = typeof window !== "undefined" ? window.location.hostname : undefined;
+  if (isAdminAppSurface(pathname, host)) {
+    return null;
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800/90 bg-ink-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">

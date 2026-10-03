@@ -1,11 +1,14 @@
 /** Strict security headers for Next.js (CSP tuned for Supabase + API + Sentry). */
 
 const API_ORIGIN = (() => {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+  const raw = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
+  if (raw.startsWith("/")) {
+    return "";
+  }
   try {
     return new URL(raw).origin;
   } catch {
-    return "http://localhost:8000";
+    return "http://127.0.0.1:8000";
   }
 })();
 

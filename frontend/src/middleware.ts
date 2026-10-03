@@ -1,11 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { ADMIN_COOKIE_NAME, hasAdminAccess, verifyAdminSession } from "@/lib/admin-auth";
 import {
-  ADMIN_COOKIE_NAME,
-  isAdminPasswordConfigured,
-  isSupabaseAdminUser,
-  verifyAdminSession,
-} from "@/lib/admin-auth";
+  adminSubdomainPublicUrl,
+  adminSurfacePath,
+  effectiveAdminInternalPath,
+  hostnameWithoutPort,
+  isAdminPublicInternalPath,
+  isAdminSubdomainHost,
+  isMainSiteAppPath,
+  mainSiteOriginFromRequest,
+  resolvesToAdminInternalPath,
+} from "@/lib/admin-host";
 import { securityHeaders } from "@/lib/security-headers";
 import { updateSupabaseSession } from "@/lib/supabase/middleware";
 
@@ -16,50 +22,117 @@ function withSecurityHeaders(response: NextResponse): NextResponse {
   return response;
 }
 
-const ADMIN_PUBLIC_PATHS = new Set(["/admin/login", "/admin/register"]);
+const SUPABASE_SESSION_PATH_PREFIXES = [
+  "/browse",
+  "/sign-in",
+  "/sign-up",
+  "/auth",
+  "/api/auth",
+];
 
-async function isAdminAuthorized(
+function requestHost(request: NextRequest): string {
+  return hostnameWithoutPort(request.headers.get("host") ?? "");
+}
+
+function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  return request.cookies.getAll().some(({ name }) => name.startsWith("sb-"));
+}
+
+function needsSupabaseSessionRefresh(pathname: string, request: NextRequest): boolean {
+  if (SUPABASE_SESSION_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    return true;
+  }
+  return hasSupabaseAuthCookie(request);
+}
+
+async function enforceAdminAccess(
   request: NextRequest,
-  user: { email?: string | null; app_metadata?: Record<string, unknown> } | null,
-): Promise<boolean> {
-  const session = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
-  if (await verifyAdminSession(session)) return true;
+  response: NextResponse,
+  internalPath: string,
+  host: string,
+): Promise<NextResponse> {
+  const legacyAdmin = await verifyAdminSession(request.cookies.get(ADMIN_COOKIE_NAME)?.value);
+  let user: { email?: string | null; app_metadata?: Record<string, unknown> } | null = null;
 
-  if (isSupabaseAdminUser(user)) return true;
+  if (!legacyAdmin && !isAdminPublicInternalPath(internalPath)) {
+    const refreshed = await updateSupabaseSession(request, response);
+    response = refreshed.response;
+    user = refreshed.user;
+  }
 
-  return false;
+  if (isAdminPublicInternalPath(internalPath)) {
+    return withSecurityHeaders(response);
+  }
+
+  if (await hasAdminAccess(request.cookies.get(ADMIN_COOKIE_NAME)?.value, user)) {
+    return withSecurityHeaders(response);
+  }
+
+  const login = new URL(adminSurfacePath("login", host), request.url);
+  login.searchParams.set("next", adminSurfacePath("", host));
+  return withSecurityHeaders(NextResponse.redirect(login));
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = requestHost(request);
+  const onAdminHost = isAdminSubdomainHost(host);
+
+  if (pathname.startsWith("/api/admin")) {
+    return withSecurityHeaders(NextResponse.next({ request }));
+  }
+
+  const redirectUrl = !onAdminHost ? adminSubdomainPublicUrl(pathname) : null;
+  if (redirectUrl) {
+    const target = new URL(redirectUrl);
+    target.search = request.nextUrl.search;
+    return withSecurityHeaders(NextResponse.redirect(target, 308));
+  }
+
+  if (onAdminHost && !pathname.startsWith("/api") && isMainSiteAppPath(pathname)) {
+    const mainOrigin = mainSiteOriginFromRequest(host, request.nextUrl.origin);
+    const target = new URL(pathname, mainOrigin);
+    target.search = request.nextUrl.search;
+    return withSecurityHeaders(NextResponse.redirect(target, 308));
+  }
 
   let response = NextResponse.next({ request });
-  const { response: refreshed, user } = await updateSupabaseSession(request, response);
-  response = refreshed;
 
-  if (!pathname.startsWith("/admin")) {
-    return withSecurityHeaders(response);
+  if (onAdminHost && !pathname.startsWith("/api")) {
+    const internalPath = effectiveAdminInternalPath(pathname, host);
+    if (internalPath !== pathname) {
+      const rewriteUrl = request.nextUrl.clone();
+      rewriteUrl.pathname = internalPath;
+      response = NextResponse.rewrite(rewriteUrl);
+    }
+    return enforceAdminAccess(request, response, internalPath, host);
   }
 
-  if (ADMIN_PUBLIC_PATHS.has(pathname)) {
-    return withSecurityHeaders(response);
+  if (resolvesToAdminInternalPath(pathname, host)) {
+    const internalPath = effectiveAdminInternalPath(pathname, host);
+    return enforceAdminAccess(request, response, internalPath, host);
   }
 
-  if (await isAdminAuthorized(request, user)) {
-    return withSecurityHeaders(response);
+  if (needsSupabaseSessionRefresh(pathname, request)) {
+    const refreshed = await updateSupabaseSession(request, response);
+    response = refreshed.response;
   }
 
-  if (!isAdminPasswordConfigured() && process.env.NODE_ENV === "development") {
-    return withSecurityHeaders(response);
-  }
-
-  const login = new URL("/admin/login", request.url);
-  login.searchParams.set("next", pathname);
-  return withSecurityHeaders(NextResponse.redirect(login));
+  return withSecurityHeaders(response);
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/",
+    "/login",
+    "/register",
+    "/admin",
+    "/admin/:path*",
+    "/browse",
+    "/sign-in",
+    "/sign-up",
+    "/auth/:path*",
+    "/api/auth/:path*",
+    "/api/admin/:path*",
   ],
 };

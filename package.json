@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev:frontend": "npm run dev --prefix frontend",
-    "dev:backend": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "dev:backend": "cd backend && .venv/bin/python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
     "build:frontend": "npm run build --prefix frontend",
     "lint:frontend": "npm run lint --prefix frontend",
     "ingest:backend": "cd backend && python scripts/ingest_rss.py",

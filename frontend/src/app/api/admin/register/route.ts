@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { adminSurfacePath, hostnameWithoutPort } from "@/lib/admin-host";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase/service";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -62,7 +63,9 @@ export async function POST(request: Request) {
     password,
     options: {
       data: displayName ? { display_name: displayName } : undefined,
-      emailRedirectTo: `${new URL(request.url).origin}/auth/callback?next=/admin`,
+      emailRedirectTo: `${new URL(request.url).origin}/auth/callback?next=${encodeURIComponent(
+        adminSurfacePath("", hostnameWithoutPort(new URL(request.url).host)),
+      )}`,
     },
   });
   if (error) {
@@ -72,6 +75,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     notice:
-      "Account created. Add this email to ADMIN_EMAILS (or set SUPABASE_SERVICE_ROLE_KEY for automatic admin role) before signing in to /admin.",
+      "Account created. Add this email to ADMIN_EMAILS (or set SUPABASE_SERVICE_ROLE_KEY for automatic admin role) before signing in to the admin site.",
   });
 }

@@ -1,24 +1,9 @@
+import { ApiDegradedBanner } from "@/components/ApiDegradedBanner";
 import { BiasMeter } from "@/components/BiasMeter";
-import { BD_SOURCES } from "@/lib/demo-data";
-import { fetchBiasOverview } from "@/lib/api";
+import { getBiasSources } from "@/lib/stories";
 
 export default async function BiasPage() {
-  const apiData = await fetchBiasOverview().catch(() => ({ sources: [] }));
-
-  const sources =
-    apiData.sources.length > 0
-      ? apiData.sources.map((s) => ({
-          id: String(s.source_id),
-          name: s.name,
-          nameBn: s.name,
-          biasScore: s.bias_score,
-        }))
-      : BD_SOURCES.map((s) => ({
-          id: s.id,
-          name: s.name,
-          nameBn: s.nameBn,
-          biasScore: s.biasScore,
-        }));
+  const { sources, fromApi } = await getBiasSources();
 
   return (
     <div className="space-y-8 pb-4">
@@ -28,6 +13,7 @@ export default async function BiasPage() {
           Perspective lean for major Bangladeshi and Bangla-language international outlets (−1 opposition lean → +1
           establishment lean). Demo ratings until your backend seed is calibrated.
         </p>
+        {!fromApi ? <div className="mt-4"><ApiDegradedBanner compact /></div> : null}
       </header>
 
       <div className="grid gap-6 md:grid-cols-2">

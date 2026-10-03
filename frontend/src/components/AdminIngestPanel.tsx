@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { ADMIN_INGEST_CLIENT_TIMEOUT_MS, postAdminRoute } from "@/lib/admin-proxy-client";
 import type { IngestResponse } from "@/lib/admin-types";
 
 export function AdminIngestPanel() {
@@ -14,12 +15,13 @@ export function AdminIngestPanel() {
     setError(null);
     setResult(null);
     try {
-      const response = await fetch("/api/admin/ingest", { method: "POST" });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(typeof data.error === "string" ? data.error : "Ingest failed.");
-      }
-      setResult(data as IngestResponse);
+      const data = await postAdminRoute<IngestResponse>(
+        "/api/admin/ingest",
+        undefined,
+        ADMIN_INGEST_CLIENT_TIMEOUT_MS,
+      );
+      setResult(data);
+      window.dispatchEvent(new CustomEvent("jachai:admin-refresh"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ingest failed.");
     } finally {

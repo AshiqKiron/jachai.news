@@ -1,0 +1,147 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+
+import { AdminSourcesPanel } from "@/components/AdminSourcesPanel";
+import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
+import type { AdminOverview } from "@/lib/admin-api";
+
+function formatWhen(value: string | null): string {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Dhaka",
+  }).format(new Date(value));
+}
+
+function StatCard({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-ink-900/50 p-4">
+      <p className="text-xs uppercase tracking-widest text-zinc-500">{label}</p>
+      <p className={`mt-2 text-2xl font-medium ${warn ? "text-amber-300" : "text-zinc-50"}`}>{value}</p>
+    </div>
+  );
+}
+
+type DashboardPayload = {
+  overview: AdminOverview | null;
+  apiHealthy: boolean;
+};
+
+export function AdminDashboardPanel() {
+  const [data, setData] = useState<DashboardPayload | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const openApiDocs =
+    process.env.NEXT_PUBLIC_BACKEND_DOCS_URL ?? "http://127.0.0.1:8000/docs";
+
+  const load = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/overview");
+      if (!response.ok) {
+        setLoadError(true);
+        return;
+      }
+      const payload = (await response.json()) as DashboardPayload;
+      setData(payload);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+
+    function onRefresh() {
+      void load();
+    }
+    window.addEventListener("jachai:admin-refresh", onRefresh);
+    return () => window.removeEventListener("jachai:admin-refresh", onRefresh);
+  }, [load]);
+
+  const overview = data?.overview ?? null;
+  const apiHealthy = data?.apiHealthy ?? false;
+
+  return (
+    <>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="API"
+          value={data === null ? "…" : apiHealthy ? "Healthy" : "Unreachable"}
+          warn={data !== null && !apiHealthy}
+        />
+        <StatCard label="Articles" value={overview ? String(overview.articles_total) : data === null ? "…" : "—"} />
+        <StatCard label="Clusters" value={overview ? String(overview.clusters_total) : data === null ? "…" : "—"} />
+        <StatCard label="Rumor flags" value={overview ? String(overview.rumors_total) : data === null ? "…" : "—"} />
+      </section>
+
+      {loadError ? (
+        <p className="rounded-xl border border-amber-900/50 bg-amber-950/30 p-4 text-sm text-amber-200">
+          Could not load admin overview from the API. Check{" "}
+          <code className="text-amber-100">NEXT_PUBLIC_API_URL</code> and{" "}
+          <code className="text-amber-100">ADMIN_API_KEY</code> on the frontend server.
+        </p>
+      ) : null}
+
+      {overview ? (
+        <>
+          <section className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border border-zinc-800 bg-ink-900/50 p-5 text-sm text-zinc-300">
+              <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">Pipeline</h2>
+              <ul className="mt-3 space-y-2">
+                <li>
+                  AI provider: <span className="text-zinc-100">{overview.ai_provider}</span>
+                </li>
+                <li>Groq key: {overview.groq_configured ? "set" : "missing"}</li>
+                <li>Gemini key: {overview.gemini_configured ? "set" : "missing"}</li>
+                <li>Ingest API key: {overview.ingest_key_configured ? "required" : "open"}</li>
+                <li>Latest article: {formatWhen(overview.latest_article_at)}</li>
+                <li>Latest cluster: {formatWhen(overview.latest_cluster_at)}</li>
+              </ul>
+            </div>
+            <div className="rounded-xl border border-zinc-800 bg-ink-900/50 p-5 text-sm text-zinc-300">
+              <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">Links</h2>
+              <ul className="mt-3 space-y-2">
+                <li>
+                  <a className="text-accent hover:underline" href={openApiDocs}>
+                    OpenAPI docs
+                  </a>
+                </li>
+                <li>
+                  <Link className="text-accent hover:underline" href="/browse">
+                    Public browse
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </section>
+
+          <ClientErrorBoundary title="Sources panel could not load">
+            <AdminSourcesPanel sources={overview.sources} />
+          </ClientErrorBoundary>
+
+          <section>
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-widest text-zinc-500">
+              Recent clusters
+            </h2>
+            <ul className="divide-y divide-zinc-800 rounded-xl border border-zinc-800">
+              {overview.recent_clusters.map((cluster) => (
+                <li key={cluster.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+                  <div>
+                    <Link href={`/story/${cluster.slug}`} className="text-zinc-100 hover:text-accent">
+                      {cluster.title}
+                    </Link>
+                    <p className="text-xs text-zinc-500">{formatWhen(cluster.created_at)}</p>
+                  </div>
+                  <span className="text-xs text-zinc-400">{cluster.article_count} articles</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      ) : null}
+    </>
+  );
+}

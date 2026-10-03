@@ -1,15 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
+import { adminSurfacePath, isAdminAppSurface } from "@/lib/admin-host";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export function AuthNav() {
   const router = useRouter();
+  const pathname = usePathname();
+  const host = typeof window !== "undefined" ? window.location.hostname : undefined;
+  const hideSignUp = isAdminAppSurface(pathname, host);
   const [email, setEmail] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -62,17 +66,23 @@ export function AuthNav() {
   return (
     <div className="flex items-center gap-2">
       <Link
-        href="/sign-in"
-        className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 md:px-4 md:py-2 md:text-sm"
+        href={hideSignUp ? adminSurfacePath("login", host) : "/sign-in"}
+        className={
+          hideSignUp
+            ? "rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-dark md:px-4 md:py-2 md:text-sm"
+            : "rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 md:px-4 md:py-2 md:text-sm"
+        }
       >
         Sign in
       </Link>
-      <Link
-        href="/sign-up"
-        className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-dark md:px-4 md:py-2 md:text-sm"
-      >
-        Sign up
-      </Link>
+      {hideSignUp ? null : (
+        <Link
+          href="/sign-up"
+          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-dark md:px-4 md:py-2 md:text-sm"
+        >
+          Sign up
+        </Link>
+      )}
     </div>
   );
 }

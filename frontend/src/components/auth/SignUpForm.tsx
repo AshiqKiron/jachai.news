@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 import { formatAuthError } from "@/lib/auth-errors";
+import { normalizeEmail, validateSignUpFields } from "@/lib/auth-input";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 import { authFormClassName, authInputClassName, authSubmitClassName } from "./auth-form-styles";
@@ -26,12 +27,18 @@ export function SignUpForm() {
       setError("Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
       return;
     }
+    const validation = validateSignUpFields(email, password, displayName);
+    if (!validation.ok) {
+      setError(validation.message);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setNotice(null);
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
+        email: normalizeEmail(email),
         password,
         options: {
           data: { display_name: displayName.trim() || undefined },

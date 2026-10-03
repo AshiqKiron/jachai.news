@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
 import { SignInForm } from "@/components/auth/SignInForm";
 
 export default function SignInPage() {
@@ -12,9 +13,11 @@ export default function SignInPage() {
       <p className="text-sm text-zinc-400">
         Sign in to sync Jachai Pro billing and saved preferences when checkout goes live.
       </p>
-      <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
-        <SignInForm />
-      </Suspense>
+      <ClientErrorBoundary title="Sign-in form could not load">
+        <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+          <SignInForm />
+        </Suspense>
+      </ClientErrorBoundary>
     </div>
   );
 }

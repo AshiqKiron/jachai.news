@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 
+import { adminSurfacePath } from "@/lib/admin-host";
+
 export function AdminLogoutButton() {
   const router = useRouter();
 
@@ -10,7 +12,7 @@ export function AdminLogoutButton() {
       fetch("/api/admin/logout", { method: "POST" }),
       fetch("/api/auth/signout", { method: "POST" }),
     ]);
-    router.push("/admin/login");
+    router.push(adminSurfacePath("login", typeof window !== "undefined" ? window.location.hostname : undefined));
     router.refresh();
   }
 
