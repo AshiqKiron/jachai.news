@@ -9,23 +9,23 @@ alwaysApply: false
 ## Structure
 
 - Routes: `backend/app/api/` (`articles`, **`sources`**, `clusters`, `bias`, `rumors`, **`ingest`**, **`admin`**, **`verify`**, **`verifications`**) mounted in `app/api/__init__.py`
-- Models: `app/models/` (`article`, `cluster`, `source`, **`verified_claim`**); Pydantic: `app/schemas/` (`ingest.py`, **`source.py`**, **`admin.py`**, **`verify.py`**, **`verification.py`**)
-- Business logic: `app/services/` — `rss_parser`, **`rss_ingestion`**, `ai_client`, **`admin_stats`**, **`admin_sources`**, **`ops_alerts`**, **`verification_*`** (submit, runner, pipeline, jobs, job_stream, fetch, slug), **`semantic_cache`**, **`embeddings`**, **`ai_guardrails`**, **`ai_input_sanitizer`**, **`object_storage`**, **`ingest_queue`**, **`db_extensions`** — keep route handlers thin
+- Models: `app/models/` (`article`, `cluster`, `source`, **`app_setting`**, **`verified_claim`**); Pydantic: `app/schemas/` (`ingest.py`, **`source.py`**, **`admin.py`**, **`verify.py`**, **`verification.py`**)
+- Business logic: `app/services/` — `rss_parser`, **`rss_ingestion`**, **`ingest_schedule`**, `ai_client`, **`admin_stats`**, **`admin_sources`**, **`ops_alerts`**, **`verification_*`** (submit, runner, pipeline, jobs, job_stream, fetch, slug), **`semantic_cache`**, **`embeddings`**, **`ai_guardrails`**, **`ai_input_sanitizer`**, **`object_storage`**, **`ingest_queue`**, **`db_extensions`** — keep route handlers thin
 - Workers: `app/workers/` — `celery_app`, `ingest_tasks`, verification tasks; queues `ingest` + `verification`
 - Monitoring: `app/core/sentry_init.py` — call `init_sentry()` from `main.py` (not inside lifespan)
 - Rate limits: `app/core/rate_limit.py`, `app/middleware/rate_limit_middleware.py` — Redis when `REDIS_URL` set; tiered limits for verify (anon/auth/Pro JWT), ingest, admin
 - Seed data: `app/data/bd_sources_seed.py`
-- Config: `app/core/config.py` (`Settings`, prefix `/api/v1`, `ingest_api_key`, `admin_api_key`, pool modes, `redis_url`, `ingest_async_enabled`, rate limits, semantic cache, optional `sentry_*`, `healthchecks_*`, `telegram_*`, object storage)
-- DB: `app/core/database.py` (`SessionLocal`, `get_db`); ORM `create_all` + **`apply_sql_migrations`** (`backend/migrations/*.sql` — `001_verified_claims_pgvector_fts.sql`, **`002_sources_disabled.sql`**) in `app/main.py` lifespan
+- Config: `app/core/config.py` (`Settings`, prefix `/api/v1`, `ingest_api_key`, `admin_api_key`, pool modes, `redis_url`, `ingest_async_enabled`, **`ingest_interval_minutes_default`**, **`ingest_scheduler_enabled`**, rate limits, semantic cache, optional `sentry_*`, `healthchecks_*`, `telegram_*`, object storage)
+- DB: `app/core/database.py` (`SessionLocal`, `get_db`); ORM `create_all` + **`apply_sql_migrations`** (`backend/migrations/*.sql` — `001_verified_claims_pgvector_fts.sql`, **`002_sources_disabled.sql`**, **`003_app_settings.sql`**) in `app/main.py` lifespan
 - CLI: `backend/scripts/ingest_rss.py` (`npm run ingest:backend`); optional `backend/scripts/verification_worker.py` for local verification queue debugging
 - Health: `GET /health` (outside API prefix)
-- Local stack: `docker-compose.yml` — Postgres pgvector, Redis, API, worker
+- Local stack: `docker-compose.yml` — Postgres pgvector, Redis, API, worker, **beat** (`scheduled_ingest_tick` on ingest queue)
 
 ## API surface
 
 - `GET /api/v1/articles` (optional **`source_id`** — non-disabled source only), **`GET /api/v1/sources`** (optional **`custom_only=true`** — admin-added feeds excluding `BD_SOURCE_SEED` names; omits disabled rows)
 - `GET /api/v1/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`
-- **`GET /api/v1/admin/overview`**, **`POST /api/v1/admin/sources`**, **`DELETE /api/v1/admin/sources/{id}`** — `X-Admin-Key` when `ADMIN_API_KEY` is set; overview lists all sources with **`disabled`** flag; DELETE runs **`_purge_source_articles`** (articles + orphan clusters), then **soft-disables** seed names or **hard-deletes** custom sources; POST re-enables when the same name was disabled
+- **`GET /api/v1/admin/overview`**, **`GET/PATCH /api/v1/admin/ingest-schedule`**, **`POST /api/v1/admin/sources`**, **`DELETE /api/v1/admin/sources/{id}`** — `X-Admin-Key` when `ADMIN_API_KEY` is set; overview lists all sources with **`disabled`** flag and embeds **`ingest_schedule`**; PATCH interval must be in **`ALLOWED_INGEST_INTERVAL_MINUTES`** (stored in **`app_settings`**); DELETE runs **`_purge_source_articles`** (articles + orphan clusters), then **soft-disables** seed names or **hard-deletes** custom sources; POST re-enables when the same name was disabled
 - **`GET /api/v1/bias`** — omits **`disabled`** sources (same filter as public `/sources`)
 - **`POST /api/v1/ingest`** — Celery (`ingest` queue) when `REDIS_URL` + `INGEST_ASYNC_ENABLED`; else inline; **202** + `job_id` when queued; **`GET /api/v1/ingest/jobs/{job_id}`**; `X-Ingest-Key` when `INGEST_API_KEY` is set
 - **`POST /api/v1/verify`** — guardrailed user submit (`VerifyResponse`; may return cache hit, blocked guardrail, or `job_id`)
@@ -39,6 +39,7 @@ alwaysApply: false
 - Seeds/updates `Source` rows from `BD_SOURCE_SEED` (does not overwrite feed URL/bias on **disabled** rows), fetches only **non-disabled** sources via `fetch_feed_items`, skips duplicate URLs, assigns articles to existing clusters by title similarity or creates new `Cluster` with unique slug
 - May call `ai_client.summarize_cluster` when a cluster gains multiple articles
 - Returns `IngestResult` counts + per-source error strings (ingest continues on fetch failures)
+- **Scheduler**: `celery_app` beat schedule (60s) → `ingest_tasks.scheduled_ingest_tick` → **`run_scheduled_ingest_if_due`**; active only when **`ingest_scheduler_active()`** (`REDIS_URL` + `INGEST_SCHEDULER_ENABLED`); enqueues Celery ingest or runs inline with ops_alerts `channel="scheduler"`
 
 ## Verification
 
@@ -52,7 +53,7 @@ alwaysApply: false
 - Use **async** endpoints and DB/HTTP for I/O-bound work
 - Add new resources as a router module + schema + model; register on `api_router`
 - AI calls go through `AIClient`; respect `settings.ai_provider` and optional API keys
-- Scheduled ingest: cron/worker should call CLI or `POST /api/v1/ingest` so Healthchecks/Telegram hooks run
+- Scheduled ingest: prefer Celery **beat** + `ingest_schedule` when Redis is available; otherwise external cron should call CLI or `POST /api/v1/ingest` so Healthchecks/Telegram hooks run
 - `ops_alerts.notify_payment_webhook` — stub for future bKash webhook handlers
 - New SQL that ORM cannot express: add idempotent file under `backend/migrations/` and run via `db_extensions`
 

@@ -41,10 +41,10 @@ export function BiasMeter({ score, label, labelBn }: Props) {
           style={{ left: `calc(${percent}% - 6px)` }}
         />
       </div>
-      <div className="flex justify-between text-[10px] uppercase tracking-wider text-zinc-600">
-        <span>বিরোধী</span>
-        <span>নিরপেক্ষ</span>
-        <span>সরকার-ঝুঁক</span>
+      <div className="flex justify-between gap-1 text-[10px] font-bengali tracking-wide text-zinc-600">
+        <span className="text-left">সরকারের বিপক্ষে</span>
+        <span className="shrink-0 text-center">নিরপেক্ষ</span>
+        <span className="text-right">সরকারের পক্ষে</span>
       </div>
     </div>
   );

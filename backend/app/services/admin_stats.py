@@ -5,7 +5,13 @@ from app.core.config import settings
 from app.models.article import Article
 from app.models.cluster import Cluster
 from app.models.source import Source
-from app.schemas.admin import AdminClusterPreview, AdminOverviewResponse, AdminSourceStat
+from app.schemas.admin import AdminClusterPreview, AdminIngestScheduleResponse, AdminOverviewResponse, AdminSourceStat
+from app.services.ingest_schedule import (
+    ALLOWED_INGEST_INTERVAL_MINUTES,
+    get_ingest_interval_minutes,
+    get_ingest_last_scheduled_at,
+    ingest_scheduler_active,
+)
 
 
 async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
@@ -68,6 +74,9 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
         for row in cluster_rows
     ]
 
+    interval_minutes = await get_ingest_interval_minutes(session)
+    last_scheduled_at = await get_ingest_last_scheduled_at(session)
+
     return AdminOverviewResponse(
         articles_total=articles_total,
         clusters_total=clusters_total,
@@ -81,4 +90,10 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
         ingest_key_configured=bool(settings.ingest_api_key),
         groq_configured=bool(settings.groq_api_key),
         gemini_configured=bool(settings.gemini_api_key),
+        ingest_schedule=AdminIngestScheduleResponse(
+            interval_minutes=interval_minutes,
+            allowed_intervals_minutes=list(ALLOWED_INGEST_INTERVAL_MINUTES),
+            scheduler_enabled=ingest_scheduler_active(),
+            last_scheduled_at=last_scheduled_at,
+        ),
     )

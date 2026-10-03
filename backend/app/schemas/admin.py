@@ -26,6 +26,17 @@ class AdminClusterPreview(BaseModel):
     article_count: int
 
 
+class AdminIngestScheduleResponse(BaseModel):
+    interval_minutes: int
+    allowed_intervals_minutes: list[int]
+    scheduler_enabled: bool
+    last_scheduled_at: datetime | None = None
+
+
+class AdminIngestScheduleUpdate(BaseModel):
+    interval_minutes: int = Field(ge=1)
+
+
 class AdminOverviewResponse(BaseModel):
     articles_total: int
     clusters_total: int
@@ -39,3 +50,4 @@ class AdminOverviewResponse(BaseModel):
     ingest_key_configured: bool
     groq_configured: bool
     gemini_configured: bool
+    ingest_schedule: AdminIngestScheduleResponse

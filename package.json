@@ -9,6 +9,7 @@
     "lint:frontend": "npm run lint --prefix frontend",
     "ingest:backend": "cd backend && python scripts/ingest_rss.py",
     "worker:backend": "cd backend && celery -A app.workers.celery_app worker -Q ingest,verification -l info",
+    "worker:beat": "cd backend && celery -A app.workers.celery_app beat -l info",
     "worker:verification": "cd backend && celery -A app.workers.celery_app worker -Q verification -l info",
     "stack:up": "docker compose up --build",
     "stack:down": "docker compose down"

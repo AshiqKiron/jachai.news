@@ -76,7 +76,10 @@ export function fetchBiasOverview() {
 }
 
 export async function tryFetchClusterBySlug(slug: string): Promise<ClusterDetail | null> {
-  return tryApiGet<ClusterDetail>(`/clusters/${encodeURIComponent(slug)}`);
+  return tryApiGet<ClusterDetail>(
+    `/clusters/${encodeURIComponent(slug)}`,
+    API_FETCH_TIMEOUT_MS,
+  );
 }
 
 export async function fetchArticlesFeed(

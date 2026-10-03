@@ -10,6 +10,19 @@ def run_rss_ingest_task() -> dict[str, object]:
     return asyncio.run(_run_rss_ingest())
 
 
+@celery_app.task(name="app.workers.ingest_tasks.scheduled_ingest_tick")
+def scheduled_ingest_tick() -> dict[str, object]:
+    return asyncio.run(_scheduled_ingest_tick())
+
+
+async def _scheduled_ingest_tick() -> dict[str, object]:
+    from app.core.database import SessionLocal
+    from app.services.ingest_schedule import run_scheduled_ingest_if_due
+
+    async with SessionLocal() as session:
+        return await run_scheduled_ingest_if_due(session)
+
+
 async def _run_rss_ingest() -> dict[str, object]:
     from app.core.database import SessionLocal
     from app.services.ops_alerts import notify_ingest_failed, notify_ingest_finished, notify_ingest_started

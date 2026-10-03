@@ -59,5 +59,18 @@ services:
       redis:
         condition: service_healthy
 
+  beat:
+    build: ./backend
+    command: celery -A app.workers.celery_app beat -l info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/jachai
+      REDIS_URL: redis://redis:6379/0
+      INGEST_SCHEDULER_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   jachai_pgdata:

@@ -8,10 +8,7 @@ import { HeaderBanglaDate } from "@/components/HeaderBanglaDate";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { adminSurfacePath, isAdminAppSurface } from "@/lib/admin-host";
 
-const nav = [
-  { href: "/", label: "Home" },
-  { href: "/pro", label: "Pro" },
-];
+const nav = [{ href: "/pro", label: "Pro" }];
 
 export function SiteHeader() {
   const pathname = usePathname();

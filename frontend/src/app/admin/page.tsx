@@ -37,7 +37,7 @@ export default async function AdminPage() {
         systemInfo={systemInfo}
         ingestPanel={
           <ClientErrorBoundary title="Ingest panel could not load">
-            <AdminIngestPanel />
+            <AdminIngestPanel initialSchedule={overview?.ingest_schedule ?? null} />
           </ClientErrorBoundary>
         }
       />

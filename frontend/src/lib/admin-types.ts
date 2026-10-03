@@ -1,3 +1,10 @@
+export type AdminIngestSchedule = {
+  interval_minutes: number;
+  allowed_intervals_minutes: number[];
+  scheduler_enabled: boolean;
+  last_scheduled_at: string | null;
+};
+
 export type AdminSourceStat = {
   source_id: number;
   name: string;

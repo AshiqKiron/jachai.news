@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+
 import { absolutePublicApiBase, resolveApiBase } from "@/lib/api-base";
 import { API_WRITE_TIMEOUT_MS, fetchJsonSafe, parseApiErrorBody } from "@/lib/api-resilience";
 
@@ -73,13 +75,38 @@ export function verificationWebSocketUrl(jobId: string): string {
   return `${wsBase}/verifications/jobs/${jobId}/ws`;
 }
 
-export async function lookupVerifiedClaim(slug: string): Promise<VerifiedClaimLookup> {
-  const result = await fetchJsonSafe<VerifiedClaim>(`${apiBase()}/verifications/${slug}`, {
-    next: { revalidate: 120 },
-  });
+type CachedVerifiedClaimLookup = { status: "ok"; claim: VerifiedClaim } | { status: "not_found" };
+
+async function lookupVerifiedClaimUncached(slug: string): Promise<VerifiedClaimLookup> {
+  const result = await fetchJsonSafe<VerifiedClaim>(
+    `${apiBase()}/verifications/${encodeURIComponent(slug)}`,
+    { next: { revalidate: 120 } },
+  );
   if (result.ok) return { status: "ok", claim: result.data };
   if (result.status === 404) return { status: "not_found" };
   return { status: "unavailable" };
+}
+
+const lookupVerifiedClaimCached = unstable_cache(
+  async (slug: string): Promise<CachedVerifiedClaimLookup> => {
+    const result = await fetchJsonSafe<VerifiedClaim>(
+      `${apiBase()}/verifications/${encodeURIComponent(slug)}`,
+      { next: { revalidate: 120 } },
+    );
+    if (result.ok) return { status: "ok", claim: result.data };
+    if (result.status === 404) return { status: "not_found" };
+    throw new Error("verification_lookup_unavailable");
+  },
+  ["verified-claim-by-slug"],
+  { revalidate: 120 },
+);
+
+export async function lookupVerifiedClaim(slug: string): Promise<VerifiedClaimLookup> {
+  try {
+    return await lookupVerifiedClaimCached(slug);
+  } catch {
+    return lookupVerifiedClaimUncached(slug);
+  }
 }
 
 /** @deprecated Prefer lookupVerifiedClaim for not-found vs offline handling */

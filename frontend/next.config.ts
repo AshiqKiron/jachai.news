@@ -50,6 +50,16 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/story/:path*",
+        headers: [
+          ...base,
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=60, stale-while-revalidate=300",
+          },
+        ],
+      },
     ];
   },
 };

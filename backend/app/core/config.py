@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     redis_url: str | None = None
     # Queue RSS ingest via Celery when Redis is configured (keeps API stateless under load)
     ingest_async_enabled: bool = True
+    # Default RSS pull interval when app_settings row is missing (admin can override in UI)
+    ingest_interval_minutes_default: int = 60
+    # Celery beat tick enqueues ingest when interval elapsed (requires REDIS_URL)
+    ingest_scheduler_enabled: bool = True
 
     # Object storage for exports, dossiers, screenshots (optional)
     object_storage_backend: str = "none"  # none | supabase

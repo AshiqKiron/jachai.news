@@ -74,7 +74,7 @@ export async function getTopStories(limit = 12): Promise<{ stories: Story[]; fro
   return getTopStoriesCached(limit);
 }
 
-export async function resolveStoryBySlug(
+async function resolveStoryBySlugUncached(
   slug: string,
 ): Promise<{ story: Story; fromApi: boolean } | null> {
   const demo = getStoryBySlug(slug);
@@ -84,6 +84,18 @@ export async function resolveStoryBySlug(
   if (cluster) return { story: storyFromClusterDetail(cluster), fromApi: true };
 
   return null;
+}
+
+const resolveStoryBySlugCached = unstable_cache(
+  async (slug: string) => resolveStoryBySlugUncached(slug),
+  ["resolve-story-by-slug"],
+  { revalidate: 60 },
+);
+
+export async function resolveStoryBySlug(
+  slug: string,
+): Promise<{ story: Story; fromApi: boolean } | null> {
+  return resolveStoryBySlugCached(slug);
 }
 
 export async function getRumorsFeed(limit = 30): Promise<{ items: Article[]; fromApi: boolean }> {

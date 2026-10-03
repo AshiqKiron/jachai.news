@@ -2,7 +2,7 @@ import { unstable_cache } from "next/cache";
 
 import { SERVER_API_BASE, serverApiOrigin } from "@/lib/api-base";
 import { API_LISTING_TIMEOUT_MS, fetchJsonSafe } from "@/lib/api-resilience";
-import type { AdminSourceStat, IngestResponse } from "@/lib/admin-types";
+import type { AdminIngestSchedule, AdminSourceStat, IngestResponse } from "@/lib/admin-types";
 
 const API_BASE = SERVER_API_BASE;
 const ADMIN_OVERVIEW_REVALIDATE_SEC = 15;
@@ -34,6 +34,7 @@ export type AdminOverview = {
   ingest_key_configured: boolean;
   groq_configured: boolean;
   gemini_configured: boolean;
+  ingest_schedule: AdminIngestSchedule;
 };
 
 async function fetchAdminOverviewUncached(): Promise<AdminOverview | null> {
@@ -116,6 +117,29 @@ export async function triggerAdminIngest(): Promise<IngestResponse> {
     throw new Error(detail || `Ingest failed (${response.status})`);
   }
   return (await response.json()) as IngestResponse;
+}
+
+export async function fetchAdminIngestSchedule(): Promise<AdminIngestSchedule | null> {
+  const result = await fetchJsonSafe<AdminIngestSchedule>(`${API_BASE}/admin/ingest-schedule`, {
+    headers: adminHeaders(),
+    cache: "no-store",
+    timeoutMs: API_LISTING_TIMEOUT_MS,
+  });
+  return result.ok ? result.data : null;
+}
+
+export async function updateAdminIngestSchedule(intervalMinutes: number): Promise<AdminIngestSchedule> {
+  const response = await fetch(`${API_BASE}/admin/ingest-schedule`, {
+    method: "PATCH",
+    headers: { ...adminHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({ interval_minutes: intervalMinutes }),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `Update ingest schedule failed (${response.status})`);
+  }
+  return (await response.json()) as AdminIngestSchedule;
 }
 
 export async function createAdminSource(payload: {

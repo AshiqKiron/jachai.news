@@ -7,8 +7,8 @@ export const PERSPECTIVE_META: Record<
   { labelEn: string; labelBn: string; color: string; order: number }
 > = {
   opposition: {
-    labelEn: "Opposition lean",
-    labelBn: "বিরোধী ঝুঁক",
+    labelEn: "Against the government",
+    labelBn: "সরকারের বিপক্ষে",
     color: "#38bdf8",
     order: 0,
   },
@@ -25,8 +25,8 @@ export const PERSPECTIVE_META: Record<
     order: 2,
   },
   establishment: {
-    labelEn: "Establishment lean",
-    labelBn: "সরকার-ঝুঁক",
+    labelEn: "Pro-government",
+    labelBn: "সরকারের পক্ষে",
     color: "#fb7185",
     order: 3,
   },
