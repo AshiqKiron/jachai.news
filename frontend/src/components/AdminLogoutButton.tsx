@@ -6,7 +6,10 @@ export function AdminLogoutButton() {
   const router = useRouter();
 
   async function logout() {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await Promise.all([
+      fetch("/api/admin/logout", { method: "POST" }),
+      fetch("/api/auth/signout", { method: "POST" }),
+    ]);
     router.push("/admin/login");
     router.refresh();
   }

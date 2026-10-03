@@ -1,4 +1,6 @@
-import Link from "next/link";
+import { Suspense } from "react";
+
+import { SignInForm } from "@/components/auth/SignInForm";
 
 export default function SignInPage() {
   return (
@@ -8,16 +10,11 @@ export default function SignInPage() {
         <p className="mt-2 font-bengali text-zinc-400">লগ ইন</p>
       </div>
       <p className="text-sm text-zinc-400">
-        Account sign-in via Supabase is coming soon. Set{" "}
-        <code className="text-zinc-300">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-        <code className="text-zinc-300">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> when auth is enabled.
+        Sign in to sync Jachai Pro billing and saved preferences when checkout goes live.
       </p>
-      <p className="text-sm text-zinc-500">
-        New here?{" "}
-        <Link href="/sign-up" className="text-accent hover:underline">
-          Create an account
-        </Link>
-      </p>
+      <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+        <SignInForm />
+      </Suspense>
     </div>
   );
 }

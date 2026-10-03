@@ -9,6 +9,13 @@ class AdminSourceStat(BaseModel):
     feed_url: str
     article_count: int
     bias_score: float | None
+    disabled: bool = False
+
+
+class AdminSourceCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    feed_url: str = Field(min_length=8, max_length=2048)
+    bias_score: float | None = Field(default=None, ge=-1.0, le=1.0)
 
 
 class AdminClusterPreview(BaseModel):

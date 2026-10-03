@@ -4,6 +4,8 @@ import withPWAInit from "@ducanh2912/next-pwa";
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
+import { securityHeaders } from "./src/lib/security-headers";
+
 const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
@@ -16,6 +18,28 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, ".."),
+  async headers() {
+    const base = Object.entries(securityHeaders()).map(([key, value]) => ({
+      key,
+      value,
+    }));
+    return [
+      {
+        source: "/:path*",
+        headers: base,
+      },
+      {
+        source: "/verify/:path*",
+        headers: [
+          ...base,
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=120, stale-while-revalidate=600",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 const withPWAConfig = withPWA(nextConfig);

@@ -14,7 +14,7 @@ export type SubscriptionStatus =
   | "canceled"
   | "expired";
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
@@ -98,6 +98,60 @@ export interface Database {
         };
         Relationships: [];
       };
+      saved_dossiers: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          notes: string;
+          source_urls: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          notes?: string;
+          source_urls?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          notes?: string;
+          source_urls?: string[];
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      custom_alerts: {
+        Row: {
+          id: string;
+          user_id: string;
+          label: string;
+          query: string;
+          is_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          label: string;
+          query: string;
+          is_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          label?: string;
+          query?: string;
+          is_enabled?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       payment_transactions: {
         Row: {
           id: string;
@@ -132,11 +186,24 @@ export interface Database {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
     Enums: {
       subscription_plan: SubscriptionPlan;
       subscription_status: SubscriptionStatus;
     };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
   };
-}
+};
+
+/** Subscription fields used for Pro entitlement (RLS: read own row only). */
+export type SubscriptionEntitlementRow = Pick<
+  Database["public"]["Tables"]["subscriptions"]["Row"],
+  "status" | "current_period_end"
+>;

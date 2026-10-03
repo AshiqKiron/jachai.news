@@ -9,3 +9,15 @@ class IngestResponse(BaseModel):
     clusters_created: int
     clusters_updated: int
     errors: list[str] = Field(default_factory=list)
+
+
+class IngestAcceptedResponse(BaseModel):
+    job_id: str
+    status: str = "queued"
+
+
+class IngestJobStatusResponse(BaseModel):
+    job_id: str
+    status: str
+    result: IngestResponse | None = None
+    error: str | None = None

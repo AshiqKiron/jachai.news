@@ -38,6 +38,10 @@ API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | Async SQLAlchemy URL (`postgresql+asyncpg://...`) |
+| `DATABASE_POOLER_URL` | Optional transaction-pool URL (PgBouncer / Supavisor) |
+| `DATABASE_POOL_MODE` | `local` (SQLAlchemy pool) or `pgbouncer` (`NullPool`) |
+| `REDIS_URL` | Broker for rate limits, Celery, queued ingest |
+| `INGEST_ASYNC_ENABLED` | Queue ingest when `REDIS_URL` is set (default `true`) |
 | `GROQ_API_KEY` | Optional — cluster summaries via Groq |
 | `GEMINI_API_KEY` | Optional — cluster summaries via Gemini |
 | `AI_PROVIDER` | `groq` (default) or `gemini` |
@@ -87,7 +91,30 @@ Optional Supabase auth: set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE
 
 Product copy and plan constants: `frontend/src/lib/subscription-plans.ts`. Checkout is not implemented yet.
 
-## Docker (API only)
+## Scalable local stack (Docker Compose)
+
+Stateless API, Redis-backed Celery workers (RSS ingest + verification jobs), and Postgres for news data:
+
+```bash
+npm run stack:up
+# API: http://localhost:8000  |  start workers are included as `worker` service
+npm run stack:down
+```
+
+Production pattern: autoscale **API** replicas on CPU/RPS; scale **workers** on queue depth (`ingest`, `verification`). Set `REDIS_URL` so `POST /api/v1/ingest` returns **202** and runs on workers. Without Redis, ingest runs synchronously in the API process (fine for local dev).
+
+**Claim verification** (`POST /api/v1/verify`): guardrails on the request path only; URL scraping and LLM analysis run on the `verification` Celery queue. Progress streams via **WebSocket** `GET ws://…/api/v1/verifications/jobs/{id}/ws` or **SSE** `/events`. Semantic cache + full-text search need **pgvector** on Postgres (the Compose file uses `pgvector/pgvector:pg16`). Set `GEMINI_API_KEY` for embeddings; `GROQ_API_KEY` or `GEMINI_API_KEY` for analysis.
+
+### Database pooling
+
+- **News Postgres** (backend `DATABASE_URL`): tune `DATABASE_POOL_SIZE` / `DATABASE_MAX_OVERFLOW` per API replica, or set `DATABASE_POOLER_URL` + `DATABASE_POOL_MODE=pgbouncer` when using a transaction pooler.
+- **Supabase** (auth / Pro): use the [connection pooler](https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler) from Next.js server code; news clusters stay in backend Postgres.
+
+### Object storage
+
+Large exports and assets go through `app/services/object_storage.py` (Supabase Storage when `OBJECT_STORAGE_BACKEND=supabase`), not Postgres BLOB columns.
+
+## Docker (API image only)
 
 ```bash
 docker build -t jachai-api ./backend
@@ -110,9 +137,18 @@ curl -X POST -H "X-Ingest-Key: your-key" http://localhost:8000/api/v1/ingest
 
 Logic lives in `backend/app/services/rss_ingestion.py` (uses `rss_parser.py`).
 
+## Workers
+
+```bash
+# With Redis running (see docker-compose or your own broker)
+npm run worker:backend
+```
+
+Cron / Healthchecks should call `POST /api/v1/ingest` (queued when `REDIS_URL` is set) or `npm run ingest:backend -- --queue`.
+
 ## Roadmap hooks
 
-- Scheduled RSS ingest (cron / worker) reusing `rss_ingestion.run_rss_ingest`
+- Scheduled RSS ingest (cron → `POST /api/v1/ingest` or `ingest:backend --queue`)
 - Clustering job + `ai_client.summarize_cluster`
 - Source seed: `backend/app/data/bd_sources_seed.py`
 - Bias score calibration for Bangladesh outlets

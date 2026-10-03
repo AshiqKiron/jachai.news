@@ -12,7 +12,7 @@ type Props = {
 export function HeadlineCompare({ articles }: Props) {
   const [index, setIndex] = useState(0);
   const sorted = useMemo(
-    () => [...articles].sort((a, b) => a.sourceName.localeCompare(b.sourceName)),
+    () => [...articles].sort((a, b) => a.sourceName.localeCompare(b.sourceName, "en")),
     [articles],
   );
 

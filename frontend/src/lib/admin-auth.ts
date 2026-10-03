@@ -1,5 +1,32 @@
 export const ADMIN_COOKIE_NAME = "jachai_admin";
 
+type AdminAuthUser = {
+  email?: string | null;
+  app_metadata?: Record<string, unknown>;
+};
+
+/** Comma-separated allowlist of admin emails (case-insensitive). */
+export function parseAdminEmails(): string[] {
+  const raw = process.env.ADMIN_EMAILS ?? "";
+  return raw
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const allowlist = parseAdminEmails();
+  if (allowlist.length === 0) return false;
+  return allowlist.includes(email.trim().toLowerCase());
+}
+
+export function isSupabaseAdminUser(user: AdminAuthUser | null | undefined): boolean {
+  if (!user) return false;
+  if (user.app_metadata?.role === "admin") return true;
+  return isAdminEmail(user.email);
+}
+
 function bufferToHex(buffer: ArrayBuffer): string {
   return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }

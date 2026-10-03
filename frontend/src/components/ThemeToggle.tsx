@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
 function MoonIcon({ className }: { className?: string }) {
@@ -40,19 +41,32 @@ function SunIcon({ className }: { className?: string }) {
 }
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const isDark = theme === "dark";
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = resolvedTheme === "dark";
 
   return (
     <button
       type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      suppressHydrationWarning
+      onClick={() => (mounted ? setTheme(isDark ? "light" : "dark") : undefined)}
       className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800/80 bg-ink-900/50 text-zinc-400 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100"
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={mounted ? (isDark ? "Switch to light mode" : "Switch to dark mode") : "Toggle color theme"}
+      aria-label={
+        mounted ? (isDark ? "Switch to light mode" : "Switch to dark mode") : "Toggle color theme"
+      }
     >
-      {isDark ? <SunIcon className="h-[1.125rem] w-[1.125rem]" /> : <MoonIcon className="h-[1.125rem] w-[1.125rem]" />}
+      {!mounted ? (
+        <MoonIcon className="h-[1.125rem] w-[1.125rem] opacity-0" aria-hidden />
+      ) : isDark ? (
+        <SunIcon className="h-[1.125rem] w-[1.125rem]" />
+      ) : (
+        <MoonIcon className="h-[1.125rem] w-[1.125rem]" />
+      )}
     </button>
   );
 }

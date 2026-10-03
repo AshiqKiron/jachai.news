@@ -25,6 +25,7 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
             Source.name,
             Source.feed_url,
             Source.bias_score,
+            Source.disabled,
             func.count(Article.id).label("article_count"),
         )
         .outerjoin(Article, Article.source_id == Source.id)
@@ -38,6 +39,7 @@ async def get_admin_overview(session: AsyncSession) -> AdminOverviewResponse:
             feed_url=row.feed_url,
             bias_score=row.bias_score,
             article_count=row.article_count or 0,
+            disabled=row.disabled,
         )
         for row in source_rows
     ]

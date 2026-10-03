@@ -1,11 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserSupabaseClient } from "./supabase/client";
 
-import type { Database } from "./database.types";
+/** Browser Supabase client — null when URL/anon key are not configured. */
+export const supabase = createBrowserSupabaseClient();
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-export const supabase =
-  supabaseUrl && supabaseAnonKey
-    ? createClient<Database>(supabaseUrl, supabaseAnonKey)
-    : null;
+export { createBrowserSupabaseClient } from "./supabase/client";
+export { createServerSupabaseClient } from "./supabase/server";
+export { isSupabaseConfigured } from "./supabase/config";

@@ -40,7 +40,7 @@ export function AdminIngestPanel() {
         disabled={loading}
         className="mt-4 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-ink-950 disabled:opacity-60"
       >
-        {loading ? "Running ingest…" : "Run ingest now"}
+        {loading ? "Running ingest (may queue on worker)…" : "Run ingest now"}
       </button>
       {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
       {result ? (

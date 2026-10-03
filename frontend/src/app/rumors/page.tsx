@@ -1,5 +1,9 @@
+import Link from "next/link";
+
 import { RumorBadge } from "@/components/RumorBadge";
 import { fetchRumors } from "@/lib/api";
+
+export const revalidate = 120;
 
 export default async function RumorsPage() {
   const data = await fetchRumors(30).catch(() => ({ items: [], total: 0 }));
@@ -11,6 +15,9 @@ export default async function RumorsPage() {
         <p className="mt-2 max-w-2xl text-zinc-400">
           Stories with low corroboration or explicitly speculative framing. Treat as unverified until sources converge.
         </p>
+        <Link href="/verify" className="mt-3 inline-block text-sm text-accent hover:underline">
+          Submit a claim for verification →
+        </Link>
       </header>
 
       <ul className="space-y-4">

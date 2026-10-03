@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AdminIngestPanel } from "@/components/AdminIngestPanel";
+import { AdminSourcesPanel } from "@/components/AdminSourcesPanel";
 import { AdminLogoutButton } from "@/components/AdminLogoutButton";
 import { fetchAdminOverview, fetchApiHealth } from "@/lib/admin-api";
 
@@ -78,34 +79,7 @@ export default async function AdminPage() {
 
       {overview ? (
         <>
-          <section>
-            <h2 className="mb-3 text-sm font-medium uppercase tracking-widest text-zinc-500">Sources</h2>
-            <div className="overflow-x-auto rounded-xl border border-zinc-800">
-              <table className="min-w-full text-left text-sm">
-                <thead className="bg-ink-900/80 text-zinc-500">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Outlet</th>
-                    <th className="px-4 py-3 font-medium">Articles</th>
-                    <th className="px-4 py-3 font-medium">Bias</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800 text-zinc-200">
-                  {overview.sources.map((source) => (
-                    <tr key={source.source_id}>
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{source.name}</div>
-                        <div className="max-w-md truncate text-xs text-zinc-500">{source.feed_url}</div>
-                      </td>
-                      <td className="px-4 py-3">{source.article_count}</td>
-                      <td className="px-4 py-3">
-                        {source.bias_score === null ? "—" : source.bias_score.toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <AdminSourcesPanel sources={overview.sources} />
 
           <section>
             <h2 className="mb-3 text-sm font-medium uppercase tracking-widest text-zinc-500">

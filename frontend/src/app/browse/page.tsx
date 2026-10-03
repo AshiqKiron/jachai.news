@@ -12,7 +12,7 @@ export default async function BrowsePage({
   searchParams: Promise<{ cluster?: string }>;
 }) {
   const { cluster: clusterSlug } = await searchParams;
-  const pro = hasProAccess();
+  const pro = await hasProAccess();
 
   if (!pro) {
     return (

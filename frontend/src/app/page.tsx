@@ -7,7 +7,7 @@ import { getTopStories } from "@/lib/stories";
 
 export default async function HomePage() {
   const { stories, fromApi } = await getTopStories(FREE_DAILY_TOP_STORIES_LIMIT);
-  const pro = hasProAccess();
+  const pro = await hasProAccess();
 
   return (
     <div className="space-y-10 pb-4">

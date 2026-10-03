@@ -72,7 +72,7 @@ async def ensure_sources_seeded(session: AsyncSession) -> None:
                     bias_score=row.get("bias_score"),
                 )
             )
-        else:
+        elif not existing.disabled:
             existing.feed_url = row["feed_url"]
             existing.bias_score = row.get("bias_score")
 
@@ -174,7 +174,9 @@ async def run_rss_ingest(session: AsyncSession) -> IngestResult:
     await ensure_sources_seeded(session)
     await session.flush()
 
-    sources = (await session.execute(select(Source).order_by(Source.name))).scalars().all()
+    sources = (
+        await session.execute(select(Source).where(Source.disabled.is_(False)).order_by(Source.name))
+    ).scalars().all()
     for source in sources:
         await ingest_source(session, source, result)
 

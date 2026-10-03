@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { SignUpForm } from "@/components/auth/SignUpForm";
 
 export default function SignUpPage() {
   return (
@@ -8,15 +8,9 @@ export default function SignUpPage() {
         <p className="mt-2 font-bengali text-zinc-400">নতুন অ্যাকাউন্ট</p>
       </div>
       <p className="text-sm text-zinc-400">
-        Registration will unlock Jachai Pro billing and saved outlets. Supabase auth integration is
-        planned — checkout is not live yet.
+        Create a free account. Pro checkout and entitlements will use this login later.
       </p>
-      <p className="text-sm text-zinc-500">
-        Already have an account?{" "}
-        <Link href="/sign-in" className="text-accent hover:underline">
-          Sign in
-        </Link>
-      </p>
+      <SignUpForm />
     </div>
   );
 }
