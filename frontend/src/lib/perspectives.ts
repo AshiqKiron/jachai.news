@@ -4,12 +4,21 @@ export type Factuality = "high" | "mixed" | "low";
 
 export const PERSPECTIVE_META: Record<
   Perspective,
-  { labelEn: string; labelBn: string; shortLabelBn: string; color: string; order: number }
+  {
+    labelEn: string;
+    labelBn: string;
+    shortLabelBn: string;
+    /** Ground News–style spectrum tab (coverage feed). */
+    spectrumTabEn: string;
+    color: string;
+    order: number;
+  }
 > = {
   establishment: {
     labelEn: "Pro-government",
     labelBn: "সরকারের পক্ষে",
     shortLabelBn: "পক্ষে",
+    spectrumTabEn: "Right",
     color: "#6B94C8",
     order: 0,
   },
@@ -17,6 +26,7 @@ export const PERSPECTIVE_META: Record<
     labelEn: "Neutral",
     labelBn: "নিরপেক্ষ",
     shortLabelBn: "নিরপেক্ষ",
+    spectrumTabEn: "Center",
     color: "#787880",
     order: 1,
   },
@@ -24,6 +34,7 @@ export const PERSPECTIVE_META: Record<
     labelEn: "Against the government",
     labelBn: "সরকারের বিপক্ষে",
     shortLabelBn: "বিপক্ষে",
+    spectrumTabEn: "Left",
     color: "#C48888",
     order: 2,
   },
@@ -31,10 +42,19 @@ export const PERSPECTIVE_META: Record<
     labelEn: "International",
     labelBn: "আন্তর্জাতিক",
     shortLabelBn: "আন্তর্জাতিক",
+    spectrumTabEn: "International",
     color: "#5BA8A0",
     order: 3,
   },
 };
+
+/** Left → Center → Right → International (Ground News–style feed tabs). */
+export const COVERAGE_SPECTRUM_TAB_ORDER: Perspective[] = [
+  "opposition",
+  "neutral",
+  "establishment",
+  "international",
+];
 
 const SEGMENT_FILL_MIX_TARGET = "#141418";
 /** Darken accent colors for small-label segments (coverage bar, chips). */

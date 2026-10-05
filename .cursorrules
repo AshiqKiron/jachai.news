@@ -25,7 +25,7 @@ You are working on **Shorup News**, a Bangladesh-focused news intelligence produ
 
 ### Frontend
 - Pages under `frontend/src/app/`; components in `src/components/`; route errors in `app/error.tsx`, `app/global-error.tsx`, and `app/not-found.tsx`; segment `loading.tsx` on story/verify detail
-- Fetch via `api.ts` + `api-resilience.ts`, `stories.ts` (API + `demo-data.ts` fallback, `fromApi` + `ApiDegradedBanner`); articles may include RSS `image_url` (`ArticleImage` on browse/rumors); cluster detail articles carry `source_name` / `bias_score` for perspective + blindspot (`blindspot.ts`, `/blindspot`); verification via `verifications.ts` (`lookupVerifiedClaim` for slug detail)
+- Fetch via `api.ts` + `api-resilience.ts`, `stories.ts` (API + `demo-data.ts` fallback, `fromApi` + `ApiDegradedBanner`; cluster blurbs from RSS via **`source-digest.ts`**); articles may include RSS `image_url` (`ArticleImage` on browse/rumors); cluster detail articles carry `source_name` / `bias_score` for perspective, blindspot (`blindspot.ts`, `/blindspot`), and partiality (`partiality.ts`); story detail **`StoryShareBar`**, **`StoryTabs`** (Coverage / Compare / Perspectives) + **`StoryCoverageDetails`**; verification via `verifications.ts` (`lookupVerifiedClaim` for slug detail)
 - Pro tier: `subscription-features.ts` (matrix, taglines, `PRO_ONLY_FEATURE_IDS` — analytics only; news open to all), `subscription-entitlement.ts` + `subscription-access.ts` (Supabase `subscriptions` + `NEXT_PUBLIC_MOCK_PRO`), `subscription-plans.ts` (pricing); **`/pro`** (**Plans**) + **`PaywallModal`** (`featureId` for Pro-only analytics)
 - Home: static `/` + `HomeStoryGridClient` hydrates from `GET /api/feed/top` (`getTopStories`, ETag/`feed-etag.ts`); story `/story/[slug]` via **`StoryDetailPanel`** + `GET /api/story/[slug]` (`client-story-cache.ts`); **`HOME_TOP_STORIES_LIMIT`** from `subscription-features.ts`; full archive on **`/browse`** for everyone
 - Server components for feeds; client components for interactive UI — wrap fragile client trees in `ClientErrorBoundary`
@@ -34,10 +34,11 @@ You are working on **Shorup News**, a Bangladesh-focused news intelligence produ
 ## Product vocabulary
 
 - **Cluster / headline clash** — Same story, different framings
-- **Perspective** — independent, neutral, establishment, opposition, international
+- **Perspective** — neutral, establishment, opposition, international (spectrum tabs on **`StoryArticleFeed`**)
 - **Bias meter** — Scored lean for a source or cluster
 - **Rumor badge** — Unverified or speculative coverage
 - **Blindspot** — Establishment or opposition press missing while the other side dominates (`blindspot.ts`; `/blindspot` feed)
+- **Partiality** — Any perspective bucket still empty in a multi-source cluster (`partiality.ts`; banners/teasers on story detail and feed cards)
 - **Verified claim** — Completed fact-check with verdict + analysis (`/verify/[slug]`, backend `verified_claims`)
 - **Shorup Pro** — All users get full news (home highlights + `/browse`); Pro unlocks analytics extras in `PRO_ONLY_FEATURE_IDS` (`subscription-features.ts`; compare on `/pro`)
 

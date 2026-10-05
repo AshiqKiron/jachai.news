@@ -38,7 +38,7 @@ alwaysApply: false
 - Entry point: `run_rss_ingest(session)` in `app/services/rss_ingestion.py`
 - **`rss_parser.py`**: `extract_entry_image_url` (media thumbnails, enclosures, `img` in content) → optional **`image_url`** on new articles (`004_articles_image_url.sql`)
 - Seeds/updates `Source` rows from `BD_SOURCE_SEED` (does not overwrite feed URL/bias on **disabled** rows), fetches only **non-disabled** sources via `fetch_feed_items`, skips duplicate URLs, assigns articles to existing clusters by title similarity or creates new `Cluster` with unique slug
-- May call `ai_client.summarize_cluster` when a cluster gains multiple articles
+- **`maybe_refresh_cluster_summary`** is a no-op (cluster copy is derived on the frontend from RSS excerpts; **`summarize_cluster`** remains on **`AIClient`** for other use)
 - Returns `IngestResult` counts + per-source error strings (ingest continues on fetch failures)
 - **Scheduler**: `celery_app` beat schedule (60s) → `ingest_tasks.scheduled_ingest_tick` → **`run_scheduled_ingest_if_due`**; active only when **`ingest_scheduler_active()`** (`REDIS_URL` + `INGEST_SCHEDULER_ENABLED`); enqueues Celery ingest or runs inline with ops_alerts `channel="scheduler"`
 

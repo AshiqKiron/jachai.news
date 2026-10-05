@@ -16,7 +16,6 @@ from app.data.bd_sources_seed import BD_SOURCE_SEED
 from app.models.article import Article
 from app.models.cluster import Cluster
 from app.models.source import Source
-from app.services.ai_client import ai_client
 from app.services.rss_parser import fetch_feed_items
 
 logger = logging.getLogger(__name__)
@@ -112,14 +111,7 @@ async def find_matching_cluster(
 
 
 async def maybe_refresh_cluster_summary(session: AsyncSession, cluster: Cluster) -> bool:
-    await session.refresh(cluster, attribute_names=["articles"])
-    if len(cluster.articles) < 2:
-        return False
-    headlines = [article.title for article in cluster.articles[:12]]
-    summary = await ai_client.summarize_cluster(headlines)
-    if summary and summary != cluster.summary:
-        cluster.summary = summary
-        return True
+    """Cluster blurbs are built from RSS excerpts on the frontend — no AI summary."""
     return False
 
 

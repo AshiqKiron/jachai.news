@@ -15,16 +15,21 @@ import {
 import { resolveArticleImageUrl } from "@/lib/article-image-url";
 import { applyBlindspotDetection } from "@/lib/blindspot";
 import { BD_SOURCES, DEMO_RUMOR_ARTICLES, DEMO_STORIES, getStoryBySlug, type Story } from "@/lib/demo-data";
+import { applySourceDerivedSummaries } from "@/lib/source-digest";
+
+function finalizeStory(story: Story): Story {
+  return applyBlindspotDetection(applySourceDerivedSummaries(story));
+}
 
 function storyShellFromCluster(cluster: Cluster, articles: Story["articles"]): Story {
   const demo = getStoryBySlug(cluster.slug);
-  if (demo) return applyBlindspotDetection(demo);
-  return applyBlindspotDetection({
+  if (demo) return finalizeStory(demo);
+  return finalizeStory({
     slug: cluster.slug,
     title: cluster.title,
     titleBn: cluster.title,
-    summary: cluster.summary ?? "",
-    summaryBn: cluster.summary ?? "",
+    summary: "",
+    summaryBn: "",
     category: "News",
     categoryBn: "সংবাদ",
     isBlindspot: false,
@@ -59,7 +64,7 @@ export function storyFromCluster(cluster: Cluster): Story {
 
 export function storyFromClusterDetail(cluster: ClusterDetail): Story {
   const demo = getStoryBySlug(cluster.slug);
-  if (demo) return demo;
+  if (demo) return finalizeStory(demo);
   return storyShellFromCluster(cluster, mapApiArticles(cluster));
 }
 
@@ -72,7 +77,7 @@ async function loadTopStoriesUncached(limit: number): Promise<{ stories: Story[]
   if (data && data.items.length > 0) {
     return { stories: data.items.map((c) => storyFromCluster(c)), fromApi: true };
   }
-  return { stories: DEMO_STORIES.slice(0, limit), fromApi: false };
+  return { stories: DEMO_STORIES.slice(0, limit).map(finalizeStory), fromApi: false };
 }
 
 const getTopStoriesCached = unstable_cache(
@@ -128,7 +133,7 @@ export async function getBrowseClusters(limit = 24): Promise<{ stories: Story[];
   } catch {
     /* demo */
   }
-  return { stories: DEMO_STORIES, fromApi: false };
+  return { stories: DEMO_STORIES.map(finalizeStory), fromApi: false };
 }
 
 export type BiasSourceView = {
@@ -183,7 +188,6 @@ export async function getBlindspotStories(
       }),
     );
     const blindspots = hydrated
-      .map((story) => applyBlindspotDetection(story))
       .filter((story) => story.isBlindspot)
       .slice(0, limit);
     if (blindspots.length > 0) {
@@ -191,8 +195,6 @@ export async function getBlindspotStories(
     }
   }
 
-  const demo = DEMO_STORIES.map((story) => applyBlindspotDetection(story)).filter(
-    (story) => story.isBlindspot,
-  );
+  const demo = DEMO_STORIES.map(finalizeStory).filter((story) => story.isBlindspot);
   return { stories: demo.slice(0, limit), fromApi: false };
 }

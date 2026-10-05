@@ -76,3 +76,52 @@ export function dominantBlindspot(story: Story): Perspective | null {
   if (!story.isBlindspot || !story.blindspotPerspective) return null;
   return story.blindspotPerspective;
 }
+
+export type CoverageStats = {
+  total: number;
+  counts: Record<Perspective, number>;
+  dominantPerspective: Perspective;
+  dominantPercent: number;
+  lastUpdatedIso: string;
+};
+
+function storyLastUpdatedIso(story: Story): string {
+  let latestMs = Date.parse(story.updatedAt);
+  if (Number.isNaN(latestMs)) latestMs = 0;
+
+  for (const article of story.articles) {
+    const articleMs = Date.parse(article.publishedAt);
+    if (!Number.isNaN(articleMs) && articleMs > latestMs) {
+      latestMs = articleMs;
+    }
+  }
+
+  return new Date(latestMs).toISOString();
+}
+
+export function coverageStats(story: Story, options?: EnrichArticlesOptions): CoverageStats | null {
+  if (story.articles.length === 0) return null;
+
+  const counts = coverageCounts(story, options);
+  const total = story.articles.length;
+
+  let dominantPerspective: Perspective = "neutral";
+  let bestCount = 0;
+  for (const perspective of Object.keys(PERSPECTIVE_META) as Perspective[]) {
+    const n = counts[perspective];
+    if (n > bestCount) {
+      bestCount = n;
+      dominantPerspective = perspective;
+    }
+  }
+
+  const dominantPercent = total > 0 ? Math.round((bestCount / total) * 100) : 0;
+
+  return {
+    total,
+    counts,
+    dominantPerspective,
+    dominantPercent,
+    lastUpdatedIso: storyLastUpdatedIso(story),
+  };
+}

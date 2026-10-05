@@ -4,6 +4,7 @@ import { ArticleImage } from "@/components/ArticleImage";
 import { resolveArticleImageUrl, resolveStoryLeadImageUrl } from "@/lib/article-image-url";
 import { blindspotBannerCopy, type BlindspotAxisPerspective } from "@/lib/blindspot";
 import { CoverageBar } from "@/components/CoverageBar";
+import { StoryPartialityTeaser } from "@/components/StoryPartialityTeaser";
 import type { Story } from "@/lib/demo-data";
 
 type Props = {
@@ -57,6 +58,9 @@ export function StoryFeedCard({ story }: Props) {
       <p className="mt-3 text-sm text-zinc-400 line-clamp-2">{story.summaryBn}</p>
       <div className="relative z-10 mt-4 overflow-visible">
         <CoverageBar story={story} compact />
+      </div>
+      <div className="relative z-10">
+        <StoryPartialityTeaser story={story} />
       </div>
       </div>
     </article>

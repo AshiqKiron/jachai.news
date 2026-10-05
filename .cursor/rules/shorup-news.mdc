@@ -29,7 +29,7 @@ alwaysApply: true
 
 ## RSS ingestion (backend)
 
-- **Service**: `backend/app/services/rss_ingestion.py` — seed sources from `bd_sources_seed.py`, fetch feeds (`rss_parser.py` extracts optional **`image_url`** per entry), dedupe by article URL, cluster by title Jaccard similarity (72h lookback, threshold ~0.42), optional AI cluster summary via `ai_client.summarize_cluster` when 2+ articles in a cluster.
+- **Service**: `backend/app/services/rss_ingestion.py` — seed sources from `bd_sources_seed.py`, fetch feeds (`rss_parser.py` extracts optional **`image_url`** per entry), dedupe by article URL, cluster by title Jaccard similarity (72h lookback, threshold ~0.42). Cluster blurbs on the frontend come from RSS excerpts via **`source-digest.ts`** (`applySourceDerivedSummaries` in **`stories.ts`**) — ingest no longer calls **`ai_client.summarize_cluster`**.
 - **CLI**: `npm run ingest:backend` → `backend/scripts/ingest_rss.py` (requires `DATABASE_URL`; ORM tables + SQL migrations on API startup).
 - **API**: `POST /api/v1/ingest` in `app/api/ingest.py`; optional `INGEST_API_KEY` env → require `X-Ingest-Key` header; async via Celery when `REDIS_URL` + `INGEST_ASYNC_ENABLED`.
 - **Ops hooks**: `app/services/ops_alerts.py` — Healthchecks.io start/success/fail pings and optional Telegram summaries on ingest; wired from `ingest.py` and `scripts/ingest_rss.py`. All no-ops when env vars are unset.
@@ -64,10 +64,12 @@ alwaysApply: true
 ## Product vocabulary
 
 - **Headline clash / cluster** — Same story, different framings (cluster or story detail view)
-- **Perspective** — `independent` \| `neutral` \| `establishment` \| `opposition` \| `international` (`frontend/src/lib/perspectives.ts`)
+- **Perspective** — `neutral` \| `establishment` \| `opposition` \| `international` (`frontend/src/lib/perspectives.ts`; **`spectrumTabEn`** / **`COVERAGE_SPECTRUM_TAB_ORDER`** for Left–Center–Right–International feed tabs)
 - **Bias meter** — Source or cluster lean score
 - **Rumor badge** — Low corroboration or speculative coverage (`is_rumor` on articles)
 - **Blindspot** — Coverage gap on the **establishment** or **opposition** axis (`lib/blindspot.ts`: **`detectBlindspot`** on enriched article perspectives; **`/blindspot`** feed via **`getBlindspotStories`**; **`BlindspotBanner`** on story detail)
+- **Partiality** — One or more perspective buckets still empty while the cluster has ≥2 articles (`lib/partiality.ts`: **`analyzePartiality`**, **`partialityBannerCopy`**); **`PartialityBanner`** on story detail, **`StoryPartialityTeaser`** on feed cards — not the same as blindspot (axis dominance vs missing buckets)
+- **Story coverage UI** — **`StoryCoverageDetails`** (counts, dominant lean %, last updated via **`coverageStats`**); **`StoryTabs`**: default **Coverage** tab (**`StoryArticleFeed`** spectrum filters), **Compare** (**`HeadlineClashTriptych`** + grouped headlines + **`HeadlineCompare`**), **Perspectives** (**`PerspectiveComparison`** with per-bucket headlines)
 - **Verified claim** — User-submitted claim with AI verdict + analysis (`verified_claims`, `/verify/[slug]`)
 - **Shorup Pro** — Paid tier; pricing in `frontend/src/lib/subscription-plans.ts` (৳49/mo, ৳399/yr). **Feature matrix** (free vs Pro): `frontend/src/lib/subscription-features.ts` — `SUBSCRIPTION_FEATURE_MATRIX`, taglines, and `PRO_ONLY_FEATURE_IDS`; **`/pro`** (**Plans**) via **`SubscriptionPlanCards`**; in-app upsell **`PaywallModal`** (optional `featureId` for Pro analytics). News/browse open to all users. **Entitlements**: `subscription-entitlement.ts` (`isActiveProSubscription` on `subscriptions` row); `subscription-access.ts` — `getProAccessState()` / `hasProAccess()` via Supabase RLS (server session) with `NEXT_PUBLIC_MOCK_PRO=true` override for local UI. Planned payment: bKash Tokenized Checkout API; no live checkout yet.
 

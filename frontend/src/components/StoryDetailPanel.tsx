@@ -8,7 +8,12 @@ import { ApiDegradedBanner } from "@/components/ApiDegradedBanner";
 import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
 import { BlindspotBanner } from "@/components/BlindspotBanner";
 import { CoverageBar } from "@/components/CoverageBar";
+import { SourceDigestPanel } from "@/components/SourceDigestPanel";
+import { PartialityBanner } from "@/components/PartialityBanner";
+import { StoryCoverageDetails } from "@/components/StoryCoverageDetails";
+import { StoryShareBar } from "@/components/StoryShareBar";
 import { applyBlindspotDetection, type BlindspotAxisPerspective } from "@/lib/blindspot";
+import { analyzePartiality } from "@/lib/partiality";
 import type { Story } from "@/lib/demo-data";
 import {
   readStoryCache,
@@ -16,6 +21,7 @@ import {
   writeStoryCache,
 } from "@/lib/client-story-cache";
 import { enrichArticles } from "@/lib/coverage";
+import { buildCoverageDigest } from "@/lib/source-digest";
 
 const StoryTabs = dynamic(
   () => import("@/components/StoryTabs").then((mod) => mod.StoryTabs),
@@ -96,20 +102,33 @@ export function StoryDetailPanel({ slug }: Props) {
 
   const { fromApi } = resolved;
   const story = applyBlindspotDetection(resolved.story);
+  const partiality = analyzePartiality(story);
   const articles = enrichArticles(story);
+  const headerDigest = buildCoverageDigest(articles, "all");
 
   return (
     <>
       {fromApi && story.articles.length === 0 ? <ApiDegradedBanner compact /> : null}
 
       <header className="max-w-3xl space-y-4">
-        <p className="text-xs uppercase tracking-widest text-zinc-500">
-          {story.categoryBn} · Full coverage
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="text-xs uppercase tracking-widest text-zinc-500">
+            {story.categoryBn} · Full coverage
+          </p>
+          <StoryShareBar slug={slug} shareTitle={story.title || story.titleBn} />
+        </div>
         <h1 className="page-title-lg break-words">{story.titleBn}</h1>
         <p className="text-lg text-zinc-400">{story.title}</p>
-        <p className="text-sm leading-relaxed text-zinc-400">{story.summaryBn}</p>
+        {headerDigest.length > 0 ? (
+          <SourceDigestPanel snippets={headerDigest} className="max-w-3xl" />
+        ) : story.summaryBn ? (
+          <p className="text-sm leading-relaxed text-zinc-400">{story.summaryBn}</p>
+        ) : null}
         <CoverageBar story={story} />
+        {story.articles.length > 0 ? (
+          <StoryCoverageDetails story={story} />
+        ) : null}
+        {partiality ? <PartialityBanner analysis={partiality} /> : null}
         {story.isBlindspot &&
         story.blindspotPerspective &&
         (story.blindspotPerspective === "establishment" ||

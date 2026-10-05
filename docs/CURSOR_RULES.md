@@ -23,7 +23,12 @@ The always-on file was renamed from legacy **`jachai-news.mdc`** to **`shorup-ne
 | Home / story hydration (ETag, client cache) | `shorup-news.mdc` data flows, `frontend.mdc` App Router + `stories.ts` |
 | Blindspot detection + `/blindspot` feed | `shorup-news.mdc` vocabulary, `frontend.mdc` (`blindspot.ts`, `BlindspotBanner`, `getBlindspotStories`) |
 | RSS **`image_url`** on articles | `backend.mdc` (`rss_parser`, migration **`004_articles_image_url.sql`**), `frontend.mdc` (`ArticleImage`, `article-image-url.ts`) |
-| Perspective / coverage bars | `frontend.mdc` (`source-perspective.ts`, `coverage.ts`, `HeadlineClashTriptych`) |
+| Perspective / coverage bars | `frontend.mdc` (`source-perspective.ts`, `coverage.ts`, `HeadlineClashTriptych`, **`coverageStats`**) |
+| Story detail tabs (Coverage / Compare / Perspectives) | `frontend.mdc` (`StoryTabs`, **`StoryArticleFeed`**, **`HeadlinesByPerspective`**) |
+| Partiality (missing perspective buckets) | `shorup-news.mdc` vocabulary, `frontend.mdc` (`partiality.ts`, **`PartialityBanner`**, **`StoryPartialityTeaser`**) — distinct from **blindspot** |
+| Coverage stats block on story detail | `frontend.mdc` (`StoryCoverageDetails`, **`relative-time.ts`**) |
+| RSS excerpt digests (no ingest AI summary) | `shorup-news.mdc` RSS section, `backend.mdc` (`maybe_refresh_cluster_summary`), `frontend.mdc` (**`source-digest.ts`**, **`SourceDigestPanel`**) |
+| Story share + report issue on detail | `frontend.mdc` (**`StoryShareBar`**, **`story-share.ts`**), `frontend/.env.example` (`NEXT_PUBLIC_REPORT_ISSUES_*`, **`NEXT_PUBLIC_SITE_URL`**) |
 | Pro vs free (news open, analytics gated) | `shorup-news.mdc`, `frontend.mdc` (`subscription-features.ts`, `SubscriptionPlanCards`, no browse paywall) |
 | Admin RSS + ingest | `shorup-news.mdc` admin section, `backend.mdc` / `frontend.mdc` API lists (full ingest, schedule, **per-source** `POST .../admin/sources/{id}/ingest`) |
 | Verification pipeline | `shorup-news.mdc`, `backend.mdc`, `frontend.mdc` (`verifications.ts`, `/verify/*`) |

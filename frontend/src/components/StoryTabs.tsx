@@ -4,15 +4,16 @@ import { useState } from "react";
 
 import { HeadlineClashTriptych } from "@/components/HeadlineClashTriptych";
 import { HeadlineCompare } from "@/components/HeadlineCompare";
+import { HeadlinesByPerspective } from "@/components/HeadlinesByPerspective";
 import { PerspectiveComparison } from "@/components/PerspectiveComparison";
-import { SourceFilterList } from "@/components/SourceFilterList";
+import { StoryArticleFeed } from "@/components/StoryArticleFeed";
 import type { ArticleWithSource } from "@/lib/coverage";
 import type { Story } from "@/lib/demo-data";
 
 const TABS = [
+  { id: "coverage", label: "কভারেজ", en: "Coverage" },
   { id: "compare", label: "তুলনা", en: "Compare" },
   { id: "perspectives", label: "দৃষ্টিভঙ্গি", en: "Perspectives" },
-  { id: "sources", label: "উৎস", en: "Sources" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -23,7 +24,7 @@ type Props = {
 };
 
 export function StoryTabs({ story, articles }: Props) {
-  const [tab, setTab] = useState<TabId>("compare");
+  const [tab, setTab] = useState<TabId>("coverage");
 
   return (
     <div className="min-w-0">
@@ -43,14 +44,17 @@ export function StoryTabs({ story, articles }: Props) {
         ))}
       </div>
       <div className="mt-6">
+        {tab === "coverage" && <StoryArticleFeed articles={articles} />}
         {tab === "compare" && (
           <>
             <HeadlineClashTriptych articles={articles} />
-            <HeadlineCompare articles={articles} />
+            <HeadlinesByPerspective articles={articles} className="mt-8 space-y-6" />
+            <div className="mt-8">
+              <HeadlineCompare articles={articles} />
+            </div>
           </>
         )}
-        {tab === "perspectives" && <PerspectiveComparison story={story} />}
-        {tab === "sources" && <SourceFilterList articles={articles} />}
+        {tab === "perspectives" && <PerspectiveComparison story={story} articles={articles} />}
       </div>
     </div>
   );

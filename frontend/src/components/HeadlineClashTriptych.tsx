@@ -91,9 +91,12 @@ export function HeadlineClashTriptych({ articles }: Props) {
                   : "border-zinc-800 bg-ink-900/70"
               }`}
             >
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-                {slot.labelBn}
-              </p>
+              <div>
+                <p className="font-bengali text-sm font-semibold leading-snug text-zinc-100">
+                  {slot.labelBn}
+                </p>
+                <p className="mt-0.5 text-xs leading-snug text-zinc-400">{slot.labelEn}</p>
+              </div>
               {article ? (
                 <>
                   <ArticleImage
