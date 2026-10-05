@@ -1,4 +1,4 @@
--- Jachai News — Supabase schema (auth users, Pro subscriptions, bKash payment records)
+-- Shorup News — Supabase schema (auth users, Pro subscriptions, bKash payment records)
 -- Apply via Supabase CLI: supabase db push
 -- Or paste into SQL Editor in the Supabase dashboard.
 
@@ -50,7 +50,7 @@ create trigger profiles_set_updated_at
   for each row execute function public.set_updated_at();
 
 -- ---------------------------------------------------------------------------
--- Subscriptions (Jachai Pro)
+-- Subscriptions (Shorup Pro)
 -- ---------------------------------------------------------------------------
 create type public.subscription_plan as enum ('monthly', 'yearly');
 

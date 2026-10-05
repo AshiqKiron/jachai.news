@@ -23,7 +23,7 @@ export default async function AdminPage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-zinc-500">Internal</p>
-          <h1 className="font-display text-3xl text-zinc-50">Operations</h1>
+          <h1 className="page-title">Operations</h1>
           <p className="mt-2 text-sm text-zinc-400">
             Overview, RSS feeds, system status, and ops issues.
           </p>

@@ -8,7 +8,7 @@ export default async function BiasPage() {
   return (
     <div className="space-y-8 pb-4">
       <header>
-        <h1 className="font-display text-3xl text-zinc-50">বাংলাদেশি outlet map</h1>
+        <h1 className="page-title break-words">বাংলাদেশি outlet map</h1>
         <p className="mt-2 max-w-2xl text-zinc-400">
           Perspective lean for major Bangladeshi and Bangla-language international outlets (−1 opposition lean → +1
           establishment lean). Demo ratings until your backend seed is calibrated.

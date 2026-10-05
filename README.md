@@ -1,12 +1,12 @@
-# Jachai News
+# Shorup News
 
-**Ground News for Bangladesh** — a installable PWA that clusters the same story across Prothom Alo, Daily Star, bdnews24, BBC Bangla, and more. Compare headlines, perspective lean (establishment / opposition / independent / international), blindspots, and rumor flags.
+**Ground News for Bangladesh** — a installable PWA that clusters the same story across Prothom Alo, Daily Star, bdnews24, BBC Bangla, and more. Compare headlines, perspective lean (establishment / opposition / neutral / international), blindspots, and rumor flags.
 
 Stack: FastAPI backend (RSS + clustering) and Next.js App Router frontend with offline shell.
 
 ## Architecture
 
-Jachai splits **news intelligence** (clusters, articles, verified claims) in **backend PostgreSQL** from **user accounts and billing** in **Supabase**. The Next.js app talks to FastAPI for feeds and verification, and to Supabase for auth and Pro entitlements.
+Shorup splits **news intelligence** (clusters, articles, verified claims) in **backend PostgreSQL** from **user accounts and billing** in **Supabase**. The Next.js app talks to FastAPI for feeds and verification, and to Supabase for auth and Pro entitlements.
 
 ```mermaid
 flowchart LR
@@ -56,7 +56,7 @@ flowchart LR
 | API | `backend/` | FastAPI, async SQLAlchemy, `/api/v1` — articles, clusters, sources, bias, rumors, verify, admin |
 | Ingestion | `backend/app/services/rss_ingestion.py`, `rss_parser.py` | Seed feeds, dedupe by URL, cluster by title similarity (~72h, Jaccard); optional AI cluster summary |
 | Verification | `backend/app/api/verify.py`, `verifications.py`, `verification_*` services | Submit claims, queue jobs, SSE/WebSocket progress, pgvector semantic cache + FTS search |
-| Workers | Celery (`ingest`, `verification` queues) | Async RSS ingest and heavy verify steps when `REDIS_URL` is set |
+| Workers | Celery (`ingest`, `verification` queues) + **beat** | Async RSS ingest, scheduled pull (`ingest_schedule` / `app_settings`), verification jobs when `REDIS_URL` is set |
 | Web app | `frontend/` | Next.js 15 App Router, React 19, Tailwind, PWA; English + Bangla product copy |
 | Auth / Pro | `supabase/migrations/`, `frontend/src/lib/supabase.ts` | Profiles, subscriptions, bKash tables (checkout planned); RLS on user metadata |
 | Ops | `docker-compose.yml`, `docs/DEPLOYMENT.md` | Local Postgres (pgvector), Redis, API, worker; production release playbook |
@@ -65,12 +65,12 @@ flowchart LR
 
 - **Browser API**: `NEXT_PUBLIC_API_URL` (default same-origin `/api/v1` via Next rewrite).
 - **Server components**: `API_URL` → `http://127.0.0.1:3001/api/v1` in dev.
-- **Home**: static shell → `GET /api/feed/top` (`getTopStories`). Custom RSS is managed in `/admin` and ingests into clusters like seed feeds.
+- **Home / story**: static home shell → `GET /api/feed/top` (ETag); story detail → `GET /api/story/[slug]` via **`StoryDetailPanel`** + **`client-story-cache.ts`**. Custom RSS is managed in `/admin` and ingests into clusters like seed feeds (no separate home custom-feed section).
 - **Resilience**: `demo-data.ts` + `stories.ts` merge API clusters with demo stories; `ApiDegradedBanner` when the API is down. Writes (verify submit, admin) require a live API.
 
 ### Admin (internal)
 
-Production dashboard on **`admin.jachai.news`** (local: `/admin`). Backend `GET /api/v1/admin/overview` and source add/remove; frontend proxies under `app/api/admin/*` with legacy `jachai_admin` cookie (see [Admin panel](#admin-panel-internal) below).
+Production dashboard on **`admin.shorup.news`** (local: `/admin`). Backend `GET /api/v1/admin/overview` and source add/remove; frontend proxies under `app/api/admin/*` with legacy `shorup_admin` cookie (see [Admin panel](#admin-panel-internal) below).
 
 ### Monitoring (optional)
 
@@ -79,14 +79,14 @@ Sentry on backend (`SENTRY_DSN`) and frontend (`@sentry/nextjs`). Ingest cron ca
 ## Structure
 
 ```
-jachai.news/
+shorup.news/
 ├── backend/              # FastAPI, SQLAlchemy, Celery tasks, RSS + verification
 ├── frontend/             # Next.js App Router, PWA, Supabase client
 ├── supabase/             # Migrations (profiles, Pro, dossiers/alerts)
-├── docs/                 # DEPLOYMENT.md and ops notes
+├── docs/                 # DEPLOYMENT.md, CURSOR_RULES.md (agent rules), ops notes
 ├── docker-compose.yml    # Postgres (pgvector), Redis, API, worker
 ├── package.json          # dev:frontend, dev:backend, stack:up, ingest:backend, workers
-├── .cursor/rules/        # Detailed Cursor project rules
+├── .cursor/rules/        # Detailed Cursor rules — see docs/CURSOR_RULES.md
 └── README.md
 ```
 
@@ -139,9 +139,9 @@ App: [http://localhost:3000](http://localhost:3000)
 
 ### Admin panel (internal)
 
-Password-protected dashboard at **`https://admin.jachai.news`** (local dev: **`/admin`**). The main site redirects `/admin` to the admin subdomain in production. API health, DB counts, sources, recent clusters, and manual RSS ingest.
+Password-protected dashboard at **`https://admin.shorup.news`** (local dev: **`/admin`**). The main site redirects `/admin` to the admin subdomain in production. API health, DB counts, sources, recent clusters, and manual RSS ingest.
 
-Add **`admin.jachai.news`** as a domain on your frontend host (same Next.js deployment as `jachai.news`). Optional env: `ADMIN_HOST`, `NEXT_PUBLIC_SITE_URL`.
+Add **`admin.shorup.news`** as a domain on your frontend host (same Next.js deployment as `shorup.news`). Optional env: `ADMIN_HOST`, `NEXT_PUBLIC_SITE_URL`.
 
 | Variable | Where | Description |
 |----------|--------|-------------|
@@ -159,7 +159,7 @@ The UI ships with **Bangladeshi demo stories** when the API is offline. Connect 
 
 Optional Supabase auth: set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`. Apply the schema in `supabase/migrations/` via [Supabase CLI](https://supabase.com/docs/guides/cli) (`supabase db push`) or the SQL editor in the dashboard.
 
-## Jachai Pro (subscriptions — planned)
+## Shorup Pro (subscriptions — planned)
 
 | Plan | Price (BDT) |
 |------|-------------|
@@ -197,8 +197,8 @@ Large exports and assets go through `app/services/object_storage.py` (Supabase S
 ## Docker (API image only)
 
 ```bash
-docker build -t jachai-api ./backend
-docker run --rm -p 3001:8000 -e DATABASE_URL=postgresql+asyncpg://... jachai-api
+docker build -t shorup-api ./backend
+docker run --rm -p 3001:8000 -e DATABASE_URL=postgresql+asyncpg://... shorup-api
 ```
 
 ## RSS ingestion
@@ -222,9 +222,11 @@ Logic lives in `backend/app/services/rss_ingestion.py` (uses `rss_parser.py`).
 ```bash
 # With Redis running (see docker-compose or your own broker)
 npm run worker:backend
+npm run worker:beat    # scheduled RSS when INGEST_SCHEDULER_ENABLED + Redis
+npm run worker:verification   # optional dedicated verification worker
 ```
 
-Cron / Healthchecks should call `POST /api/v1/ingest` (queued when `REDIS_URL` is set) or `npm run ingest:backend -- --queue`.
+Without beat, use external cron / Healthchecks on `POST /api/v1/ingest` (queued when `REDIS_URL` is set) or `npm run ingest:backend`. Admin can set pull interval via **`/admin`** → ingest schedule (`GET/PATCH /api/v1/admin/ingest-schedule`).
 
 ## Production releases
 
@@ -232,7 +234,6 @@ Safe deploy order, migrations, PWA notes, rollback, and a pre-ship checklist: **
 
 ## Roadmap hooks
 
-- Scheduled RSS ingest (cron → `POST /api/v1/ingest` or `ingest:backend --queue`)
-- Clustering job + `ai_client.summarize_cluster`
+- Clustering job + `ai_client.summarize_cluster` (partial: optional AI summary on multi-article clusters today)
 - Source seed: `backend/app/data/bd_sources_seed.py`
 - Bias score calibration for Bangladesh outlets

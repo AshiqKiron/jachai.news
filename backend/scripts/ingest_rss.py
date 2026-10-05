@@ -12,7 +12,7 @@ from app.services.rss_ingestion import run_rss_ingest
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run Jachai RSS ingestion")
+    parser = argparse.ArgumentParser(description="Run Shorup RSS ingestion")
     parser.add_argument(
         "--sync",
         action="store_true",

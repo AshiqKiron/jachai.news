@@ -10,9 +10,9 @@ import {
   writeTopStoriesCache,
 } from "@/lib/client-story-cache";
 import { DEMO_STORIES, type Story } from "@/lib/demo-data";
-import { FREE_DAILY_TOP_STORIES_LIMIT } from "@/lib/subscription-features";
+import { HOME_TOP_STORIES_LIMIT } from "@/lib/subscription-features";
 
-const INITIAL_STORIES = DEMO_STORIES.slice(0, FREE_DAILY_TOP_STORIES_LIMIT);
+const INITIAL_STORIES = DEMO_STORIES.slice(0, HOME_TOP_STORIES_LIMIT);
 
 export function HomeStoryGridClient() {
   const [stories, setStories] = useState<Story[]>(INITIAL_STORIES);
@@ -34,7 +34,7 @@ export function HomeStoryGridClient() {
 
     void (async () => {
       try {
-        const response = await fetch(`/api/feed/top?limit=${FREE_DAILY_TOP_STORIES_LIMIT}`, {
+        const response = await fetch(`/api/feed/top?limit=${HOME_TOP_STORIES_LIMIT}`, {
           headers: cached?.fingerprint ? { "If-None-Match": `"${cached.fingerprint}"` } : undefined,
         });
 

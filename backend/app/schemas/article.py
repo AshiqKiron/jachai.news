@@ -7,6 +7,7 @@ class ArticleBase(BaseModel):
     title: str
     url: HttpUrl
     excerpt: str | None = None
+    image_url: HttpUrl | None = None
     published_at: datetime | None = None
     is_rumor: bool = False
 

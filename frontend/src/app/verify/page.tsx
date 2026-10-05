@@ -7,7 +7,7 @@ export default function VerifyPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <header>
-        <h1 className="font-display text-3xl text-zinc-50">Verify a claim</h1>
+        <h1 className="page-title">Verify a claim</h1>
         <p className="mt-2 text-zinc-400">
           Submit viral claims for AI-assisted fact-checking. Heavy analysis runs in the background — you will see live
           progress (WebSocket), and near-duplicate claims reuse cached verdicts. URL sources are scraped in the worker.

@@ -14,7 +14,7 @@ export default async function VerifyDatabasePage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="font-display text-3xl text-zinc-50">Verified claims database</h1>
+        <h1 className="page-title">Verified claims database</h1>
         <p className="mt-2 max-w-2xl text-zinc-400">
           Full-text search across indexed claims (PostgreSQL tsvector + GIN). Pages regenerate on a short ISR interval
           for fast edge delivery.

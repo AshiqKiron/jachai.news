@@ -1,7 +1,7 @@
-# Minimal Supabase CLI project config for Jachai News.
+# Minimal Supabase CLI project config for Shorup News.
 # See https://supabase.com/docs/guides/cli/config
 
-project_id = "jachai-news"
+project_id = "shorup-news"
 
 [api]
 enabled = true

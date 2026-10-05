@@ -15,16 +15,15 @@ export type SubscriptionFeatureRow = {
 };
 
 export const FREE_TIER_TAGLINE =
-  "Viral growth & public utility — today’s top stories and trust tools for everyone." as const;
+  "Full news coverage and trust tools for everyone." as const;
 
-export const PRO_TIER_TAGLINE =
-  "Insiders & analysts — full archive, priority loading, and pro analytics." as const;
+export const PRO_TIER_TAGLINE = "Insiders & analysts — pro analytics." as const;
 
-export const FREE_DAILY_TOP_STORIES_LIMIT = 10;
+/** Home feed cluster count (curated slice; full archive on /browse for all users). */
+export const HOME_TOP_STORIES_LIMIT = 24;
 
 /** Features that require an active Pro subscription (checkout not wired yet). */
 export const PRO_ONLY_FEATURE_IDS = [
-  "browse_full_search",
   "narrative_evolution_timeline",
   "custom_topic_radar_alerts",
 ] as const;
@@ -40,19 +39,8 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     nameBn: "শীর্ষ খবর — বড় ঘটনা",
     free: "yes",
     pro: "yes",
-    freeNote: "Curated top national stories",
-    proNote: "Priority loading",
-  },
-  {
-    id: "browse_full_search",
-    category: "Core Feed",
-    categoryBn: "মূল ফিড",
-    name: 'Browse All News / Full Search',
-    nameBn: "সব খবর / পূর্ণ অনুসন্ধান",
-    free: "locked",
-    pro: "yes",
-    freeNote: "Top news only",
-    proNote: "Unlock the entire historical database",
+    freeNote: "Home highlights + full browse archive",
+    proNote: "Priority loading on home",
   },
   {
     id: "headline_clash",

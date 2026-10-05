@@ -17,18 +17,18 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-ink-900/90 backdrop-blur dark:bg-ink-900/80">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        <div className="flex min-w-0 flex-col gap-0.5">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:py-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <Link
             href={admin ? adminSurfacePath("", host) : "/"}
-            className="font-display text-xl tracking-tight text-zinc-50"
+            className="font-display text-lg tracking-tight text-zinc-50 sm:text-xl"
           >
-            jachai<span className="text-accent dark:text-neutral-500">.</span>news
+            shorup<span className="text-accent dark:text-neutral-500">.</span>news
           </Link>
           {!admin ? <HeaderBanglaDate /> : null}
         </div>
-        <div className="flex items-center gap-4 md:gap-6">
-          <div className="flex items-center gap-3 md:gap-5">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4 md:gap-6">
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-5">
             {!admin && (
               <nav className="hidden gap-5 text-sm text-zinc-300 md:flex">
                 {nav.map((item) => (

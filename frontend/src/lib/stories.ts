@@ -12,12 +12,14 @@ import {
   type ClusterDetail,
   type SourceBias,
 } from "@/lib/api";
+import { resolveArticleImageUrl } from "@/lib/article-image-url";
+import { applyBlindspotDetection } from "@/lib/blindspot";
 import { BD_SOURCES, DEMO_RUMOR_ARTICLES, DEMO_STORIES, getStoryBySlug, type Story } from "@/lib/demo-data";
 
 function storyShellFromCluster(cluster: Cluster, articles: Story["articles"]): Story {
   const demo = getStoryBySlug(cluster.slug);
-  if (demo) return demo;
-  return {
+  if (demo) return applyBlindspotDetection(demo);
+  return applyBlindspotDetection({
     slug: cluster.slug,
     title: cluster.title,
     titleBn: cluster.title,
@@ -29,21 +31,30 @@ function storyShellFromCluster(cluster: Cluster, articles: Story["articles"]): S
     perspectiveSummaries: {},
     articles,
     updatedAt: cluster.created_at,
-  };
+  });
 }
 
-function mapApiArticles(cluster: ClusterDetail): Story["articles"] {
-  return cluster.articles.map((article) => ({
+function mapClusterArticles(cluster: Cluster | ClusterDetail): Story["articles"] {
+  const rows = cluster.articles ?? [];
+  if (rows.length === 0) return [];
+  return rows.map((article) => ({
     sourceId: String(article.source_id),
     headline: article.title,
     url: article.url,
     excerpt: article.excerpt ?? "",
+    imageUrl: resolveArticleImageUrl(article.image_url),
     publishedAt: article.published_at ?? cluster.created_at,
+    sourceName: article.source_name ?? undefined,
+    biasScore: article.bias_score ?? undefined,
   }));
 }
 
+function mapApiArticles(cluster: ClusterDetail): Story["articles"] {
+  return mapClusterArticles(cluster);
+}
+
 export function storyFromCluster(cluster: Cluster): Story {
-  return storyShellFromCluster(cluster, []);
+  return storyShellFromCluster(cluster, mapClusterArticles(cluster));
 }
 
 export function storyFromClusterDetail(cluster: ClusterDetail): Story {
@@ -157,4 +168,31 @@ export async function getLatestArticlesFeed(
   const feed = await fetchArticlesFeed(limit);
   if (feed.fromApi) return feed;
   return { items: [], total: 0, fromApi: false };
+}
+
+export async function getBlindspotStories(
+  limit = 12,
+): Promise<{ stories: Story[]; fromApi: boolean }> {
+  const data = await tryApiGet<{ items: Cluster[]; total: number }>(`/clusters?limit=40`);
+  if (data && data.items.length > 0) {
+    const hydrated = await Promise.all(
+      data.items.slice(0, 24).map(async (cluster) => {
+        const detail = await tryFetchClusterBySlug(cluster.slug);
+        if (detail) return storyFromClusterDetail(detail);
+        return storyFromCluster(cluster);
+      }),
+    );
+    const blindspots = hydrated
+      .map((story) => applyBlindspotDetection(story))
+      .filter((story) => story.isBlindspot)
+      .slice(0, limit);
+    if (blindspots.length > 0) {
+      return { stories: blindspots, fromApi: true };
+    }
+  }
+
+  const demo = DEMO_STORIES.map((story) => applyBlindspotDetection(story)).filter(
+    (story) => story.isBlindspot,
+  );
+  return { stories: demo.slice(0, limit), fromApi: false };
 }

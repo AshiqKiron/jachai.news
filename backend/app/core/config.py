@@ -4,9 +4,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    app_name: str = "Jachai News API"
+    app_name: str = "Shorup News API"
     api_v1_prefix: str = "/api/v1"
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/jachai"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/shorup"
     # Use a PgBouncer / Supavisor transaction-pool URL in production (port 6543 on Supabase).
     database_pooler_url: str | None = None
     # local = SQLAlchemy pool; pgbouncer = NullPool (pooler owns connections)
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
 
     # Object storage for exports, dossiers, screenshots (optional)
     object_storage_backend: str = "none"  # none | supabase
-    object_storage_bucket: str = "jachai-assets"
+    object_storage_bucket: str = "shorup-assets"
     object_storage_public_base_url: str | None = None
     rate_limit_enabled: bool = True
     rate_limit_default_per_minute: int = 120

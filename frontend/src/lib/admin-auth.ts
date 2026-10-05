@@ -1,4 +1,4 @@
-export const ADMIN_COOKIE_NAME = "jachai_admin";
+export const ADMIN_COOKIE_NAME = "shorup_admin";
 
 type AdminAuthUser = {
   email?: string | null;

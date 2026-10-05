@@ -8,7 +8,7 @@ export function isChunkLoadError(error: Error): boolean {
   );
 }
 
-const RELOAD_FLAG = "jachai:chunk-reload";
+const RELOAD_FLAG = "shorup:chunk-reload";
 
 /** Reload once so a fresh HTML + chunk hashes load; returns true if reloading. */
 export function reloadOnceOnChunkError(error: Error): boolean {

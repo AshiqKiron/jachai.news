@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { HeadlineClashTriptych } from "@/components/HeadlineClashTriptych";
 import { HeadlineCompare } from "@/components/HeadlineCompare";
 import { PerspectiveComparison } from "@/components/PerspectiveComparison";
 import { SourceFilterList } from "@/components/SourceFilterList";
@@ -25,14 +26,14 @@ export function StoryTabs({ story, articles }: Props) {
   const [tab, setTab] = useState<TabId>("compare");
 
   return (
-    <div>
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-ink-900/50 p-1">
+    <div className="min-w-0">
+      <div className="flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-ink-900/50 p-1 [-webkit-overflow-scrolling:touch]">
         {TABS.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setTab(item.id)}
-            className={`flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition ${
+            className={`min-w-[5.5rem] flex-1 whitespace-nowrap rounded-lg px-2 py-2 text-sm transition sm:px-3 ${
               tab === item.id ? "bg-zinc-800 text-zinc-50" : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
@@ -42,7 +43,12 @@ export function StoryTabs({ story, articles }: Props) {
         ))}
       </div>
       <div className="mt-6">
-        {tab === "compare" && <HeadlineCompare articles={articles} />}
+        {tab === "compare" && (
+          <>
+            <HeadlineClashTriptych articles={articles} />
+            <HeadlineCompare articles={articles} />
+          </>
+        )}
         {tab === "perspectives" && <PerspectiveComparison story={story} />}
         {tab === "sources" && <SourceFilterList articles={articles} />}
       </div>

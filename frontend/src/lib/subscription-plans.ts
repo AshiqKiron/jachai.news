@@ -1,4 +1,4 @@
-/** Jachai Pro — planned billing (not wired yet). Feature matrix: `subscription-features.ts`. */
+/** Shorup Pro — planned billing (not wired yet). Feature matrix: `subscription-features.ts`. */
 
 export type SubscriptionInterval = "monthly" | "yearly";
 

@@ -159,6 +159,7 @@ async def ingest_source(session: AsyncSession, source: Source, result: IngestRes
                 title=item.title,
                 url=item.url,
                 excerpt=item.excerpt,
+                image_url=item.image_url,
                 published_at=item.published_at,
             )
         )
@@ -167,6 +168,18 @@ async def ingest_source(session: AsyncSession, source: Source, result: IngestRes
 
         if await maybe_refresh_cluster_summary(session, cluster):
             result.clusters_updated += 1
+
+
+async def run_rss_ingest_for_source(session: AsyncSession, source_id: int) -> IngestResult:
+    result = IngestResult()
+    source = await session.get(Source, source_id)
+    if source is None:
+        raise LookupError("Source not found.")
+    if source.disabled:
+        raise ValueError("Source is disabled and will not be ingested.")
+    await ingest_source(session, source, result)
+    await session.commit()
+    return result
 
 
 async def run_rss_ingest(session: AsyncSession) -> IngestResult:

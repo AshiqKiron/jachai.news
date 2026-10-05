@@ -39,7 +39,7 @@ export class ClientErrorBoundary extends Component<Props, State> {
         >
           <p className="font-medium text-amber-50">{this.props.title ?? "This section could not load"}</p>
           <p className="mt-2 text-amber-100/80">
-            Something went wrong in this part of the page. The rest of Jachai should still work.
+            Something went wrong in this part of the page. The rest of Shorup should still work.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <button

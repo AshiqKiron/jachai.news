@@ -1,7 +1,11 @@
 import { unstable_cache } from "next/cache";
 
 import { SERVER_API_BASE, serverApiOrigin } from "@/lib/api-base";
-import { API_LISTING_TIMEOUT_MS, fetchJsonSafe } from "@/lib/api-resilience";
+import {
+  API_LISTING_TIMEOUT_MS,
+  API_WRITE_TIMEOUT_MS,
+  fetchJsonSafe,
+} from "@/lib/api-resilience";
 import type { AdminIngestSchedule, AdminSourceStat, IngestResponse } from "@/lib/admin-types";
 
 const API_BASE = SERVER_API_BASE;
@@ -142,35 +146,62 @@ export async function updateAdminIngestSchedule(intervalMinutes: number): Promis
   return (await response.json()) as AdminIngestSchedule;
 }
 
+function adminBackendActionError(error: unknown, action: string): Error {
+  if (error instanceof Error) {
+    if (error.message === "fetch failed" || error.message === "Request timed out") {
+      return new Error(
+        `Backend unreachable — could not ${action}. Start the API (npm run dev:backend or npm run stack:up) and verify API_URL on the Next server.`,
+      );
+    }
+    return error;
+  }
+  return new Error(`Could not ${action}.`);
+}
+
 export async function createAdminSource(payload: {
   name: string;
   feed_url: string;
   bias_score?: number | null;
 }): Promise<AdminSourceStat> {
-  const response = await fetch(`${API_BASE}/admin/sources`, {
+  const result = await fetchJsonSafe<AdminSourceStat>(`${API_BASE}/admin/sources`, {
     method: "POST",
     headers: { ...adminHeaders(), "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     cache: "no-store",
+    timeoutMs: API_WRITE_TIMEOUT_MS,
   });
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `Create source failed (${response.status})`);
+  if (!result.ok) {
+    throw adminBackendActionError(result.error, "add RSS feed");
   }
-  return (await response.json()) as AdminSourceStat;
+  return result.data;
 }
 
 export async function removeAdminSource(sourceId: number): Promise<AdminSourceStat> {
-  const response = await fetch(`${API_BASE}/admin/sources/${sourceId}`, {
+  const result = await fetchJsonSafe<AdminSourceStat>(`${API_BASE}/admin/sources/${sourceId}`, {
     method: "DELETE",
     headers: adminHeaders(),
     cache: "no-store",
+    timeoutMs: API_WRITE_TIMEOUT_MS,
   });
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `Remove source failed (${response.status})`);
+  if (!result.ok) {
+    throw adminBackendActionError(result.error, "remove RSS feed");
   }
-  return (await response.json()) as AdminSourceStat;
+  return result.data;
+}
+
+const ADMIN_SOURCE_INGEST_TIMEOUT_MS = 5 * 60 * 1000;
+
+export async function triggerAdminSourceIngest(sourceId: number): Promise<IngestResponse> {
+  const result = await fetchJsonSafe<IngestResponse>(`${API_BASE}/admin/sources/${sourceId}/ingest`, {
+    method: "POST",
+    headers: adminHeaders(),
+    cache: "no-store",
+    timeoutMs: ADMIN_SOURCE_INGEST_TIMEOUT_MS,
+  });
+  if (!result.ok) {
+    throw adminBackendActionError(result.error, "fetch RSS feed");
+  }
+  return result.data;
 }
 
 async function fetchApiHealthUncached(): Promise<boolean> {

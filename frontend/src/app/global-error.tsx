@@ -20,7 +20,7 @@ export default function GlobalError({ error, reset }: Props) {
     <html lang="en">
       <body className="min-h-screen bg-black font-sans text-zinc-100 antialiased">
         <div className="mx-auto max-w-lg px-4 py-16">
-          <h1 className="text-2xl font-semibold">Jachai News</h1>
+          <h1 className="text-2xl font-semibold">Shorup News</h1>
           <p className="mt-4 text-sm text-zinc-400">
             A critical error occurred. Reload the app or try again in a moment.
           </p>

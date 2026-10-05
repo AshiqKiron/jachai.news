@@ -57,8 +57,8 @@ export function AdminIngestPanel({ initialSchedule = null }: Props) {
     function onRefresh() {
       void loadSchedule();
     }
-    window.addEventListener("jachai:admin-refresh", onRefresh);
-    return () => window.removeEventListener("jachai:admin-refresh", onRefresh);
+    window.addEventListener("shorup:admin-refresh", onRefresh);
+    return () => window.removeEventListener("shorup:admin-refresh", onRefresh);
   }, [loadSchedule]);
 
   const intervalOptions = useMemo(() => {
@@ -81,7 +81,7 @@ export function AdminIngestPanel({ initialSchedule = null }: Props) {
       setSchedule(data);
       setIntervalDraft(data.interval_minutes);
       setScheduleSaved(true);
-      window.dispatchEvent(new CustomEvent("jachai:admin-refresh"));
+      window.dispatchEvent(new CustomEvent("shorup:admin-refresh"));
     } catch (err) {
       setScheduleError(err instanceof Error ? err.message : "Could not save schedule.");
     } finally {
@@ -100,7 +100,7 @@ export function AdminIngestPanel({ initialSchedule = null }: Props) {
         ADMIN_INGEST_CLIENT_TIMEOUT_MS,
       );
       setResult(data);
-      window.dispatchEvent(new CustomEvent("jachai:admin-refresh"));
+      window.dispatchEvent(new CustomEvent("shorup:admin-refresh"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ingest failed.");
     } finally {

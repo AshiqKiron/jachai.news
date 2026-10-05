@@ -9,7 +9,7 @@ export function HeaderBanglaDate() {
     <time
       dateTime={banglaHeaderDateTimeIso(now)}
       suppressHydrationWarning
-      className="block font-bengali text-xs leading-snug text-zinc-500 dark:text-zinc-400"
+      className="block truncate font-bengali text-[11px] leading-snug text-zinc-500 sm:text-xs dark:text-zinc-400"
     >
       {formatBanglaHeaderDate(now)}
     </time>

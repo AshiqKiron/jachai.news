@@ -9,8 +9,9 @@ import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { adminSurfacePath, isAdminAppSurface } from "@/lib/admin-host";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
-const guestMenuLinks = [
-  { href: "/sign-in", label: "Sign in" },
+const signInMenuLink = { href: "/sign-in", label: "Sign in" };
+
+const registeredMenuLinks = [
   { href: "/blindspot", label: "Blindspot" },
   { href: "/browse", label: "Browse" },
   { href: "/rumors", label: "Rumors" },
@@ -107,15 +108,47 @@ export function AuthNav() {
 
   if (email) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="hidden max-w-[10rem] truncate text-xs text-zinc-400 md:inline">{email}</span>
+      <div ref={menuRef} className="relative">
         <button
           type="button"
-          onClick={signOut}
-          className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 md:px-4 md:py-2 md:text-sm"
+          onClick={() => setMenuOpen((open) => !open)}
+          className="flex max-w-[9rem] items-center gap-1.5 rounded-lg border border-zinc-700 px-2.5 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 sm:max-w-[12rem] sm:px-3 md:max-w-[14rem] md:px-4 md:py-2 md:text-sm"
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          aria-label={menuOpen ? "Close account menu" : "Open account menu"}
         >
-          Sign out
+          <span className="truncate">{email}</span>
+          <ChevronDownIcon open={menuOpen} className="shrink-0" />
         </button>
+        {menuOpen ? (
+          <div
+            role="menu"
+            className="absolute right-0 top-full z-50 mt-1 min-w-[10.5rem] rounded-lg border border-zinc-700/90 bg-ink-950 py-1 shadow-lg"
+          >
+            {registeredMenuLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                role="menuitem"
+                className="block px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800/90 hover:text-white"
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <button
+              type="button"
+              role="menuitem"
+              className="block w-full px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800/90 hover:text-white"
+              onClick={() => {
+                setMenuOpen(false);
+                void signOut();
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -150,17 +183,14 @@ export function AuthNav() {
           role="menu"
           className="absolute right-0 top-full z-50 mt-1 min-w-[10.5rem] rounded-lg border border-zinc-700/90 bg-ink-950 py-1 shadow-lg"
         >
-          {guestMenuLinks.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              role="menuitem"
-              className="block px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800/90 hover:text-white"
-              onClick={() => setMenuOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
+          <Link
+            href={signInMenuLink.href}
+            role="menuitem"
+            className="block px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800/90 hover:text-white"
+            onClick={() => setMenuOpen(false)}
+          >
+            {signInMenuLink.label}
+          </Link>
         </div>
       ) : null}
     </div>

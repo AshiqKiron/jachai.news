@@ -5,6 +5,11 @@ from pydantic import BaseModel, ConfigDict
 from app.schemas.article import ArticleRead
 
 
+class ClusterArticleRead(ArticleRead):
+    source_name: str
+    bias_score: float | None = None
+
+
 class ClusterRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -16,9 +21,9 @@ class ClusterRead(BaseModel):
 
 
 class ClusterDetail(ClusterRead):
-    articles: list[ArticleRead] = []
+    articles: list[ClusterArticleRead] = []
 
 
 class ClusterListResponse(BaseModel):
-    items: list[ClusterRead]
+    items: list[ClusterDetail]
     total: int

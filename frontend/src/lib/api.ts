@@ -14,8 +14,12 @@ export type Article = {
   title: string;
   url: string;
   excerpt: string | null;
+  image_url?: string | null;
   published_at: string | null;
   is_rumor: boolean;
+  /** Present on cluster detail payloads when the API joins source metadata. */
+  source_name?: string | null;
+  bias_score?: number | null;
 };
 
 export type Cluster = {
@@ -24,6 +28,7 @@ export type Cluster = {
   title: string;
   summary: string | null;
   created_at: string;
+  articles?: Article[];
 };
 
 export type ClusterDetail = Cluster & {

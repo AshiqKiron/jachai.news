@@ -12,6 +12,7 @@ dist
 dist-ssr
 .next
 *.local
+frontend/tsconfig.tsbuildinfo
 
 # Python
 .venv

@@ -1,8 +1,8 @@
-# Jachai News — Cursor project rules
+# Shorup News — Cursor project rules
 
-You are working on **Jachai News**, a Bangladesh-focused news intelligence product: multi-source headline clusters, perspective/bias signals, rumor flags, blindspot detection, and **AI claim verification**. Installable **PWA**; UI is English + Bangla where the app already uses both.
+You are working on **Shorup News**, a Bangladesh-focused news intelligence product: multi-source headline clusters, perspective/bias signals, rumor flags, blindspot detection, and **AI claim verification**. Installable **PWA**; UI is English + Bangla where the app already uses both.
 
-**Detailed rules** live in `.cursor/rules/` (`jachai-news.mdc` always applies; `backend.mdc` / `frontend.mdc` / `supabase.mdc` when editing those trees).
+**Detailed rules** live in `.cursor/rules/` (`shorup-news.mdc` always applies; `backend.mdc` / `frontend.mdc` / `supabase.mdc` when editing those trees). Maintainer guide: `docs/CURSOR_RULES.md`.
 
 ## Architecture
 
@@ -13,7 +13,7 @@ You are working on **Jachai News**, a Bangladesh-focused news intelligence produ
 - **Production releases**: `docs/DEPLOYMENT.md` (deploy order, migrations, rollback, checklist)
 - **Claim verification**: `POST /api/v1/verify` (guardrailed submit), `/api/v1/verifications/*` (jobs, SSE/WS, list/search/detail); UI `/verify`, `/verify/[slug]`, `/verify/database` via `src/lib/verifications.ts`
 - **Public sources**: `GET /api/v1/sources` (optional `custom_only`) + `GET /api/v1/articles?source_id=` — admin-added RSS and per-source article reads (no admin key); optional helper `fetchCustomSourcesFeed` in `api.ts`
-- **Admin ops (internal)**: backend `GET /api/v1/admin/overview` (includes **`ingest_schedule`**) + **`GET/PATCH /api/v1/admin/ingest-schedule`** (`app_settings`, migration `003_app_settings.sql`; Celery beat tick when `REDIS_URL` + `INGEST_SCHEDULER_ENABLED`) + RSS source add/remove (`admin.py` → `admin_stats` / `admin_sources` / **`ingest_schedule`**; DELETE purges articles/orphan clusters then soft-disables seed or deletes custom; `sources.disabled`, migration `002_sources_disabled.sql`); frontend **`admin.jachai.news`** in production (`admin-host.ts`, local `/admin`) gated by legacy cookie or **Supabase admin**; tabbed **`AdminDashboardPanel`** (overview, sources/ingest, system, **Users**, issues) + `GET /api/admin/overview` → `{ overview, apiHealthy }`; legacy **`jachai_admin`** cookie still required for sources/ingest/**ingest-schedule**/users proxies (overview allows Supabase admin — see `frontend.mdc`)
+- **Admin ops (internal)**: backend `GET /api/v1/admin/overview` (includes **`ingest_schedule`**) + **`GET/PATCH /api/v1/admin/ingest-schedule`** (`app_settings`, migration `003_app_settings.sql`; Celery beat tick when `REDIS_URL` + `INGEST_SCHEDULER_ENABLED`) + RSS source add/remove (`admin.py` → `admin_stats` / `admin_sources` / **`ingest_schedule`**; DELETE purges articles/orphan clusters then soft-disables seed or deletes custom; `sources.disabled`, migration `002_sources_disabled.sql`); frontend **`admin.shorup.news`** in production (`admin-host.ts`, local `/admin`) gated by legacy cookie or **Supabase admin**; tabbed **`AdminDashboardPanel`** (overview, sources/ingest, system, **Users**, issues) + `GET /api/admin/overview` → `{ overview, apiHealthy }`; legacy **`shorup_admin`** cookie still required for sources/ingest/**ingest-schedule**/users proxies (overview allows Supabase admin — see `frontend.mdc`)
 - **PWA deploy resilience**: `chunk-load-error.ts` — one-shot reload on chunk failures (`error.tsx` / `global-error.tsx`; dev SW unregister in `layout.tsx`); see `docs/DEPLOYMENT.md`
 - **Monitoring (optional)**: Sentry on backend (`app/core/sentry_init.py`) and frontend (`@sentry/nextjs`, `instrumentation.ts`); ingest cron pings via `app/services/ops_alerts.py` (Healthchecks.io + Telegram when env is set)
 
@@ -24,10 +24,10 @@ You are working on **Jachai News**, a Bangladesh-focused news intelligence produ
 - Async for I/O; config in `app/core/config.py`; API prefix `/api/v1`; optional `INGEST_API_KEY` / `ADMIN_API_KEY`; Redis-backed rate limits when `REDIS_URL` is set; never commit secrets
 
 ### Frontend
-- Pages under `frontend/src/app/`; components in `src/components/`; route errors in `app/error.tsx` and `app/global-error.tsx`
-- Fetch via `api.ts` + `api-resilience.ts`, `stories.ts` (API + `demo-data.ts` fallback, `fromApi` + `ApiDegradedBanner`); verification via `verifications.ts` (`lookupVerifiedClaim` for slug detail)
-- Pro tier: `subscription-features.ts` (matrix), `subscription-entitlement.ts` + `subscription-access.ts` (Supabase `subscriptions` + `NEXT_PUBLIC_MOCK_PRO`), `subscription-plans.ts` (pricing); browse gated for free users
-- Home: static `/` + `HomeStoryGridClient` hydrates from `GET /api/feed/top` (`getTopStories`, ETag/`feed-etag.ts`); story `/story/[slug]` via **`StoryDetailPanel`** + `GET /api/story/[slug]` (`client-story-cache.ts`); **`FREE_DAILY_TOP_STORIES_LIMIT`** (10) from `subscription-features.ts`
+- Pages under `frontend/src/app/`; components in `src/components/`; route errors in `app/error.tsx`, `app/global-error.tsx`, and `app/not-found.tsx`; segment `loading.tsx` on story/verify detail
+- Fetch via `api.ts` + `api-resilience.ts`, `stories.ts` (API + `demo-data.ts` fallback, `fromApi` + `ApiDegradedBanner`); articles may include RSS `image_url` (`ArticleImage` on browse/rumors); cluster detail articles carry `source_name` / `bias_score` for perspective + blindspot (`blindspot.ts`, `/blindspot`); verification via `verifications.ts` (`lookupVerifiedClaim` for slug detail)
+- Pro tier: `subscription-features.ts` (matrix, taglines, `PRO_ONLY_FEATURE_IDS` — analytics only; news open to all), `subscription-entitlement.ts` + `subscription-access.ts` (Supabase `subscriptions` + `NEXT_PUBLIC_MOCK_PRO`), `subscription-plans.ts` (pricing); **`/pro`** (**Plans**) + **`PaywallModal`** (`featureId` for Pro-only analytics)
+- Home: static `/` + `HomeStoryGridClient` hydrates from `GET /api/feed/top` (`getTopStories`, ETag/`feed-etag.ts`); story `/story/[slug]` via **`StoryDetailPanel`** + `GET /api/story/[slug]` (`client-story-cache.ts`); **`HOME_TOP_STORIES_LIMIT`** from `subscription-features.ts`; full archive on **`/browse`** for everyone
 - Server components for feeds; client components for interactive UI — wrap fragile client trees in `ClientErrorBoundary`
 - Reads degrade to demo when the API is down; writes (verify submit, admin) must surface real failures
 
@@ -37,9 +37,9 @@ You are working on **Jachai News**, a Bangladesh-focused news intelligence produ
 - **Perspective** — independent, neutral, establishment, opposition, international
 - **Bias meter** — Scored lean for a source or cluster
 - **Rumor badge** — Unverified or speculative coverage
-- **Blindspot** — One-sided coverage on a story
+- **Blindspot** — Establishment or opposition press missing while the other side dominates (`blindspot.ts`; `/blindspot` feed)
 - **Verified claim** — Completed fact-check with verdict + analysis (`/verify/[slug]`, backend `verified_claims`)
-- **Jachai Pro** — Free daily top 10 on home; full browse/archive and pro analytics locked behind Pro (see feature matrix)
+- **Shorup Pro** — All users get full news (home highlights + `/browse`); Pro unlocks analytics extras in `PRO_ONLY_FEATURE_IDS` (`subscription-features.ts`; compare on `/pro`)
 
 ## Quality bar
 

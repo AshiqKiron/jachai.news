@@ -1,9 +1,9 @@
 ---
-description: Jachai News product context, architecture, and vocabulary
+description: Shorup News product context, architecture, and vocabulary
 alwaysApply: true
 ---
 
-# Jachai News
+# Shorup News
 
 **Ground News for Bangladesh** — installable PWA that clusters the same story across Prothom Alo, Daily Star, bdnews24, BBC Bangla, and more. Compare framing, perspective lean, blindspots, rumor flags, and **verify claims** with AI-assisted fact-checking. UI copy is **English + Bangla** where product-facing.
 
@@ -16,19 +16,20 @@ alwaysApply: true
 | `supabase/` | Migrations for profiles, Pro subscriptions, bKash tables, user dossiers/alerts (RLS); see `.cursor/rules/supabase.mdc` |
 | Root `package.json` | `dev:frontend`, `dev:backend`, `build:frontend`, `lint:frontend`, **`ingest:backend`**, **`worker:backend`**, **`worker:beat`**, **`worker:verification`**, **`stack:up`** / **`stack:down`** |
 | `docs/DEPLOYMENT.md` | Production release playbook — deploy order, migrations (backend + Supabase), PWA/chunk reload, rollback, CI hooks |
+| `docs/CURSOR_RULES.md` | How to maintain `.cursorrules` and `.cursor/rules/*.mdc` with the codebase |
 | `docker-compose.yml` | Local stack: Postgres (pgvector), Redis, API, Celery worker, **beat** (minute tick → scheduled RSS when Redis + scheduler enabled) |
 
 ## Data on the frontend
 
-- **Live API**: `api-base.ts` — browser `NEXT_PUBLIC_API_URL` (default `/api/v1` via Next rewrite); server `API_URL` → `http://127.0.0.1:3001/api/v1` (`DEV_BACKEND_ORIGIN`). `api.ts` / `verifications.ts` use `resolveApiBase()`. News: `/articles` (optional `source_id`), `/sources` (`custom_only` for admin-added feeds), `/clusters`, `/clusters/{slug}`, `/bias`, `/rumors`. GETs time out quickly via `api-resilience.ts` (`fetchJsonSafe`).
+- **Live API**: `api-base.ts` — browser `NEXT_PUBLIC_API_URL` (default `/api/v1` via Next rewrite); server `API_URL` → `http://127.0.0.1:3001/api/v1` (`DEV_BACKEND_ORIGIN`). `api.ts` / `verifications.ts` use `resolveApiBase()`. News: `/articles` (optional `source_id`, optional **`image_url`** from RSS), `/sources` (`custom_only` for admin-added feeds), `/clusters`, `/clusters/{slug}` (articles + **`source_name`** / **`bias_score`**), `/bias`, `/rumors`. GETs time out quickly via `api-resilience.ts` (`fetchJsonSafe`).
 - **Verification**: `frontend/src/lib/verifications.ts` → `POST /verify`, `/verifications`, `/verifications/jobs/{id}`, SSE `/events`, WebSocket `/ws`, `/verifications/{slug}`, `/verifications/search`; progress helper `verification-progress.ts`. Reads degrade safely; submit still requires a live API.
 - **Demo fallback**: Rich story payloads in `demo-data.ts` (`DEMO_STORIES`, `BD_SOURCES`, `DEMO_RUMOR_ARTICLES`); `stories.ts` merges API clusters with demo by slug and falls back when the API is down or empty. UI signals offline/demo with `ApiDegradedBanner` (`fromApi` flags).
 - **Home feed**: `/` is static shell + `HomeStoryGridClient` — paints demo stories first, then hydrates from **`GET /api/feed/top`** (`app/api/feed/top/route.ts` → `getTopStories`, ETag via **`feed-etag.ts`**, short public cache). **Story detail**: `/story/[slug]` static params from demo + **`StoryDetailPanel`** client fetch **`GET /api/story/[slug]`** (`resolveStoryBySlug`, ETag + **`client-story-cache.ts`**). Custom RSS sources are managed in **`/admin`** (`AdminSourcesPanel`); they ingest into clusters like seed feeds — no separate home custom-feed section.
-- **Resilience**: `app/error.tsx` + `global-error.tsx` (`reloadOnceOnChunkError` from `chunk-load-error.ts` after deploy/PWA chunk mismatches; dev layout unregisters stale service workers). `ClientErrorBoundary` on heavy client widgets (`StoryTabs`, `VerifyClaimForm`). Prefer extending `stories.ts` / `api.ts` / `verifications.ts` rather than fetching ad hoc in pages.
+- **Resilience**: `app/error.tsx` + `global-error.tsx` (`reloadOnceOnChunkError` from `chunk-load-error.ts` after deploy/PWA chunk mismatches; dev layout unregisters stale service workers); **`app/not-found.tsx`**; segment **`loading.tsx`** on story/verify detail. `ClientErrorBoundary` on heavy client widgets (`StoryTabs`, `VerifyClaimForm`). Prefer extending `stories.ts` / `api.ts` / `verifications.ts` rather than fetching ad hoc in pages.
 
 ## RSS ingestion (backend)
 
-- **Service**: `backend/app/services/rss_ingestion.py` — seed sources from `bd_sources_seed.py`, fetch feeds, dedupe by article URL, cluster by title Jaccard similarity (72h lookback, threshold ~0.42), optional AI cluster summary via `ai_client.summarize_cluster` when 2+ articles in a cluster.
+- **Service**: `backend/app/services/rss_ingestion.py` — seed sources from `bd_sources_seed.py`, fetch feeds (`rss_parser.py` extracts optional **`image_url`** per entry), dedupe by article URL, cluster by title Jaccard similarity (72h lookback, threshold ~0.42), optional AI cluster summary via `ai_client.summarize_cluster` when 2+ articles in a cluster.
 - **CLI**: `npm run ingest:backend` → `backend/scripts/ingest_rss.py` (requires `DATABASE_URL`; ORM tables + SQL migrations on API startup).
 - **API**: `POST /api/v1/ingest` in `app/api/ingest.py`; optional `INGEST_API_KEY` env → require `X-Ingest-Key` header; async via Celery when `REDIS_URL` + `INGEST_ASYNC_ENABLED`.
 - **Ops hooks**: `app/services/ops_alerts.py` — Healthchecks.io start/success/fail pings and optional Telegram summaries on ingest; wired from `ingest.py` and `scripts/ingest_rss.py`. All no-ops when env vars are unset.
@@ -43,8 +44,8 @@ alwaysApply: true
 
 ## Admin ops (internal)
 
-- **Backend**: `GET /api/v1/admin/overview` — counts, per-source stats (incl. **`disabled`**), recent clusters, **`ingest_schedule`**, AI provider + key flags (`admin_stats.py`). **`GET/PATCH /api/v1/admin/ingest-schedule`** — read/update pull interval stored in **`app_settings`**. `POST/DELETE /api/v1/admin/sources` — add or remove RSS sources (`admin_sources.py`: DELETE **purges** that source’s articles and orphan clusters, then **soft-disables** seed feeds or **hard-deletes** custom rows; POST with same name re-enables disabled seed/custom). When `ADMIN_API_KEY` is set, require header `X-Admin-Key`.
-- **Frontend**: production admin UI on **`admin.jachai.news`** (`admin-host.ts`; main site redirects `/admin`); local dev at `/admin`. Page gate via legacy cookie (`ADMIN_PASSWORD` + `admin-auth.ts`) **or** Supabase user with `app_metadata.role=admin` / `ADMIN_EMAILS` allowlist. Public: `/admin/login`, `/admin/register` (`ADMIN_REGISTRATION_CODE`). Server proxies: `app/api/admin/login`, `logout`, `ingest`, **`ingest-schedule`**, `register`, `verify`, **`overview`**, **`users`**, **`users/[id]`**, `sources` — RSS/ingest/schedule via `lib/admin-api.ts` + **`ingest-schedule.ts`** (`ADMIN_API_KEY` / `INGEST_API_KEY`); Supabase user admin via `lib/admin-users.ts` (service role). **`GET /api/admin/overview`** uses **`isAdminRouteAuthorized`** and returns **`{ overview, apiHealthy }`**. Sources, ingest, **ingest-schedule**, and user CRUD proxies still require legacy **`jachai_admin`** (`verifyAdminSession`). UI: tabbed **`AdminDashboardPanel`** (`components/admin/`) — Overview, General (**`AdminIngestPanel`** schedule + manual ingest, **`AdminSourcesPanel`**), System (`buildAdminSystemInfo`), Users (`AdminUsersPanel`), Issues (`collectAdminIssues`); `AdminLogoutButton`; optional `NEXT_PUBLIC_BACKEND_DOCS_URL` for OpenAPI link.
+- **Backend**: `GET /api/v1/admin/overview` — counts, per-source stats (incl. **`disabled`**), recent clusters, **`ingest_schedule`**, AI provider + key flags (`admin_stats.py`). **`GET/PATCH /api/v1/admin/ingest-schedule`** — read/update pull interval stored in **`app_settings`**. `POST/DELETE /api/v1/admin/sources` — add or remove RSS sources (`admin_sources.py`: DELETE **purges** that source’s articles and orphan clusters, then **soft-disables** seed feeds or **hard-deletes** custom rows; POST with same name re-enables disabled seed/custom). **`POST /api/v1/admin/sources/{source_id}/ingest`** — pull one feed (`run_rss_ingest_for_source`). When `ADMIN_API_KEY` is set, require header `X-Admin-Key`.
+- **Frontend**: production admin UI on **`admin.shorup.news`** (`admin-host.ts`; main site redirects `/admin`); local dev at `/admin`. Page gate via legacy cookie (`ADMIN_PASSWORD` + `admin-auth.ts`) **or** Supabase user with `app_metadata.role=admin` / `ADMIN_EMAILS` allowlist. Public: `/admin/login`, `/admin/register` (`ADMIN_REGISTRATION_CODE`). Server proxies: `app/api/admin/login`, `logout`, `ingest`, **`ingest-schedule`**, `register`, `verify`, **`overview`**, **`users`**, **`users/[id]`**, `sources` — RSS/ingest/schedule via `lib/admin-api.ts` + **`ingest-schedule.ts`** (`ADMIN_API_KEY` / `INGEST_API_KEY`); Supabase user admin via `lib/admin-users.ts` (service role). **`GET /api/admin/overview`** uses **`isAdminRouteAuthorized`** and returns **`{ overview, apiHealthy }`**. Sources, ingest, **ingest-schedule**, and user CRUD proxies still require legacy **`shorup_admin`** (`verifyAdminSession`). UI: tabbed **`AdminDashboardPanel`** (`components/admin/`) — Overview, General (**`AdminIngestPanel`** schedule + manual ingest, **`AdminSourcesPanel`**), System (`buildAdminSystemInfo`), Users (`AdminUsersPanel`), Issues (`collectAdminIssues`); `AdminLogoutButton`; optional `NEXT_PUBLIC_BACKEND_DOCS_URL` for OpenAPI link.
 - **Seed vs custom RSS**: `seed-source-names.ts` mirrors `bd_sources_seed.py`; `isCustomRssSource` distinguishes admin-added feeds from seed names (backend `GET /sources?custom_only=true`).
 - **Env**: document in `backend/.env.example` and `frontend/.env.example`; never expose admin secrets as `NEXT_PUBLIC_*`.
 
@@ -66,9 +67,9 @@ alwaysApply: true
 - **Perspective** — `independent` \| `neutral` \| `establishment` \| `opposition` \| `international` (`frontend/src/lib/perspectives.ts`)
 - **Bias meter** — Source or cluster lean score
 - **Rumor badge** — Low corroboration or speculative coverage (`is_rumor` on articles)
-- **Blindspot** — Story marked one-sided (`isBlindspot` on demo `Story` type)
+- **Blindspot** — Coverage gap on the **establishment** or **opposition** axis (`lib/blindspot.ts`: **`detectBlindspot`** on enriched article perspectives; **`/blindspot`** feed via **`getBlindspotStories`**; **`BlindspotBanner`** on story detail)
 - **Verified claim** — User-submitted claim with AI verdict + analysis (`verified_claims`, `/verify/[slug]`)
-- **Jachai Pro** — Paid tier; pricing in `frontend/src/lib/subscription-plans.ts` (৳49/mo, ৳399/yr). **Feature matrix** (free vs Pro): `frontend/src/lib/subscription-features.ts` — source of truth for gating copy and `PRO_ONLY_FEATURE_IDS`. **Entitlements**: `subscription-entitlement.ts` (`isActiveProSubscription` on `subscriptions` row); `subscription-access.ts` — `getProAccessState()` / `hasProAccess()` via Supabase RLS (server session) with `NEXT_PUBLIC_MOCK_PRO=true` override for local UI. Planned payment: bKash Tokenized Checkout API; no live checkout yet.
+- **Shorup Pro** — Paid tier; pricing in `frontend/src/lib/subscription-plans.ts` (৳49/mo, ৳399/yr). **Feature matrix** (free vs Pro): `frontend/src/lib/subscription-features.ts` — `SUBSCRIPTION_FEATURE_MATRIX`, taglines, and `PRO_ONLY_FEATURE_IDS`; **`/pro`** (**Plans**) via **`SubscriptionPlanCards`**; in-app upsell **`PaywallModal`** (optional `featureId` for Pro analytics). News/browse open to all users. **Entitlements**: `subscription-entitlement.ts` (`isActiveProSubscription` on `subscriptions` row); `subscription-access.ts` — `getProAccessState()` / `hasProAccess()` via Supabase RLS (server session) with `NEXT_PUBLIC_MOCK_PRO=true` override for local UI. Planned payment: bKash Tokenized Checkout API; no live checkout yet.
 
 ## Quality bar
 

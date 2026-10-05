@@ -24,7 +24,7 @@ export function InstallPWA() {
 
   return (
     <div className="fixed bottom-20 left-4 right-4 z-50 rounded-xl border border-zinc-700 bg-ink-900 p-4 shadow-xl md:bottom-6 md:left-auto md:right-6 md:max-w-sm">
-      <p className="text-sm font-medium text-zinc-100">Jachai ইনস্টল করুন</p>
+      <p className="text-sm font-medium text-zinc-100">Shorup ইনস্টল করুন</p>
       <p className="mt-1 text-xs text-zinc-400">হোম স্ক্রিনে যোগ করে দ্রুত বাংলাদেশি সংবাদ তুলনা করুন।</p>
       <div className="mt-3 flex gap-2">
         <button

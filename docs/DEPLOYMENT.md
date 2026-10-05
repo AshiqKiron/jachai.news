@@ -1,12 +1,12 @@
 # Production deployment & safe releases
 
-How to ship new features to **jachai.news** without breaking the site. Use this as the default release playbook when CI/CD is added.
+How to ship new features to **shorup.news** without breaking the site. Use this as the default release playbook when CI/CD is added.
 
 ## Architecture at deploy time
 
 | Piece | Role | Typical failure mode |
 |-------|------|----------------------|
-| **Frontend** | Next.js PWA — `jachai.news`, `admin.jachai.news` (same deployment) | Broken UI, stale JS chunks after deploy |
+| **Frontend** | Next.js PWA — `shorup.news`, `admin.shorup.news` (same deployment) | Broken UI, stale JS chunks after deploy |
 | **Backend API** | FastAPI — `/api/v1`, `GET /health` | 5xx, wrong JSON shapes |
 | **Celery workers** | Queues `ingest`, `verification` | Ingest / verify jobs fail |
 | **News Postgres** | Clusters, articles, verified claims (+ pgvector) | Migrations block API startup |
@@ -31,7 +31,7 @@ PR + review → CI (lint, build, tests) → staging (prod-shaped env)
 
 - Backend: `GET /health` (frontend proxy: `/backend-health` in `next.config.ts`).
 - Public: home (`/api/feed/top`), one story slug, `/verify`, `/verify/database`.
-- Admin: `admin.jachai.news` — overview + API health (`AdminDashboardPanel`).
+- Admin: `admin.shorup.news` — overview + API health (`AdminDashboardPanel`).
 - Ingest (optional): `POST /api/v1/ingest` with `X-Ingest-Key` when `INGEST_API_KEY` is set; confirm **202** when `REDIS_URL` + `INGEST_ASYNC_ENABLED`.
 
 ## Deploy order by change type
@@ -64,7 +64,7 @@ Default for a full-stack feature: **migrations → API → workers → frontend*
 
 - Production: prefer `NEXT_PUBLIC_API_URL=/api/v1` (same-origin rewrite); SSR uses server `API_URL` → backend (see `frontend/.env.example`, `api-base.ts`).
 - PWA service worker is **production builds only** (`next.config.ts`). After deploy, installed clients may hit chunk hash mismatches; `frontend/src/lib/chunk-load-error.ts` reloads once — still prefer lower-traffic windows for big UI releases.
-- `jachai.news` and `admin.jachai.news` share one Next deployment — validate both on staging.
+- `shorup.news` and `admin.shorup.news` share one Next deployment — validate both on staging.
 
 ## Rollback
 

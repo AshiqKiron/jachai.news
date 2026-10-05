@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
-import { ADMIN_COOKIE_NAME, verifyAdminSession } from "@/lib/admin-auth";
 import { removeAdminSource } from "@/lib/admin-api";
+import { requireAdminRouteAuthorized } from "@/lib/admin-route-auth";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const session = (await cookies()).get(ADMIN_COOKIE_NAME)?.value;
-  if (!(await verifyAdminSession(session))) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
+  const unauthorized = await requireAdminRouteAuthorized();
+  if (unauthorized) return unauthorized;
 
   const { id } = await context.params;
   const sourceId = Number.parseInt(id, 10);

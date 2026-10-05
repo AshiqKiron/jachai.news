@@ -16,6 +16,7 @@ class Article(Base):
     title: Mapped[str] = mapped_column(String(512))
     url: Mapped[str] = mapped_column(String(2048), unique=True)
     excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_rumor: Mapped[bool] = mapped_column(Boolean, default=False)
 

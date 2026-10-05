@@ -1,8 +1,8 @@
 import type { Story } from "@/lib/demo-data";
 
-const TOP_STORIES_KEY = "jachai:top-stories:v1";
-const STORY_KEY_PREFIX = "jachai:story:v1:";
-const TOP_FETCHED_AT_KEY = "jachai:top-stories-fetched-at:v1";
+const TOP_STORIES_KEY = "shorup:top-stories:v2";
+const STORY_KEY_PREFIX = "shorup:story:v1:";
+const TOP_FETCHED_AT_KEY = "shorup:top-stories-fetched-at:v1";
 
 /** Align with home feed `Cache-Control` / server revalidate. */
 export const CLIENT_FEED_STALE_MS = 30_000;
@@ -19,10 +19,11 @@ function canUseStorage(): boolean {
 
 export function storyFingerprint(story: Story): string {
   const articleSig = story.articles
-    .map((a) => `${a.url}:${a.publishedAt}`)
+    .map((a) => `${a.url}:${a.publishedAt}:${a.perspective ?? ""}`)
     .sort()
     .join("|");
-  return `${story.slug}:${story.updatedAt}:${story.articles.length}:${articleSig}`;
+  const perspectiveSig = Object.keys(story.perspectiveSummaries).sort().join(",");
+  return `${story.slug}:${story.updatedAt}:${story.articles.length}:${articleSig}:${perspectiveSig}`;
 }
 
 export function storiesListFingerprint(stories: Story[]): string {
@@ -88,6 +89,9 @@ export function mergeStoryLists(cached: Story[], incoming: Story[]): Story[] {
     const prev = bySlug.get(next.slug);
     if (prev && storyFingerprint(prev) === storyFingerprint(next)) {
       return prev;
+    }
+    if (prev && next.articles.length === 0 && prev.articles.length > 0) {
+      return { ...next, articles: prev.articles };
     }
     return next;
   });

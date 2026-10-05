@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
-import { ADMIN_COOKIE_NAME, verifyAdminSession } from "@/lib/admin-auth";
 import { createAdminSource } from "@/lib/admin-api";
+import { requireAdminRouteAuthorized } from "@/lib/admin-route-auth";
 
 export async function POST(request: Request) {
-  const session = (await cookies()).get(ADMIN_COOKIE_NAME)?.value;
-  if (!(await verifyAdminSession(session))) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
+  const unauthorized = await requireAdminRouteAuthorized();
+  if (unauthorized) return unauthorized;
 
   let body: { name?: string; feed_url?: string; bias_score?: number | null };
   try {

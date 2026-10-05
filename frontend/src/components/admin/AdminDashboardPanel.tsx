@@ -96,8 +96,8 @@ export function AdminDashboardPanel({
     function onRefresh() {
       void load();
     }
-    window.addEventListener("jachai:admin-refresh", onRefresh);
-    return () => window.removeEventListener("jachai:admin-refresh", onRefresh);
+    window.addEventListener("shorup:admin-refresh", onRefresh);
+    return () => window.removeEventListener("shorup:admin-refresh", onRefresh);
   }, [load]);
 
   const overview = data?.overview ?? null;
@@ -130,7 +130,7 @@ export function AdminDashboardPanel({
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-ink-900/50 p-1">
+      <div className="flex gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-ink-900/50 p-1 [-webkit-overflow-scrolling:touch]">
         {TABS.map((item) => {
           const showIssueBadge = item.id === "issues" && issues.length > 0;
           const badgeCritical = issueCounts.critical > 0;

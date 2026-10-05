@@ -1,3 +1,4 @@
+import { resolveArticleImageUrl } from "@/lib/article-image-url";
 import type { Article } from "@/lib/api";
 import type { Factuality, Perspective } from "@/lib/perspectives";
 
@@ -18,7 +19,23 @@ export type StoryArticle = {
   excerpt: string;
   publishedAt: string;
   framingNote?: string;
+  /** Overrides source default when a story needs a finer perspective label. */
+  perspective?: Perspective;
+  /** Populated from API cluster payloads for perspective / blindspot signals. */
+  sourceName?: string;
+  biasScore?: number | null;
+  imageUrl?: string;
 };
+
+function withDemoArticleImages(stories: Story[]): Story[] {
+  return stories.map((story) => ({
+    ...story,
+    articles: story.articles.map((article) => ({
+      ...article,
+      imageUrl: resolveArticleImageUrl(article.imageUrl),
+    })),
+  }));
+}
 
 export type Story = {
   slug: string;
@@ -40,7 +57,7 @@ export const BD_SOURCES: NewsSource[] = [
     id: "prothom-alo",
     name: "Prothom Alo",
     nameBn: "প্রথম আলো",
-    perspective: "independent",
+    perspective: "neutral",
     factuality: "high",
     language: "bn",
     biasScore: -0.08,
@@ -49,7 +66,7 @@ export const BD_SOURCES: NewsSource[] = [
     id: "daily-star",
     name: "The Daily Star",
     nameBn: "দ্য ডেইলি স্টার",
-    perspective: "independent",
+    perspective: "neutral",
     factuality: "high",
     language: "en",
     biasScore: -0.12,
@@ -128,7 +145,7 @@ export const BD_SOURCES: NewsSource[] = [
   },
 ];
 
-export const DEMO_STORIES: Story[] = [
+const DEMO_STORIES_BASE: Story[] = [
   {
     slug: "padma-bridge-toll-revision",
     title: "Government proposes Padma Bridge toll revision amid commuter pushback",
@@ -146,7 +163,7 @@ export const DEMO_STORIES: Story[] = [
         "Frames the revision as essential maintenance funding and compares rates favorably with regional bridges.",
       opposition:
         "Highlights burden on daily wage earners and questions transparency of toll revenue use.",
-      independent:
+      neutral:
         "Balances fiscal data with commuter interviews from Munshiganj and Shariatpur.",
       international:
         "Places the story in South Asia infrastructure financing context without domestic party labels.",
@@ -174,6 +191,7 @@ export const DEMO_STORIES: Story[] = [
         url: "https://www.thedailystar.net/",
         excerpt: "Economists cite FX pressure; civil society groups demand published audit trails.",
         publishedAt: "2026-10-02T09:40:00Z",
+        perspective: "neutral",
       },
       {
         sourceId: "bbc-bangla",
@@ -194,11 +212,10 @@ export const DEMO_STORIES: Story[] = [
       "রাজধানীতে AQI তীব্র। স্বাস্থ্যঝুঁকি নিয়ে একমত হলেও, শিল্পখাত নাকি যানজট— কোনটাকে আগে ঠেকাতে হবে তা নিয়ে ভিন্ন অ্যাঙ্গেল।",
     category: "Environment",
     categoryBn: "পরিবেশ",
-    isBlindspot: true,
-    blindspotPerspective: "establishment",
+    isBlindspot: false,
     updatedAt: "2026-10-02T06:00:00Z",
     perspectiveSummaries: {
-      independent:
+      neutral:
         "Cites AQI monitors in Mirpur and Keraniganj; quotes pulmonologists on children's exposure.",
       opposition:
         "Attributes crisis to unplanned industrial units and weak enforcement in surrounding districts.",
@@ -245,9 +262,7 @@ export const DEMO_STORIES: Story[] = [
       establishment:
         "Links inflow to government diaspora outreach and stable exchange policy.",
       neutral:
-        "Reports figures with minimal editorial framing; includes BB press release quotes.",
-      independent:
-        "Adds remittance cost-to-send comparisons and migrant worker interviews.",
+        "Reports figures with minimal editorial framing; includes BB press release quotes and migrant worker interviews.",
     },
     articles: [
       {
@@ -265,10 +280,10 @@ export const DEMO_STORIES: Story[] = [
         publishedAt: "2026-10-01T15:30:00Z",
       },
       {
-        sourceId: "prothom-alo",
-        headline: "রেমittance বাড়লেও পাঠানোর খরচ কমেনি— প্রবাসীরা কী বলছেন",
-        url: "https://www.prothomalo.com/",
-        excerpt: "মধ্যপ্রাচ্যে কর্মরত বাংladeshi শ্রমিকদের সাক্ষাৎকার।",
+        sourceId: "jugantor",
+        headline: "রেমittance রেকর্ড: সরকারের নীতিতে প্রবাসীদের আস্থা বাড়ছে",
+        url: "https://www.jugantor.com/",
+        excerpt: "দেশের অর্থনীতিতে ইতিবাচক প্রভাব— সরকারি মুখপাত্র।",
         publishedAt: "2026-10-01T14:45:00Z",
       },
     ],
@@ -286,8 +301,8 @@ export const DEMO_STORIES: Story[] = [
     isBlindspot: false,
     updatedAt: "2026-10-01T22:00:00Z",
     perspectiveSummaries: {
-      neutral: "Straight match report tone with scorecard emphasis.",
-      independent: "Analytical pieces on bowling depth and fielding metrics.",
+      neutral:
+        "Straight match reports and analytical pieces on bowling depth and fielding metrics.",
     },
     articles: [
       {
@@ -315,16 +330,14 @@ export const DEMO_STORIES: Story[] = [
   },
 ];
 
+export const DEMO_STORIES: Story[] = withDemoArticleImages(DEMO_STORIES_BASE);
+
 export function getSourceById(id: string): NewsSource | undefined {
   return BD_SOURCES.find((s) => s.id === id);
 }
 
 export function getStoryBySlug(slug: string): Story | undefined {
   return DEMO_STORIES.find((s) => s.slug === slug);
-}
-
-export function getBlindspotStories(): Story[] {
-  return DEMO_STORIES.filter((s) => s.isBlindspot);
 }
 
 /** Shown on /rumors when the API is empty or unreachable. */

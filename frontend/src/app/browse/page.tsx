@@ -1,10 +1,10 @@
 import Link from "next/link";
 
+import { ArticleImage } from "@/components/ArticleImage";
+import { resolveArticleImageUrl } from "@/lib/article-image-url";
 import { ApiDegradedBanner } from "@/components/ApiDegradedBanner";
-import { BrowseProGate } from "@/components/BrowseProGate";
 import { StoryFeedCard } from "@/components/StoryFeedCard";
 import { DEMO_STORIES } from "@/lib/demo-data";
-import { hasProAccess } from "@/lib/subscription-access";
 import { getBrowseClusters, getLatestArticlesFeed } from "@/lib/stories";
 
 export default async function BrowsePage({
@@ -13,19 +13,6 @@ export default async function BrowsePage({
   searchParams: Promise<{ cluster?: string }>;
 }) {
   const { cluster: clusterSlug } = await searchParams;
-  const pro = await hasProAccess();
-
-  if (!pro) {
-    return (
-      <div className="space-y-8 pb-4">
-        <header>
-          <h1 className="font-display text-3xl text-zinc-50">Browse</h1>
-          <p className="mt-2 text-zinc-400">Full search and historical clusters are part of Jachai Pro.</p>
-        </header>
-        <BrowseProGate />
-      </div>
-    );
-  }
 
   const [articlesFeed, clustersFeed] = await Promise.all([getLatestArticlesFeed(24), getBrowseClusters(24)]);
 
@@ -37,7 +24,7 @@ export default async function BrowsePage({
   return (
     <div className="space-y-8 pb-4">
       <header>
-        <h1 className="font-display text-3xl text-zinc-50">Browse</h1>
+        <h1 className="page-title">Browse</h1>
         <p className="mt-2 text-zinc-400">Story clusters and latest ingested articles.</p>
         {!clustersFromApi || !articlesFromApi ? (
           <div className="mt-4">
@@ -71,10 +58,33 @@ export default async function BrowsePage({
           <ul className="divide-y divide-zinc-800 rounded-xl border border-zinc-800">
             {articleItems.map((article) => (
               <li key={article.id} className="px-4 py-3">
-                <a href={article.url} target="_blank" rel="noreferrer" className="font-medium text-zinc-100">
-                  {article.title}
-                </a>
-                {article.excerpt && <p className="mt-1 line-clamp-2 text-sm text-zinc-500">{article.excerpt}</p>}
+                <div className="flex gap-3">
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 overflow-hidden rounded-lg"
+                  >
+                    <ArticleImage
+                      src={resolveArticleImageUrl(article.image_url)}
+                      alt=""
+                      className="h-16 w-24 object-cover"
+                    />
+                  </a>
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={article.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-zinc-100"
+                    >
+                      {article.title}
+                    </a>
+                    {article.excerpt ? (
+                      <p className="mt-1 line-clamp-2 text-sm text-zinc-500">{article.excerpt}</p>
+                    ) : null}
+                  </div>
+                </div>
               </li>
             ))}
           </ul>

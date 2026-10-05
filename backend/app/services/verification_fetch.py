@@ -10,7 +10,7 @@ async def fetch_claim_source_text(url: str) -> str:
     async with httpx.AsyncClient(
         timeout=12.0,
         follow_redirects=True,
-        headers={"User-Agent": "JachaiNewsVerify/1.0"},
+        headers={"User-Agent": "ShorupNewsVerify/1.0"},
     ) as client:
         response = await client.get(safe_url)
         response.raise_for_status()

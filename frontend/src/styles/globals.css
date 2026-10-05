@@ -54,7 +54,7 @@ html:not(.dark) .text-zinc-200 {
 }
 
 html:not(.dark) .text-zinc-300 {
-  @apply text-zinc-600;
+  color: rgb(82 82 91);
 }
 
 html:not(.dark) .text-zinc-400 {
@@ -105,8 +105,11 @@ html:not(.dark) .bg-zinc-900\/50 {
   background-color: rgb(255 255 255 / 0.88);
 }
 
+html:not(.dark) .bg-ink-900\/30,
+html:not(.dark) .bg-ink-900\/40,
 html:not(.dark) .bg-ink-900\/50,
 html:not(.dark) .bg-ink-900\/60,
+html:not(.dark) .bg-ink-900\/70,
 html:not(.dark) .bg-ink-900\/80 {
   background-color: rgb(255 255 255 / 0.92);
 }
@@ -148,8 +151,14 @@ html:not(.dark) .shadow-black\/25 {
   @apply text-neutral-100 hover:text-white;
 }
 
-.dark .text-zinc-500 {
-  @apply text-neutral-400;
+.dark a.bg-accent,
+.dark a.bg-accent:hover {
+  @apply text-black hover:text-black;
+}
+
+.dark .text-zinc-500,
+.dark .text-zinc-600 {
+  color: rgb(163 163 163);
 }
 
 .dark .border-zinc-800,
@@ -171,6 +180,24 @@ html:not(.dark) .shadow-black\/25 {
 .dark .bg-zinc-900\/40,
 .dark .bg-zinc-900\/50 {
   background-color: rgb(23 23 23 / 0.85);
+}
+
+.dark .bg-ink-900\/30 {
+  background-color: rgb(23 23 23 / 0.82);
+}
+
+.dark .bg-ink-900\/40 {
+  background-color: rgb(23 23 23 / 0.88);
+}
+
+.dark .bg-ink-900\/50,
+.dark .bg-ink-900\/60 {
+  background-color: rgb(23 23 23 / 0.9);
+}
+
+.dark .bg-ink-900\/70,
+.dark .bg-ink-900\/80 {
+  background-color: rgb(23 23 23 / 0.94);
 }
 
 .dark .text-accent,
@@ -226,4 +253,22 @@ html:not(.dark) .shadow-black\/25 {
 .dark .hover\:border-zinc-700:hover,
 .dark .hover\:border-zinc-600:hover {
   @apply border-neutral-500;
+}
+
+@layer utilities {
+  .page-title {
+    @apply font-display text-2xl leading-tight text-zinc-50 sm:text-3xl;
+  }
+
+  .page-title-lg {
+    @apply font-display text-2xl leading-tight text-zinc-50 sm:text-3xl md:text-4xl;
+  }
+
+  .page-hero-title {
+    @apply font-display text-3xl leading-tight text-zinc-50 sm:text-4xl md:text-5xl;
+  }
+
+  .horizontal-scroll-pad {
+    @apply -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0;
+  }
 }

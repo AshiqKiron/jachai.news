@@ -14,12 +14,13 @@ export function BiasMeter({ score, label, labelBn }: Props) {
   const meta = PERSPECTIVE_META[perspective];
   const value = score ?? 0;
   const clamped = Math.max(-1, Math.min(1, value));
-  const percent = ((clamped + 1) / 2) * 100;
+  /** Left = pro-government, center = neutral, right = opposition. */
+  const percent = ((1 - clamped) / 2) * 100;
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2 text-sm">
-        <div>
+        <div className="min-w-0">
           {labelBn ? <p className="font-bengali text-zinc-200">{labelBn}</p> : null}
           <span className="text-zinc-500">{label}</span>
         </div>
@@ -27,24 +28,24 @@ export function BiasMeter({ score, label, labelBn }: Props) {
           {meta.labelBn}
         </span>
       </div>
-      <div className="relative h-2 overflow-hidden rounded-full bg-zinc-800">
+      <div className="relative h-1 overflow-hidden rounded-full bg-zinc-800">
         <div className="absolute inset-y-0 left-1/2 w-px bg-zinc-600" />
         <div
           className="absolute inset-y-0 rounded-full opacity-90"
           style={{
             width: `${percent}%`,
-            background: `linear-gradient(90deg, ${PERSPECTIVE_META.opposition.color}, ${PERSPECTIVE_META.neutral.color}, ${PERSPECTIVE_META.establishment.color})`,
+            background: `linear-gradient(90deg, ${PERSPECTIVE_META.establishment.color}, ${PERSPECTIVE_META.neutral.color}, ${PERSPECTIVE_META.opposition.color})`,
           }}
         />
         <div
-          className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-ink-950 bg-white shadow"
-          style={{ left: `calc(${percent}% - 6px)` }}
+          className="absolute top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border border-ink-950 bg-white shadow"
+          style={{ left: `calc(${percent}% - 4px)` }}
         />
       </div>
       <div className="flex justify-between gap-1 text-[10px] font-bengali tracking-wide text-zinc-600">
-        <span className="text-left">সরকারের বিপক্ষে</span>
+        <span className="text-left">সরকারের পক্ষে</span>
         <span className="shrink-0 text-center">নিরপেক্ষ</span>
-        <span className="text-right">সরকারের পক্ষে</span>
+        <span className="text-right">সরকারের বিপক্ষে</span>
       </div>
     </div>
   );

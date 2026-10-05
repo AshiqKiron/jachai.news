@@ -3,7 +3,7 @@ from celery import Celery
 from app.core.config import settings
 
 celery_app = Celery(
-    "jachai",
+    "shorup",
     broker=settings.redis_url or "redis://localhost:6379/0",
     backend=settings.redis_url or "redis://localhost:6379/0",
 )

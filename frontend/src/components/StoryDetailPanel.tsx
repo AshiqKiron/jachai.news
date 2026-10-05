@@ -6,7 +6,9 @@ import { useEffect, useLayoutEffect, useState } from "react";
 
 import { ApiDegradedBanner } from "@/components/ApiDegradedBanner";
 import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
+import { BlindspotBanner } from "@/components/BlindspotBanner";
 import { CoverageBar } from "@/components/CoverageBar";
+import { applyBlindspotDetection, type BlindspotAxisPerspective } from "@/lib/blindspot";
 import type { Story } from "@/lib/demo-data";
 import {
   readStoryCache,
@@ -14,7 +16,6 @@ import {
   writeStoryCache,
 } from "@/lib/client-story-cache";
 import { enrichArticles } from "@/lib/coverage";
-import { PERSPECTIVE_META } from "@/lib/perspectives";
 
 const StoryTabs = dynamic(
   () => import("@/components/StoryTabs").then((mod) => mod.StoryTabs),
@@ -93,7 +94,8 @@ export function StoryDetailPanel({ slug }: Props) {
     return <StoryDetailSkeleton />;
   }
 
-  const { story, fromApi } = resolved;
+  const { fromApi } = resolved;
+  const story = applyBlindspotDetection(resolved.story);
   const articles = enrichArticles(story);
 
   return (
@@ -104,16 +106,15 @@ export function StoryDetailPanel({ slug }: Props) {
         <p className="text-xs uppercase tracking-widest text-zinc-500">
           {story.categoryBn} · Full coverage
         </p>
-        <h1 className="font-display text-3xl leading-tight text-zinc-50 md:text-4xl">{story.titleBn}</h1>
+        <h1 className="page-title-lg break-words">{story.titleBn}</h1>
         <p className="text-lg text-zinc-400">{story.title}</p>
         <p className="text-sm leading-relaxed text-zinc-400">{story.summaryBn}</p>
         <CoverageBar story={story} />
-        {story.isBlindspot && story.blindspotPerspective ? (
-          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
-            Blindspot: mostly covered from{" "}
-            <strong>{PERSPECTIVE_META[story.blindspotPerspective].labelBn}</strong> angles — other perspectives
-            underrepresented.
-          </p>
+        {story.isBlindspot &&
+        story.blindspotPerspective &&
+        (story.blindspotPerspective === "establishment" ||
+          story.blindspotPerspective === "opposition") ? (
+          <BlindspotBanner perspective={story.blindspotPerspective as BlindspotAxisPerspective} />
         ) : null}
       </header>
 

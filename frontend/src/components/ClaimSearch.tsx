@@ -29,18 +29,18 @@ export function ClaimSearch() {
 
   return (
     <div className="space-y-4">
-      <form onSubmit={onSearch} className="flex gap-2">
+      <form onSubmit={onSearch} className="flex flex-col gap-2 sm:flex-row">
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search verified claims…"
-          className="flex-1 rounded-lg border border-zinc-700 bg-ink-950 px-3 py-2 text-sm text-zinc-100"
+          className="min-w-0 flex-1 rounded-lg border border-zinc-700 bg-ink-950 px-3 py-2 text-sm text-zinc-100"
         />
         <button
           type="submit"
           disabled={loading || query.trim().length < 2}
-          className="rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-200 disabled:opacity-50"
+          className="rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-200 disabled:opacity-50 sm:shrink-0"
         >
           {loading ? "…" : "Search"}
         </button>

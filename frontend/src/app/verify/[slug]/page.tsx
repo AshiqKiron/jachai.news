@@ -78,7 +78,7 @@ function VerificationClaimBody({ claim }: { claim: VerifiedClaim }) {
         <span className="inline-block rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase tracking-wide text-zinc-400">
           {verdictLabel(claim.verdict)}
         </span>
-        <h1 className="font-display text-2xl text-zinc-50">{claim.claim_text}</h1>
+        <h1 className="break-words font-display text-xl text-zinc-50 sm:text-2xl">{claim.claim_text}</h1>
         {claim.cache_source_id && (
           <p className="text-xs text-zinc-500">Semantic cache hit — analysis reused from a similar verified claim.</p>
         )}

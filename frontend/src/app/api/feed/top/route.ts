@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { etagForStories, ifNoneMatchMatches } from "@/lib/feed-etag";
-import { FREE_DAILY_TOP_STORIES_LIMIT } from "@/lib/subscription-features";
+import { HOME_TOP_STORIES_LIMIT } from "@/lib/subscription-features";
 import { getTopStories } from "@/lib/stories";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const rawLimit = Number(searchParams.get("limit") ?? FREE_DAILY_TOP_STORIES_LIMIT);
-  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : FREE_DAILY_TOP_STORIES_LIMIT;
+  const rawLimit = Number(searchParams.get("limit") ?? HOME_TOP_STORIES_LIMIT);
+  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : HOME_TOP_STORIES_LIMIT;
 
   const feed = await getTopStories(limit);
   const etag = etagForStories(feed.stories);

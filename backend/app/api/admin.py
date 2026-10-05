@@ -10,8 +10,10 @@ from app.schemas.admin import (
     AdminSourceCreate,
     AdminSourceStat,
 )
+from app.schemas.ingest import IngestResponse
 from app.services.admin_stats import get_admin_overview
 from app.services.admin_sources import create_admin_source, remove_admin_source
+from app.services.rss_ingestion import IngestResult, run_rss_ingest_for_source
 from app.services.ingest_schedule import (
     ALLOWED_INGEST_INTERVAL_MINUTES,
     get_ingest_interval_minutes,
@@ -26,6 +28,18 @@ router = APIRouter()
 def _require_admin_key(x_admin_key: str | None) -> None:
     if settings.admin_api_key and x_admin_key != settings.admin_api_key:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin key")
+
+
+def _ingest_response_from_result(result: IngestResult) -> IngestResponse:
+    return IngestResponse(
+        sources_processed=result.sources_processed,
+        articles_fetched=result.articles_fetched,
+        articles_created=result.articles_created,
+        articles_skipped_duplicate=result.articles_skipped_duplicate,
+        clusters_created=result.clusters_created,
+        clusters_updated=result.clusters_updated,
+        errors=result.errors,
+    )
 
 
 async def _ingest_schedule_response(session: AsyncSession) -> AdminIngestScheduleResponse:
@@ -88,3 +102,19 @@ async def admin_remove_source(
 ) -> AdminSourceStat:
     _require_admin_key(x_admin_key)
     return await remove_admin_source(db, source_id)
+
+
+@router.post("/sources/{source_id}/ingest", response_model=IngestResponse)
+async def admin_ingest_source(
+    source_id: int,
+    db: AsyncSession = Depends(get_db),
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+) -> IngestResponse:
+    _require_admin_key(x_admin_key)
+    try:
+        result = await run_rss_ingest_for_source(db, source_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    return _ingest_response_from_result(result)

@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 
-import { deleteAdminRoute, postAdminRoute } from "@/lib/admin-proxy-client";
+import {
+  ADMIN_INGEST_CLIENT_TIMEOUT_MS,
+  deleteAdminRoute,
+  postAdminRoute,
+} from "@/lib/admin-proxy-client";
+import type { IngestResponse } from "@/lib/admin-types";
 import { buildRssSourcePayload, validateRssSourceInput } from "@/lib/admin-input";
 import type { AdminSourceStat } from "@/lib/admin-types";
 type Props = {
@@ -11,7 +16,7 @@ type Props = {
 };
 
 function notifyFeedsChanged(onFeedsChanged?: () => void) {
-  window.dispatchEvent(new CustomEvent("jachai:admin-refresh"));
+  window.dispatchEvent(new CustomEvent("shorup:admin-refresh"));
   onFeedsChanged?.();
 }
 
@@ -21,6 +26,7 @@ export function AdminSourcesPanel({ sources, onFeedsChanged }: Props) {
   const [biasScore, setBiasScore] = useState("");
   const [loading, setLoading] = useState(false);
   const [removingId, setRemovingId] = useState<number | null>(null);
+  const [fetchingId, setFetchingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -54,9 +60,39 @@ export function AdminSourcesPanel({ sources, onFeedsChanged }: Props) {
     }
   }
 
+  function formatFetchResult(sourceName: string, result: IngestResponse): string {
+    const parts = [`Fetched ${sourceName}: ${result.articles_created} new article(s).`];
+    if (result.articles_skipped_duplicate > 0) {
+      parts.push(`${result.articles_skipped_duplicate} duplicate(s) skipped.`);
+    }
+    if (result.errors.length > 0) {
+      parts.push(result.errors.join(" "));
+    }
+    return parts.join(" ");
+  }
+
+  async function handleFetchNow(source: AdminSourceStat) {
+    setFetchingId(source.source_id);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await postAdminRoute<IngestResponse>(
+        `/api/admin/sources/${source.source_id}/ingest`,
+        undefined,
+        ADMIN_INGEST_CLIENT_TIMEOUT_MS,
+      );
+      setMessage(formatFetchResult(source.name, result));
+      notifyFeedsChanged(onFeedsChanged);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not fetch RSS feed.");
+    } finally {
+      setFetchingId(null);
+    }
+  }
+
   async function handleRemove(source: AdminSourceStat) {
     const confirmRemove = window.confirm(
-      `Remove "${source.name}" from RSS ingest? All articles from this feed will be deleted from Jachai.`,
+      `Remove "${source.name}" from RSS ingest? All articles from this feed will be deleted from Shorup.`,
     );
     if (!confirmRemove) return;
 
@@ -163,14 +199,28 @@ export function AdminSourcesPanel({ sources, onFeedsChanged }: Props) {
                       {source.bias_score === null ? "—" : source.bias_score.toFixed(2)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleRemove(source)}
-                        disabled={removingId === source.source_id}
-                        className="text-sm text-red-400 hover:text-red-300 disabled:opacity-60"
-                      >
-                        {removingId === source.source_id ? "Removing…" : "Remove"}
-                      </button>
+                      <div className="flex flex-wrap items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => void handleFetchNow(source)}
+                          disabled={
+                            fetchingId === source.source_id || removingId === source.source_id
+                          }
+                          className="text-sm text-accent hover:text-accent/90 disabled:opacity-60"
+                        >
+                          {fetchingId === source.source_id ? "Fetching…" : "Fetch now"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemove(source)}
+                          disabled={
+                            removingId === source.source_id || fetchingId === source.source_id
+                          }
+                          className="text-sm text-red-400 hover:text-red-300 disabled:opacity-60"
+                        >
+                          {removingId === source.source_id ? "Removing…" : "Remove"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

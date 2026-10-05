@@ -20,14 +20,14 @@ export function MobileNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800/90 bg-ink-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-      <ul className="mx-auto flex max-w-lg justify-around px-2 py-2">
+      <ul className="mx-auto flex max-w-lg justify-around px-1 py-2 sm:px-2">
         {items.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <li key={item.href}>
               <Link
                 href={item.href}
-                className={`flex flex-col items-center px-3 py-1 text-[11px] ${
+                className={`flex min-w-0 flex-1 flex-col items-center px-2 py-1 text-[11px] sm:px-3 ${
                   active ? "text-accent" : "text-zinc-500"
                 }`}
               >

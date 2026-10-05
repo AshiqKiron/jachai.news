@@ -1,16 +1,16 @@
 ---
-description: Supabase auth, Pro subscriptions, and bKash schema for Jachai News
+description: Supabase auth, Pro subscriptions, and bKash schema for Shorup News
 globs: supabase/**
 alwaysApply: false
 ---
 
 # Supabase
 
-Jachai uses Supabase for **auth**, **Pro entitlement**, **user research metadata**, and **planned bKash checkout** — not for articles/clusters or verified claims (those live in backend PostgreSQL).
+Shorup uses Supabase for **auth**, **Pro entitlement**, **user research metadata**, and **planned bKash checkout** — not for articles/clusters or verified claims (those live in backend PostgreSQL).
 
 ## Layout
 
-- `supabase/config.toml` — local CLI project (`project_id = "jachai-news"`, Postgres 15)
+- `supabase/config.toml` — local CLI project (`project_id = "shorup-news"`, Postgres 15)
 - `supabase/migrations/` — versioned SQL:
   - `20250301000000_init_profiles_subscriptions.sql` — profiles, subscriptions, bKash tables
   - `20250302000000_security_rls_hardening.sql` — `saved_dossiers`, `custom_alerts`, explicit deny INSERT/UPDATE/DELETE on billing tables for anon/authenticated

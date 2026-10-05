@@ -1,6 +1,6 @@
 /** Production admin UI host (subdomain). Override with ADMIN_HOST / NEXT_PUBLIC_ADMIN_HOST. */
 
-const DEFAULT_PRODUCTION_ADMIN_HOST = "admin.jachai.news";
+const DEFAULT_PRODUCTION_ADMIN_HOST = "admin.shorup.news";
 
 export function hostnameWithoutPort(host: string): string {
   return host.split(":")[0].toLowerCase();
@@ -112,5 +112,5 @@ export function mainSiteOriginFromRequest(host: string, fallbackOrigin: string):
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
   if (configured) return configured;
   if (!isAdminSubdomainHost(host)) return fallbackOrigin;
-  return "https://jachai.news";
+  return "https://shorup.news";
 }

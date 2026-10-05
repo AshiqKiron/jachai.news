@@ -26,9 +26,9 @@ export function PaywallModal({ open, onClose, featureId }: Props) {
   const feature = featureId ? getFeatureRow(featureId) : undefined;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-ink-900 p-6 shadow-2xl">
-        <h2 className="font-display text-xl text-zinc-50">Jachai Pro</h2>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
+      <div className="max-h-[min(90dvh,100%)] w-full max-w-md overflow-y-auto rounded-2xl border border-zinc-700 bg-ink-900 p-5 shadow-2xl sm:p-6">
+        <h2 className="font-display text-xl text-zinc-50">Shorup Pro</h2>
         <p className="mt-2 text-sm text-zinc-400">{PRO_TIER_TAGLINE}</p>
         {feature ? (
           <p className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-sm text-zinc-300">
@@ -44,9 +44,9 @@ export function PaywallModal({ open, onClose, featureId }: Props) {
           {SUBSCRIPTION_PLANS.map((plan) => (
             <li
               key={plan.id}
-              className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3"
+              className="flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-zinc-100">
                   {plan.label}
                   <span className="ml-2 font-bengali text-zinc-400">({plan.labelBn})</span>

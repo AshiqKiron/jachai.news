@@ -81,7 +81,7 @@ export function VerifyClaimForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-zinc-800 bg-ink-900/40 p-6">
+    <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-zinc-800 bg-ink-900/40 p-4 sm:p-6">
       <div>
         <label className="text-sm text-zinc-400" htmlFor="claim-text">
           Claim text

@@ -13,14 +13,14 @@ const display = Newsreader({ subsets: ["latin"], variable: "--font-display" });
 const bengali = Noto_Sans_Bengali({ subsets: ["bengali"], variable: "--font-bengali" });
 
 export const metadata: Metadata = {
-  title: "Jachai News — Bangladesh multi-source news",
+  title: "Shorup News — Bangladesh multi-source news",
   description:
     "Compare Bangladeshi headlines across outlets. Bias signals, blindspots, and rumor flags — Ground News for BD.",
-  applicationName: "Jachai News",
+  applicationName: "Shorup News",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Jachai",
+    title: "Shorup",
   },
   manifest: "/manifest.webmanifest",
   icons: {
@@ -36,7 +36,6 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
 };
 
@@ -52,7 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <script dangerouslySetInnerHTML={{ __html: DEV_UNREGISTER_STALE_SERVICE_WORKER_SCRIPT }} />
         ) : null}
       </head>
-      <body className="min-h-screen font-sans pb-20 md:pb-0">
+      <body className="min-h-screen overflow-x-hidden font-sans pb-20 md:pb-0">
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem("theme");if(t==="system")localStorage.setItem("theme","light")}catch(e){}`,
@@ -60,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <ThemeProvider>
           <SiteHeader />
-          <main className="mx-auto max-w-6xl px-4 py-8 md:py-10">{children}</main>
+          <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-6 sm:py-8 md:py-10">{children}</main>
           <MobileNav />
           <InstallPWA />
         </ThemeProvider>
