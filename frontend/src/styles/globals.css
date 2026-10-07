@@ -36,6 +36,15 @@ body {
   line-height: 1.65;
 }
 
+/* Bengali headlines: Noto + avoid mid-word breaks from Latin display fonts */
+.story-title-bn {
+  @apply font-bengali break-normal;
+  overflow-wrap: normal;
+  word-break: normal;
+  line-break: strict;
+  text-wrap: wrap;
+}
+
 a {
   @apply text-accent hover:text-accent-dark transition-colors;
 }
@@ -324,6 +333,10 @@ html:not(.dark) .shadow-black\/25 {
 
   .page-title-lg {
     @apply font-display text-2xl leading-tight text-zinc-50 sm:text-3xl md:text-4xl;
+  }
+
+  .page-title-lg.story-title-bn {
+    @apply font-bengali;
   }
 
   .page-hero-title {

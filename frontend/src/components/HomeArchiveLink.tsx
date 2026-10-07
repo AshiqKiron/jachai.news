@@ -6,7 +6,7 @@ import Link from "next/link";
 export function HomeArchiveLink() {
   return (
     <Link href="/browse" className="text-xs text-zinc-500 hover:text-zinc-300">
-      Browse all →
+      Browse all
     </Link>
   );
 }

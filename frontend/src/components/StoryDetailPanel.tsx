@@ -22,6 +22,7 @@ import {
   storyFingerprint,
   writeStoryCache,
 } from "@/lib/client-story-cache";
+import { hydrateClientStory } from "@/lib/client-story-hydrate";
 import { enrichArticles } from "@/lib/coverage";
 import { isStoryFollowed, toggleStoryFollowed } from "@/lib/followed-stories";
 import { topicMetaForStory } from "@/lib/story-topics";
@@ -111,12 +112,14 @@ export function StoryDetailPanel({ slug }: Props) {
         const payload = (await response.json()) as ResolvedStory;
         if (cancelled || !payload.story) return;
 
-        writeStoryCache(payload.story);
+        const story = hydrateClientStory(payload.story);
+        writeStoryCache(story);
         setResolved((prev) => {
-          if (prev && storyFingerprint(prev.story) === storyFingerprint(payload.story)) {
-            return prev;
+          const next = { ...payload, story };
+          if (prev && storyFingerprint(prev.story) === storyFingerprint(story)) {
+            return prev.story.titleBn === story.titleBn ? prev : next;
           }
-          return payload;
+          return next;
         });
       } catch {
         /* keep cached / skeleton */
@@ -166,7 +169,9 @@ export function StoryDetailPanel({ slug }: Props) {
             <StoryShareBar slug={slug} shareTitle={story.title || story.titleBn} />
           </div>
         </div>
-        <h1 className="page-title-lg break-words">{story.titleBn}</h1>
+        <h1 lang="bn" className="page-title-lg story-title-bn">
+          {story.titleBn}
+        </h1>
         <p className="text-lg text-zinc-400">{story.title}</p>
         {summaryBullets.length > 0 ? (
           <AntiClickbaitSummaryPanel bullets={summaryBullets} className="max-w-3xl" />

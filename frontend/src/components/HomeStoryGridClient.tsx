@@ -12,6 +12,7 @@ import {
   readTopStoriesCache,
   writeTopStoriesCache,
 } from "@/lib/client-story-cache";
+import { hydrateClientStories } from "@/lib/client-story-hydrate";
 import { DEMO_STORIES, type Story } from "@/lib/demo-data";
 import { readFollowedStorySlugs, toggleStoryFollowed } from "@/lib/followed-stories";
 import { HOME_TOP_STORIES_LIMIT } from "@/lib/subscription-features";
@@ -21,7 +22,7 @@ import {
   type StoryTopicId,
 } from "@/lib/story-topics";
 
-const INITIAL_STORIES = DEMO_STORIES.slice(0, HOME_TOP_STORIES_LIMIT);
+const INITIAL_STORIES = hydrateClientStories(DEMO_STORIES.slice(0, HOME_TOP_STORIES_LIMIT));
 
 export function HomeStoryGridClient() {
   const [stories, setStories] = useState<Story[]>(INITIAL_STORIES);
@@ -145,6 +146,7 @@ export function HomeStoryGridClient() {
             {filteredStories.map((story) => (
               <StoryFeedCard
                 key={story.slug}
+                variant="home"
                 story={story}
                 isPro={isPro}
                 proKnown={proKnown}

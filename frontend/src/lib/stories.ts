@@ -15,10 +15,27 @@ import {
 import { resolveArticleImageUrl } from "@/lib/article-image-url";
 import { applyBlindspotDetection } from "@/lib/blindspot";
 import { BD_SOURCES, DEMO_RUMOR_ARTICLES, DEMO_STORIES, getStoryBySlug, type Story } from "@/lib/demo-data";
+import {
+  hasBengaliScript,
+  normalizeMixedScriptHeadline,
+  pickPrimaryBengaliHeadline,
+} from "@/lib/mixed-script-text";
 import { applySourceDerivedSummaries } from "@/lib/source-digest";
 
+function deriveTitleBn(clusterTitle: string, articles: Story["articles"]): string {
+  const title = clusterTitle.trim();
+  if (hasBengaliScript(title)) return normalizeMixedScriptHeadline(title);
+  const fromArticles = pickPrimaryBengaliHeadline(articles.map((a) => a.headline));
+  if (fromArticles) return fromArticles;
+  return title;
+}
+
 function finalizeStory(story: Story): Story {
-  return applyBlindspotDetection(applySourceDerivedSummaries(story));
+  const normalized: Story = {
+    ...story,
+    titleBn: normalizeMixedScriptHeadline(story.titleBn),
+  };
+  return applyBlindspotDetection(applySourceDerivedSummaries(normalized));
 }
 
 function storyShellFromCluster(cluster: Cluster, articles: Story["articles"]): Story {
@@ -27,7 +44,7 @@ function storyShellFromCluster(cluster: Cluster, articles: Story["articles"]): S
   return finalizeStory({
     slug: cluster.slug,
     title: cluster.title,
-    titleBn: cluster.title,
+    titleBn: deriveTitleBn(cluster.title, articles),
     summary: "",
     summaryBn: "",
     category: "News",

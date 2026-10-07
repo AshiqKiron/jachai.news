@@ -21,9 +21,11 @@ function formatPercent(count: number, total: number): string {
   return `${Math.round(pct)}%`;
 }
 
+const HOVER_CONTEXT_BN = "এই সংবাদ";
+
 function segmentTooltip(perspective: Perspective, count: number, total: number): string {
   const meta = PERSPECTIVE_META[perspective];
-  return `${meta.labelBn} · ${formatPercent(count, total)} · ${count} source${count === 1 ? "" : "s"}`;
+  return `${HOVER_CONTEXT_BN} · ${meta.labelBn} · ${formatPercent(count, total)} · ${count} source${count === 1 ? "" : "s"}`;
 }
 
 function segmentLabel(
@@ -62,7 +64,10 @@ export function CoverageBar({ story, compact }: Props) {
           role="tooltip"
         >
           <div className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-center shadow-xl shadow-black/15 dark:border-neutral-600 dark:bg-neutral-950 dark:shadow-black/50">
-            <p className="text-[11px] font-medium leading-snug text-zinc-900 dark:text-zinc-50">
+            <p className="font-bengali text-[11px] font-medium leading-snug text-zinc-700 dark:text-zinc-300">
+              {HOVER_CONTEXT_BN}
+            </p>
+            <p className="mt-1 text-[11px] font-medium leading-snug text-zinc-900 dark:text-zinc-50">
               {activeMeta.labelBn}
             </p>
             <p className="text-[10px] text-zinc-600 dark:text-zinc-400">{activeMeta.labelEn}</p>

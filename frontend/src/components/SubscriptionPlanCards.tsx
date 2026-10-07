@@ -6,7 +6,6 @@ import {
   SUBSCRIPTION_FEATURE_MATRIX,
 } from "@/lib/subscription-features";
 import {
-  SUBSCRIPTION_PAYMENT_PROVIDER,
   SUBSCRIPTION_PLANS,
   formatPlanPrice,
   getYearlyPlanSavings,
@@ -123,7 +122,7 @@ export function SubscriptionPlanCards({ onBuyPro }: Props) {
               onClick={onBuyPro}
               className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-dark"
             >
-              Buy Pro with {SUBSCRIPTION_PAYMENT_PROVIDER}
+              Buy Pro
             </button>
           </div>
         </div>

@@ -36,7 +36,9 @@ export default async function BrowsePage({
       {activeStory ? (
         <section className="rounded-xl border border-zinc-800 bg-ink-900/50 p-5">
           <p className="text-xs uppercase tracking-widest text-zinc-500">Selected story</p>
-          <h2 className="mt-1 font-display text-xl">{activeStory.titleBn}</h2>
+          <h2 lang="bn" className="story-title-bn mt-1 text-xl font-semibold leading-snug">
+            {activeStory.titleBn}
+          </h2>
           <Link href={`/story/${activeStory.slug}`} className="mt-3 inline-block text-sm text-accent">
             Open full coverage →
           </Link>

@@ -17,7 +17,8 @@ export type SubscriptionFeatureRow = {
 export const FREE_TIER_TAGLINE =
   "Full news coverage and trust tools for everyone." as const;
 
-export const PRO_TIER_TAGLINE = "Insiders & analysts — pro analytics." as const;
+export const PRO_TIER_TAGLINE =
+  "Follow the stories you care about and catch when coverage shifts." as const;
 
 /** Home feed cluster count (curated slice; full archive on /browse for all users). */
 export const HOME_TOP_STORIES_LIMIT = 24;
@@ -62,15 +63,6 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     pro: "yes",
   },
   {
-    id: "tone_depth_badges",
-    category: "AI Insights",
-    categoryBn: "AI অন্তর্দৃষ্টি",
-    name: "Tone & Depth Score Badges",
-    nameBn: "টোন ও গভীরতা স্কোর ব্যাজ",
-    free: "yes",
-    pro: "yes",
-  },
-  {
     id: "my_news_bias_dashboard",
     category: "Trust & Bias",
     categoryBn: "বিশ্বাস ও ঝুঁক",
@@ -100,7 +92,7 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     nameBn: "খবর ফলো করুন",
     free: "locked",
     pro: "yes",
-    proNote: "Get updates when coverage shifts on stories you track",
+    proNote: "We’ll notify you when new outlets pick up the story or the framing changes.",
   },
   {
     id: "narrative_evolution_timeline",
