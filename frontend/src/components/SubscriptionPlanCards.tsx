@@ -6,8 +6,10 @@ import {
   SUBSCRIPTION_FEATURE_MATRIX,
 } from "@/lib/subscription-features";
 import {
+  SUBSCRIPTION_PAYMENT_PROVIDER,
   SUBSCRIPTION_PLANS,
   formatPlanPrice,
+  getYearlyPlanSavings,
 } from "@/lib/subscription-plans";
 
 function PlanFeatureStatusIcon({ included }: { included: boolean }) {
@@ -71,6 +73,7 @@ type Props = {
 export function SubscriptionPlanCards({ onBuyPro }: Props) {
   const monthly = SUBSCRIPTION_PLANS.find((p) => p.id === "monthly");
   const yearly = SUBSCRIPTION_PLANS.find((p) => p.id === "yearly");
+  const yearlySavings = getYearlyPlanSavings();
 
   return (
     <div className="mx-auto grid w-full max-w-4xl gap-5 sm:gap-6 lg:max-w-5xl lg:grid-cols-2">
@@ -95,14 +98,21 @@ export function SubscriptionPlanCards({ onBuyPro }: Props) {
               </p>
             ) : null}
           </div>
-          <p className="mt-2 text-sm text-zinc-400">{PRO_TIER_TAGLINE}</p>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{PRO_TIER_TAGLINE}</p>
           {yearly ? (
-            <p className="mt-1 text-sm text-zinc-400">
-              or {formatPlanPrice(yearly.amountBdt)}/year
-              {yearly.badge ? (
-                <span className="ml-1 text-accent">({yearly.badge})</span>
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                or {formatPlanPrice(yearly.amountBdt)}/year
+              </p>
+              {yearlySavings ? (
+                <span
+                  className="inline-flex w-fit max-w-full items-center rounded-md border border-emerald-700/20 bg-emerald-100 px-2.5 py-1 text-sm font-semibold text-emerald-900 dark:border-emerald-400/35 dark:bg-emerald-500/20 dark:text-emerald-100"
+                  aria-label={`Save ${formatPlanPrice(yearlySavings.amountBdt)}, ${yearlySavings.percentOff} percent off annual billing`}
+                >
+                  Save {formatPlanPrice(yearlySavings.amountBdt)} ({yearlySavings.percentOff}% off)
+                </span>
               ) : null}
-            </p>
+            </div>
           ) : null}
         </header>
         <div className="flex flex-1 flex-col px-5 py-4">
@@ -113,7 +123,7 @@ export function SubscriptionPlanCards({ onBuyPro }: Props) {
               onClick={onBuyPro}
               className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-dark"
             >
-              Buy Pro with bKash
+              Buy Pro with {SUBSCRIPTION_PAYMENT_PROVIDER}
             </button>
           </div>
         </div>

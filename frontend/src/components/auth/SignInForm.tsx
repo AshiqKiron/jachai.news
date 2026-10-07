@@ -90,9 +90,9 @@ export function SignInForm() {
         {loading ? "Signing in…" : "Sign in"}
       </button>
       <p className="text-center text-sm text-zinc-500">
-        New here?{" "}
-        <Link href="/sign-up" className="text-accent hover:underline">
-          Create an account
+        Want Shorup Pro?{" "}
+        <Link href="/pro" className="text-accent hover:underline">
+          Go Pro
         </Link>
       </p>
     </form>

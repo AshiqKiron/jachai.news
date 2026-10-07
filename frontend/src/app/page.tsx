@@ -1,6 +1,4 @@
-import Link from "next/link";
-
-import { HomeArchiveLink, HomeStoriesSectionTitle } from "@/components/HomeArchiveLink";
+import { HeaderBanglaDate } from "@/components/HeaderBanglaDate";
 import { HomeStoryGridClient } from "@/components/HomeStoryGridClient";
 
 export const dynamic = "force-static";
@@ -9,40 +7,17 @@ export default function HomePage() {
   return (
     <div className="space-y-10 pb-4">
       <section className="max-w-2xl">
-        <h1 className="page-hero-title">
+        <h1 className="page-hero-title font-bengali">
           একই খবর, বিভিন্ন কণ্ঠ।
         </h1>
-        <p className="mt-4 text-lg leading-relaxed text-zinc-400">
-          Shorup clusters the same story from popular Bangladeshi news outlets — compare framing, spot blindspots, and
-          read with context.
+        <p className="mt-4 font-bengali text-lg leading-relaxed text-zinc-400">
+          বাংলাদেশের জনপ্রিয় সব সংবাদমাধ্যমের একই খবর এক জায়গায় হাজির করে কোন মিডিয়া খবরটা কীভাবে
+          দেখছে আর দেখাচ্ছে তা আপনি সহজেই তুলনা করতে পারবেন।
         </p>
+        <HeaderBanglaDate className="mt-4 text-sm text-zinc-500 dark:text-zinc-400" />
       </section>
 
-      <section className="horizontal-scroll-pad flex gap-3 pb-1 snap-x snap-mandatory">
-        <QuickLink href="/blindspot" label="Blindspot" sub="এক ঝুঁকে বেশি" />
-        <QuickLink href="/bias" label="Source map" sub="ঝুঁক ও তথ্যবিশ্বাস" />
-        <QuickLink href="/rumors" label="Rumors" sub="অপ্রমাণিত" />
-      </section>
-
-      <section>
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <HomeStoriesSectionTitle />
-          <HomeArchiveLink />
-        </div>
-        <HomeStoryGridClient />
-      </section>
+      <HomeStoryGridClient />
     </div>
-  );
-}
-
-function QuickLink({ href, label, sub }: { href: string; label: string; sub: string }) {
-  return (
-    <Link
-      href={href}
-      className="min-w-[140px] shrink-0 snap-start rounded-xl border border-zinc-800 bg-ink-900/60 px-4 py-3 hover:border-zinc-600"
-    >
-      <p className="text-sm font-medium text-zinc-100">{label}</p>
-      <p className="text-xs text-zinc-500">{sub}</p>
-    </Link>
   );
 }

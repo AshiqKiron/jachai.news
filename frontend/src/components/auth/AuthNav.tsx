@@ -38,7 +38,13 @@ function ChevronDownIcon({ className, open }: { className?: string; open?: boole
 }
 
 const signUpButtonClass =
-  "rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-dark md:px-4 md:py-2 md:text-sm";
+  "rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-dark hover:text-white md:px-4 md:py-2 md:text-sm dark:text-black dark:hover:text-black";
+
+const authMenuPanelClass =
+  "absolute right-0 top-full z-50 mt-1 min-w-[10.5rem] overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-neutral-600 dark:bg-neutral-900";
+
+const authMenuItemClass =
+  "block w-full px-3 py-2 text-left text-sm text-zinc-800 hover:bg-zinc-100 hover:text-zinc-900 dark:text-neutral-100 dark:hover:bg-neutral-800 dark:hover:text-white";
 
 export function AuthNav() {
   const router = useRouter();
@@ -121,16 +127,13 @@ export function AuthNav() {
           <ChevronDownIcon open={menuOpen} className="shrink-0" />
         </button>
         {menuOpen ? (
-          <div
-            role="menu"
-            className="absolute right-0 top-full z-50 mt-1 min-w-[10.5rem] rounded-lg border border-zinc-700/90 bg-ink-950 py-1 shadow-lg"
-          >
+          <div role="menu" className={authMenuPanelClass}>
             {registeredMenuLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 role="menuitem"
-                className="block px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800/90 hover:text-white"
+                className={authMenuItemClass}
                 onClick={() => setMenuOpen(false)}
               >
                 {item.label}
@@ -139,7 +142,7 @@ export function AuthNav() {
             <button
               type="button"
               role="menuitem"
-              className="block w-full px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800/90 hover:text-white"
+              className={authMenuItemClass}
               onClick={() => {
                 setMenuOpen(false);
                 void signOut();
@@ -161,11 +164,19 @@ export function AuthNav() {
     );
   }
 
+  if (pathname === "/sign-up") {
+    return (
+      <Link href={signInMenuLink.href} className={signUpButtonClass}>
+        {signInMenuLink.label}
+      </Link>
+    );
+  }
+
   return (
     <div ref={menuRef} className="relative">
       <div className="flex items-stretch">
-        <Link href="/sign-up" className={`${signUpButtonClass} rounded-r-none pr-2 md:pr-3`}>
-          Sign up
+        <Link href="/pro" className={`${signUpButtonClass} rounded-r-none pr-2 md:pr-3`}>
+          Go Pro
         </Link>
         <button
           type="button"
@@ -179,14 +190,11 @@ export function AuthNav() {
         </button>
       </div>
       {menuOpen ? (
-        <div
-          role="menu"
-          className="absolute right-0 top-full z-50 mt-1 min-w-[10.5rem] rounded-lg border border-zinc-700/90 bg-ink-950 py-1 shadow-lg"
-        >
+        <div role="menu" className={`${authMenuPanelClass} inset-x-0 min-w-0`}>
           <Link
             href={signInMenuLink.href}
             role="menuitem"
-            className="block px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800/90 hover:text-white"
+            className={authMenuItemClass}
             onClick={() => setMenuOpen(false)}
           >
             {signInMenuLink.label}

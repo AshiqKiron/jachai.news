@@ -11,6 +11,7 @@ import {
   SUBSCRIPTION_PAYMENT_PROVIDER,
   SUBSCRIPTION_PLANS,
   formatPlanPrice,
+  getYearlyPlanSavings,
 } from "@/lib/subscription-plans";
 
 type Props = {
@@ -24,6 +25,7 @@ export function PaywallModal({ open, onClose, featureId }: Props) {
   if (!open) return null;
 
   const feature = featureId ? getFeatureRow(featureId) : undefined;
+  const yearlySavings = getYearlyPlanSavings();
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
@@ -51,8 +53,11 @@ export function PaywallModal({ open, onClose, featureId }: Props) {
                   {plan.label}
                   <span className="ml-2 font-bengali text-zinc-400">({plan.labelBn})</span>
                 </p>
-                {plan.badge ? (
-                  <p className="mt-0.5 text-xs text-accent">{plan.badge}</p>
+                {plan.id === "yearly" && yearlySavings ? (
+                  <p className="mt-1.5 inline-flex w-fit rounded-md border border-emerald-700/20 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-900 dark:border-emerald-400/35 dark:bg-emerald-500/20 dark:text-emerald-100">
+                    Save {formatPlanPrice(yearlySavings.amountBdt)}/yr ({yearlySavings.percentOff}% vs
+                    monthly)
+                  </p>
                 ) : null}
               </div>
               <p className="font-display text-lg text-zinc-50">
@@ -73,10 +78,10 @@ export function PaywallModal({ open, onClose, featureId }: Props) {
           <button
             type="button"
             disabled
-            title="bKash checkout coming soon"
+            title="PayEurasia checkout coming soon"
             className="flex-1 cursor-not-allowed rounded-lg bg-accent/50 px-4 py-2 text-sm font-medium text-white"
           >
-            Subscribe with bKash
+            Subscribe with {SUBSCRIPTION_PAYMENT_PROVIDER}
           </button>
           <Link
             href="/pro"

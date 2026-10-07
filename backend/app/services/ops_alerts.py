@@ -106,7 +106,7 @@ async def notify_ingest_started(*, channel: str = "cli") -> None:
     await ping_healthcheck("start")
 
 
-def notify_payment_webhook(*, success: bool, detail: str, provider: str = "bkash") -> bool:
-    """Call from bKash (or other) webhook handlers when checkout is wired."""
+def notify_payment_webhook(*, success: bool, detail: str, provider: str = "payeurasia") -> bool:
+    """Call from PayEurasia (or other) webhook handlers when checkout is wired."""
     icon = "✅" if success else "❌"
     return send_telegram_message(f"{icon} {provider} webhook: {detail}")

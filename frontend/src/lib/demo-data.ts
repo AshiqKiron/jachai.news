@@ -43,6 +43,8 @@ export type Story = {
   titleBn: string;
   summary: string;
   summaryBn: string;
+  /** Rule-based neutral bullets (from RSS excerpts/headlines). */
+  summaryBullets?: string[];
   category: string;
   categoryBn: string;
   isBlindspot: boolean;
@@ -181,7 +183,7 @@ const DEMO_STORIES_BASE: Story[] = [
         sourceId: "samakal",
         headline: "ভাড়া বাড়ানোর আগে জবাবদিহি চায় যাত্রীরা",
         url: "https://samakal.com/",
-        excerpt: "মুন্সীগঞ্গের মাইকrobus চালকরা বলছেন, আয়ের সঙ্গে সামঞ্জস্য নেই।",
+        excerpt: "মুন্সীগঞ্গের মাইক্রোবাস চালকরা বলছেন, আয়ের সঙ্গে সামঞ্জস্য নেই।",
         publishedAt: "2026-10-02T10:05:00Z",
         framingNote: "Leads with commuter hardship.",
       },
@@ -195,7 +197,7 @@ const DEMO_STORIES_BASE: Story[] = [
       },
       {
         sourceId: "bbc-bangla",
-        headline: "পদ্মা সেতু: ভাড়া বাড়লে ক whom affects most?",
+        headline: "পদ্মা সেতু: ভাড়া বাড়লে সবচেয়ে বেশি কাকে প্রভাবিত করবে?",
         url: "https://www.bbc.com/bengali",
         excerpt: "বাংলাদেশের গ্রামীণ-শহর সংযোগে সেতুর ভূমিকা এবং নতুন খরচের প্রভাব।",
         publishedAt: "2026-10-02T08:30:00Z",
@@ -249,11 +251,11 @@ const DEMO_STORIES_BASE: Story[] = [
   {
     slug: "remittance-record-september",
     title: "September remittance inflow hits multi-year high",
-    titleBn: "সেপ্টেম্বরে রেমittance প্রবাহে বহু বছরের রেকর্ড",
+    titleBn: "সেপ্টেম্বরে রেমিট্যান্স প্রবাহে বহু বছরের রেকর্ড",
     summary:
       "Bangladesh Bank data shows strong Gulf inflows. Business press celebrates reserves; some outlets warn dependency on single corridors.",
     summaryBn:
-      "কেন্দ্রীয় ব্যাংকের তথ্যে উপসাগরীয় অঞ্চল থেকে প্রবাহ শক্তিশালী। ব্যবসায়ik press reserves উদযাপন করে; কেউ কেউ একক করidorের ওপর নির্ভরতা তুলে ধরে।",
+      "কেন্দ্রীয় ব্যাংকের তথ্যে উপসাগরীয় অঞ্চল থেকে প্রবাহ শক্তিশালী। ব্যবসায়িক সংবাদমাধ্যম রিজার্ভ উদযাপন করে; কেউ কেউ একক উৎসের ওপর নির্ভরতার ঝুঁকি তুলে ধরে।",
     category: "Economy",
     categoryBn: "অর্থনীতি",
     isBlindspot: false,
@@ -274,14 +276,14 @@ const DEMO_STORIES_BASE: Story[] = [
       },
       {
         sourceId: "bdnews24",
-        headline: "সেপ্টেম্বরে রেমittance ২.১ বিলিয়ন ডলার ছাড়াল",
+        headline: "সেপ্টেম্বরে রেমিট্যান্স ২.১ বিলিয়ন ডলার ছাড়াল",
         url: "https://bdnews24.com/",
         excerpt: "বাংলাদেশ ব্যাংকের প্রাথমিক হিসাব অনুযায়ী প্রবাহ বেড়েছে।",
         publishedAt: "2026-10-01T15:30:00Z",
       },
       {
         sourceId: "jugantor",
-        headline: "রেমittance রেকর্ড: সরকারের নীতিতে প্রবাসীদের আস্থা বাড়ছে",
+        headline: "রেমিট্যান্স রেকর্ড: সরকারের নীতিতে প্রবাসীদের আস্থা বাড়ছে",
         url: "https://www.jugantor.com/",
         excerpt: "দেশের অর্থনীতিতে ইতিবাচক প্রভাব— সরকারি মুখপাত্র।",
         publishedAt: "2026-10-01T14:45:00Z",
@@ -291,7 +293,7 @@ const DEMO_STORIES_BASE: Story[] = [
   {
     slug: "tigers-asia-cup-semifinal",
     title: "Tigers reach Asia Cup semifinal after tense chase",
-    titleBn: "উত্তেজনাপূর্ণ জয়ের পর এশিয়া কাপ স emifinal-এ বাংladesh",
+    titleBn: "উত্তেজনাপূর্ণ জয়ের পর এশিয়া কাপ সেমিফাইনালে বাংলাদেশ",
     summary:
       "Sports desks align on match facts; debate centers on middle-order stability and selection calls.",
     summaryBn:
@@ -307,7 +309,7 @@ const DEMO_STORIES_BASE: Story[] = [
     articles: [
       {
         sourceId: "bdnews24",
-        headline: "বাংladesh reaches Asia Cup last four",
+        headline: "বাংলাদেশ এশিয়া কাপের শেষ চারে",
         url: "https://bdnews24.com/",
         excerpt: "Hassan Mahmud finishes with three wickets in the death overs.",
         publishedAt: "2026-10-01T21:10:00Z",
@@ -321,7 +323,7 @@ const DEMO_STORIES_BASE: Story[] = [
       },
       {
         sourceId: "manab-zamin",
-        headline: "টাইgerরা semi-final-এ: ফ্যানদের উল্লাস",
+        headline: "টাইগাররা সেমিফাইনালে: ফ্যানদের উল্লাস",
         url: "https://mzamin.com/",
         excerpt: "ঢাকা ও চট্টগ্রামে উচ্ছ্বাসের ছবি।",
         publishedAt: "2026-10-01T20:50:00Z",

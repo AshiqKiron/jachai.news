@@ -24,6 +24,7 @@ export const HOME_TOP_STORIES_LIMIT = 24;
 
 /** Features that require an active Pro subscription (checkout not wired yet). */
 export const PRO_ONLY_FEATURE_IDS = [
+  "follow_story",
   "narrative_evolution_timeline",
   "custom_topic_radar_alerts",
 ] as const;
@@ -55,8 +56,8 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     id: "anti_clickbait_summary",
     category: "AI Insights",
     categoryBn: "AI অন্তর্দৃষ্টি",
-    name: "3-Bullet Anti-Clickbait Summary",
-    nameBn: "৩-বুলেট anti-clickbait সারাংশ",
+    name: "Quick summary from different sources",
+    nameBn: "বিভিন্ন উৎস থেকে দ্রুত সারাংশ",
     free: "yes",
     pro: "yes",
   },
@@ -68,17 +69,6 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     nameBn: "টোন ও গভীরতা স্কোর ব্যাজ",
     free: "yes",
     pro: "yes",
-  },
-  {
-    id: "rumor_reality_tracker",
-    category: "Trust & Bias",
-    categoryBn: "বিশ্বাস ও ঝুঁক",
-    name: "Rumor vs. Reality Tracker",
-    nameBn: "গুজব বনাম বাস্তবতা",
-    free: "yes",
-    pro: "yes",
-    freeNote: "Rumor Scanner & FactWatch debunks",
-    proNote: "Same real-time coverage",
   },
   {
     id: "my_news_bias_dashboard",
@@ -101,6 +91,16 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     pro: "yes",
     freeNote: "Automated summary briefing",
     proNote: "Automated summary briefing",
+  },
+  {
+    id: "follow_story",
+    category: "Core Feed",
+    categoryBn: "মূল ফিড",
+    name: "Follow a Story",
+    nameBn: "খবর ফলো করুন",
+    free: "locked",
+    pro: "yes",
+    proNote: "Get updates when coverage shifts on stories you track",
   },
   {
     id: "narrative_evolution_timeline",

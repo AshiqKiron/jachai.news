@@ -39,7 +39,7 @@ export function StoryTabs({ story, articles }: Props) {
             }`}
           >
             {item.label}
-            <span className="ml-1 text-[10px] uppercase opacity-60">{item.en}</span>
+            <span className="ml-1 text-[10px] uppercase opacity-60 dark:opacity-90">{item.en}</span>
           </button>
         ))}
       </div>

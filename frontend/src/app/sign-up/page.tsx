@@ -8,9 +8,6 @@ export default function SignUpPage() {
         <h1 className="page-title">Sign up</h1>
         <p className="mt-2 font-bengali text-zinc-400">নতুন অ্যাকাউন্ট</p>
       </div>
-      <p className="text-sm text-zinc-400">
-        Create a free account. Pro checkout and entitlements will use this login later.
-      </p>
       <ClientErrorBoundary title="Sign-up form could not load">
         <SignUpForm />
       </ClientErrorBoundary>

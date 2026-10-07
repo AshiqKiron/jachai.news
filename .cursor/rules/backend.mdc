@@ -55,7 +55,7 @@ alwaysApply: false
 - Add new resources as a router module + schema + model; register on `api_router`
 - AI calls go through `AIClient`; respect `settings.ai_provider` and optional API keys
 - Scheduled ingest: prefer Celery **beat** + `ingest_schedule` when Redis is available; otherwise external cron should call CLI or `POST /api/v1/ingest` so Healthchecks/Telegram hooks run
-- `ops_alerts.notify_payment_webhook` — stub for future bKash webhook handlers
+- `ops_alerts.notify_payment_webhook` — stub for future PayEurasia webhook handlers
 - New SQL that ORM cannot express: add idempotent file under `backend/migrations/` and run via `db_extensions`
 
 ## Example route shape

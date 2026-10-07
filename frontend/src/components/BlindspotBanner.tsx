@@ -12,9 +12,9 @@ export function BlindspotBanner({ perspective, compact }: Props) {
 
   if (compact) {
     return (
-      <p className="rounded-lg border border-amber-300/80 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+      <p className="rounded-lg border border-amber-300/80 bg-amber-100 px-3 py-2 text-sm text-amber-950 dark:border-amber-600/35 dark:bg-amber-950/50 dark:text-amber-50">
         <span className="font-semibold">{copy.titleBn}</span>
-        <span className="text-amber-900/90 dark:text-amber-200/80"> — {copy.detailBn}</span>
+        <span className="text-amber-900/90 dark:text-amber-100/90"> — {copy.detailBn}</span>
       </p>
     );
   }
@@ -26,7 +26,7 @@ export function BlindspotBanner({ perspective, compact }: Props) {
     >
       <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">{copy.titleBn}</p>
       <p className="mt-1 text-sm text-amber-900/95 dark:text-amber-200/90">{copy.detailBn}</p>
-      <p className="mt-2 text-xs text-amber-800/85 dark:text-amber-200/70">{copy.detailEn}</p>
+      <p className="mt-2 text-xs text-amber-800/85 dark:text-amber-100/90">{copy.detailEn}</p>
     </div>
   );
 }

@@ -32,7 +32,7 @@ export function MobileNav() {
                 }`}
               >
                 <span className="font-medium">{item.label}</span>
-                <span className="text-[9px] uppercase tracking-wider opacity-70">{item.en}</span>
+                <span className="text-[9px] uppercase tracking-wider opacity-70 dark:opacity-90">{item.en}</span>
               </Link>
             </li>
           );

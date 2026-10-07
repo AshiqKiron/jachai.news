@@ -58,7 +58,7 @@ flowchart LR
 | Verification | `backend/app/api/verify.py`, `verifications.py`, `verification_*` services | Submit claims, queue jobs, SSE/WebSocket progress, pgvector semantic cache + FTS search |
 | Workers | Celery (`ingest`, `verification` queues) + **beat** | Async RSS ingest, scheduled pull (`ingest_schedule` / `app_settings`), verification jobs when `REDIS_URL` is set |
 | Web app | `frontend/` | Next.js 15 App Router, React 19, Tailwind, PWA; English + Bangla product copy |
-| Auth / Pro | `supabase/migrations/`, `frontend/src/lib/supabase.ts` | Profiles, subscriptions, bKash tables (checkout planned); RLS on user metadata |
+| Auth / Pro | `supabase/migrations/`, `frontend/src/lib/supabase.ts` | Profiles, subscriptions, payment tables (PayEurasia checkout planned); RLS on user metadata |
 | Ops | `docker-compose.yml`, `docs/DEPLOYMENT.md` | Local Postgres (pgvector), Redis, API, worker; production release playbook |
 
 ### Request paths (frontend)
@@ -166,7 +166,7 @@ Optional Supabase auth: set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE
 | Monthly | ৳49 / month |
 | Yearly | ৳399 / year |
 
-- **Payment (planned):** [bKash Tokenized Checkout API](https://developer.bka.sh/docs/tokenized-checkout-process) — agreement + tokenized charges for renewals.
+- **Payment (planned):** [PayEurasia](https://payeurasia.com/api/docs) — REST checkout (bKash, Nagad, bank in BD) with HMAC-signed webhooks for renewals.
 - **Database (planned):** Supabase (auth, subscription status, payment/agreement records). News API data stays in backend PostgreSQL.
 
 Product copy and plan constants: `frontend/src/lib/subscription-plans.ts`. Checkout is not implemented yet.

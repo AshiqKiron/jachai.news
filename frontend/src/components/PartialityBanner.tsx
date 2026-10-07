@@ -26,7 +26,7 @@ export function PartialityBanner({ analysis, compact }: Props) {
     >
       <p className="text-sm font-semibold text-violet-950 dark:text-violet-100">{copy.titleBn}</p>
       <p className="mt-1 text-sm leading-relaxed text-violet-900/95 dark:text-violet-100/90">{copy.detailBn}</p>
-      <p className="mt-2 text-xs text-violet-800/85 dark:text-violet-200/70">{copy.detailEn}</p>
+      <p className="mt-2 text-xs text-violet-800/85 dark:text-violet-100/90">{copy.detailEn}</p>
     </div>
   );
 }

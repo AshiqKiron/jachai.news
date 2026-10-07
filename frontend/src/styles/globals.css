@@ -14,18 +14,18 @@
 }
 
 .dark {
-  /* High-contrast monochrome */
-  --color-ink-950: 0 0 0;
-  --color-ink-900: 23 23 23;
-  --color-ink-700: 38 38 38;
-  --color-accent: 163 163 163;
-  --color-accent-muted: 115 115 115;
-  --color-accent-dark: 212 212 212;
+  /* Soft charcoal base — easier on the eyes than pure black */
+  --color-ink-950: 15 15 18;
+  --color-ink-900: 24 24 27;
+  --color-ink-700: 39 39 42;
+  --color-accent: 125 211 252;
+  --color-accent-muted: 186 230 253;
+  --color-accent-dark: 56 189 248;
   color-scheme: dark;
 }
 
 body {
-  @apply bg-ink-950 text-base leading-relaxed text-black antialiased font-normal text-pretty dark:text-neutral-100;
+  @apply bg-ink-950 text-base leading-relaxed text-black antialiased font-normal text-pretty dark:text-zinc-100;
 }
 
 .font-display {
@@ -40,6 +40,14 @@ a {
   @apply text-accent hover:text-accent-dark transition-colors;
 }
 
+/* Filled accent controls keep readable label color (override default link hover) */
+a.bg-accent,
+a.bg-accent:hover,
+button.bg-accent,
+button.bg-accent:hover {
+  @apply text-white;
+}
+
 /* Light-mode remaps for existing dark-first utility classes */
 html:not(.dark) .text-zinc-50 {
   @apply text-black;
@@ -50,7 +58,8 @@ html:not(.dark) .text-zinc-100 {
 }
 
 html:not(.dark) .text-zinc-200 {
-  @apply text-zinc-700;
+  /* zinc-700 — raw color avoids @apply circular dependency with .dark .text-zinc-* overrides */
+  color: rgb(63 63 70);
 }
 
 html:not(.dark) .text-zinc-300 {
@@ -58,11 +67,11 @@ html:not(.dark) .text-zinc-300 {
 }
 
 html:not(.dark) .text-zinc-400 {
-  @apply text-zinc-700;
+  color: rgb(63 63 70);
 }
 
 html:not(.dark) .text-zinc-500 {
-  @apply text-zinc-700;
+  color: rgb(63 63 70);
 }
 
 html:not(.dark) .text-accent-muted {
@@ -131,7 +140,7 @@ html:not(.dark) .hover\:bg-zinc-800:hover {
 }
 
 html:not(.dark) .hover\:text-zinc-300:hover {
-  @apply text-zinc-700;
+  color: rgb(63 63 70);
 }
 
 html:not(.dark) .group:hover .group-hover\:text-white {
@@ -146,19 +155,65 @@ html:not(.dark) .shadow-black\/25 {
   --tw-shadow-color: rgb(0 0 0 / 0.1);
 }
 
-/* Dark mode — black & white, readable contrast */
+/* Dark mode — readable contrast on charcoal (WCAG-friendly muted tiers) */
 .dark a {
-  @apply text-neutral-100 hover:text-white;
+  color: rgb(var(--color-accent));
+}
+
+.dark a:hover {
+  color: rgb(var(--color-accent-dark));
 }
 
 .dark a.bg-accent,
-.dark a.bg-accent:hover {
+.dark a.bg-accent:hover,
+.dark button.bg-accent,
+.dark button.bg-accent:hover {
   @apply text-black hover:text-black;
 }
 
-.dark .text-zinc-500,
+.dark .text-zinc-50,
+.dark .text-zinc-100 {
+  color: rgb(250 250 250);
+}
+
+.dark .text-zinc-200 {
+  color: rgb(244 244 245);
+}
+
+.dark .text-zinc-300 {
+  color: rgb(228 228 231);
+}
+
+.dark .text-zinc-400 {
+  color: rgb(212 212 216);
+}
+
+.dark .text-zinc-500 {
+  color: rgb(200 200 208);
+}
+
 .dark .text-zinc-600 {
-  color: rgb(163 163 163);
+  color: rgb(186 186 193);
+}
+
+.dark .text-zinc-700 {
+  color: rgb(212 212 216);
+}
+
+.dark .text-zinc-800 {
+  color: rgb(228 228 231);
+}
+
+.dark .text-neutral-400 {
+  color: rgb(200 200 208);
+}
+
+.dark .text-neutral-500 {
+  color: rgb(186 186 193);
+}
+
+.dark .marker\:text-zinc-600::marker {
+  color: rgb(186 186 193);
 }
 
 .dark .border-zinc-800,
@@ -200,13 +255,16 @@ html:not(.dark) .shadow-black\/25 {
   background-color: rgb(23 23 23 / 0.94);
 }
 
-.dark .text-accent,
+.dark .text-accent {
+  color: rgb(var(--color-accent));
+}
+
 .dark .text-accent\/80 {
-  @apply text-neutral-100;
+  color: rgb(var(--color-accent) / 0.88);
 }
 
 .dark .text-accent-muted {
-  @apply text-neutral-400;
+  color: rgb(var(--color-accent-muted));
 }
 
 .dark .bg-accent {
@@ -247,12 +305,16 @@ html:not(.dark) .shadow-black\/25 {
 }
 
 .dark .text-emerald-400\/90 {
-  @apply text-neutral-300;
+  color: rgb(228 228 231);
 }
 
 .dark .hover\:border-zinc-700:hover,
 .dark .hover\:border-zinc-600:hover {
   @apply border-neutral-500;
+}
+
+.dark .group:hover .group-hover\:text-white {
+  color: rgb(250 250 250);
 }
 
 @layer utilities {
@@ -266,6 +328,13 @@ html:not(.dark) .shadow-black\/25 {
 
   .page-hero-title {
     @apply font-display text-3xl leading-tight text-zinc-50 sm:text-4xl md:text-5xl;
+  }
+
+  .dark .page-title,
+  .dark .page-title-lg,
+  .dark .page-hero-title {
+    /* Match .dark .text-zinc-50 — avoid @apply (circular with theme overrides above) */
+    color: rgb(250 250 250);
   }
 
   .horizontal-scroll-pad {

@@ -1,3 +1,7 @@
+import {
+  buildAntiClickbaitBullets,
+  formatBulletsForFeed,
+} from "@/lib/anti-clickbait-summary";
 import type { ArticleWithSource } from "@/lib/coverage";
 import { enrichArticles } from "@/lib/coverage";
 import type { Story } from "@/lib/demo-data";
@@ -146,11 +150,17 @@ export function applySourceDerivedSummaries(story: Story): Story {
   if (story.articles.length === 0) return story;
 
   const articles = enrichArticles(story);
-  const summary = buildStorySourceSummary(articles);
+  const summaryBullets = buildAntiClickbaitBullets(articles, {
+    summary: story.summary,
+    summaryBn: story.summaryBn,
+  });
+  const feedSummary = summaryBullets.length > 0 ? formatBulletsForFeed(summaryBullets) : "";
+  const summary = feedSummary || buildStorySourceSummary(articles);
   const perspectiveSummaries = buildPerspectiveDigests(articles);
 
   return {
     ...story,
+    summaryBullets: summaryBullets.length > 0 ? summaryBullets : story.summaryBullets,
     summary: summary || story.summary,
     summaryBn: summary || story.summaryBn,
     perspectiveSummaries,

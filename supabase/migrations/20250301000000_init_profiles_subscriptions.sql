@@ -1,4 +1,4 @@
--- Shorup News — Supabase schema (auth users, Pro subscriptions, bKash payment records)
+-- Shorup News — Supabase schema (auth users, Pro subscriptions, PayEurasia payment records)
 -- Apply via Supabase CLI: supabase db push
 -- Or paste into SQL Editor in the Supabase dashboard.
 
@@ -84,7 +84,7 @@ create trigger subscriptions_set_updated_at
   for each row execute function public.set_updated_at();
 
 -- ---------------------------------------------------------------------------
--- bKash tokenized checkout (planned integration)
+-- PayEurasia checkout (planned; bkash_agreements table name is legacy)
 -- ---------------------------------------------------------------------------
 create table public.bkash_agreements (
   id uuid primary key default gen_random_uuid(),
@@ -108,7 +108,7 @@ create table public.payment_transactions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   subscription_id uuid references public.subscriptions (id) on delete set null,
-  provider text not null default 'bkash',
+  provider text not null default 'payeurasia',
   provider_trx_id text,
   amount_bdt integer not null check (amount_bdt > 0),
   currency text not null default 'BDT',

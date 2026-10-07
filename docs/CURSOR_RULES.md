@@ -16,20 +16,36 @@ Scoped rules use YAML frontmatter (`description`, `globs`, `alwaysApply`). See C
 
 The always-on file was renamed from legacy **`jachai-news.mdc`** to **`shorup-news.mdc`** — do not reintroduce the old filename.
 
+### Authoring new rules
+
+- Keep **`.cursorrules`** to architecture bullets and vocabulary agents need on every task; put file paths, route lists, and component inventories in **`.mdc`** files.
+- Add a new scoped rule only when a tree needs conventions that would bloat an existing file (e.g. a new top-level package). Register it in the **File map** table above.
+- After renaming or splitting rules, grep the repo for old filenames (`jachai-news`, stale component names) so docs and `.cursorrules` stay aligned.
+- Rule content may exceed the generic “short rule” guidance — this repo intentionally keeps detailed inventories in `frontend.mdc` / `backend.mdc`; still avoid duplicating the same API list in both `.cursorrules` and an `.mdc` file.
+- When adding **`frontend/src/lib/*.ts`** helpers or **`app/api/me/*`** (or similar session routes), list them in **`frontend.mdc`** and add a row below if the feature is product-facing.
+
 ## Product areas → where to document
 
 | Area | Update these |
 |------|----------------|
+| Home landing (`app/page.tsx`) | `frontend.mdc` — Bangla hero + subcopy; **`HeaderBanglaDate`** under hero (optional **`className`**); **`HomeStoryGridClient`** (**`HomeTopicFilter`**, demo slice then **`/api/feed/top`**); **`HomeArchiveLink`** / **`HomeStoriesSectionTitle`** → `/browse`. Nav: **`AuthNav`** / **`MobileNav`** (header tagline is EN — see **`SiteHeader`**) |
+| Site chrome (`SiteHeader`, theme) | `frontend.mdc` — logo + EN tagline (“This country deserves…”), **`ThemeToggle`**, **`AuthNav`** (signed-in menu: Blindspot, Browse, Rumors, **Verify**, Bias — not duplicated in **`SiteHeader`** links); dark palette + sky **`--color-accent`** in **`globals.css`** (soft charcoal **`ink-*`**, brighter zinc text overrides) |
 | Home / story hydration (ETag, client cache) | `shorup-news.mdc` data flows, `frontend.mdc` App Router + `stories.ts` |
-| Blindspot detection + `/blindspot` feed | `shorup-news.mdc` vocabulary, `frontend.mdc` (`blindspot.ts`, `BlindspotBanner`, `getBlindspotStories`) |
+| Home topic chips | `frontend.mdc` — **`story-topics.ts`** (`HOME_STORY_TOPICS`, **`topicIdForStory`**, **`topicMetaForStory`**, **`storyMatchesTopic`**, **`visibleTopicIdsForStories`**); maps `Story.category` / `categoryBn` — not subscription matrix categories |
+| Anti-clickbait summary (RSS, no AI) | `shorup-news.mdc` vocabulary, `frontend.mdc` (**`anti-clickbait-summary.ts`**, **`AntiClickbaitSummaryPanel`**, wired in **`applySourceDerivedSummaries`** / **`Story.summaryBullets`**) — matrix row **`anti_clickbait_summary`** is **free: yes** (not in **`PRO_ONLY_FEATURE_IDS`**) |
+| Follow story (Pro) | `shorup-news.mdc` Pro matrix, `frontend.mdc` (**`app/api/me/pro/route.ts`**, **`followed-stories.ts`** localStorage, **`StoryFollowButton`**, **`getProAccessState`**, **`PaywallModal`** `featureId="follow_story"`) — home grid + story detail only; not **`/browse`** or **`/blindspot`** cards |
+| Client Pro session route | `frontend.mdc` route handlers — **`GET /api/me/pro`** returns **`{ isPro, userId }`** only; add rows here when introducing other **`app/api/me/*`** gates |
+| **`StoryFeedCard`** (shared feed UI) | `frontend.mdc` — **`topicMetaForStory`** chip line; **`summaryBullets`** list or `summaryBn`; compact **`BlindspotBanner`** (not amber pill); optional follow when parent passes callbacks (**`/browse`**, **`/blindspot`** omit follow) |
+| Bengali typography & dates | `frontend.mdc` — **`font-bengali`**, **`.page-hero-title`**; **`bangla-date.ts`** + **`HeaderBanglaDate`** (home hero, not sticky header); **`globals.css`** theme tokens + **`.bg-accent`** control colors |
+| Blindspot detection + `/blindspot` feed | `shorup-news.mdc` vocabulary, `frontend.mdc` (`blindspot.ts`, **`BlindspotBanner`** compact on cards + full on detail, `getBlindspotStories`) |
 | RSS **`image_url`** on articles | `backend.mdc` (`rss_parser`, migration **`004_articles_image_url.sql`**), `frontend.mdc` (`ArticleImage`, `article-image-url.ts`) |
 | Perspective / coverage bars | `frontend.mdc` (`source-perspective.ts`, `coverage.ts`, `HeadlineClashTriptych`, **`coverageStats`**) |
 | Story detail tabs (Coverage / Compare / Perspectives) | `frontend.mdc` (`StoryTabs`, **`StoryArticleFeed`**, **`HeadlinesByPerspective`**) |
 | Partiality (missing perspective buckets) | `shorup-news.mdc` vocabulary, `frontend.mdc` (`partiality.ts`, **`PartialityBanner`**, **`StoryPartialityTeaser`**) — distinct from **blindspot** |
 | Coverage stats block on story detail | `frontend.mdc` (`StoryCoverageDetails`, **`relative-time.ts`**) |
-| RSS excerpt digests (no ingest AI summary) | `shorup-news.mdc` RSS section, `backend.mdc` (`maybe_refresh_cluster_summary`), `frontend.mdc` (**`source-digest.ts`**, **`SourceDigestPanel`**) |
+| RSS excerpt digests (no ingest AI summary) | `shorup-news.mdc` RSS section, `backend.mdc` (**`maybe_refresh_cluster_summary`** no-op), `frontend.mdc` (**`source-digest.ts`**, **`SourceDigestPanel`**) |
 | Story share + report issue on detail | `frontend.mdc` (**`StoryShareBar`**, **`story-share.ts`**), `frontend/.env.example` (`NEXT_PUBLIC_REPORT_ISSUES_*`, **`NEXT_PUBLIC_SITE_URL`**) |
-| Pro vs free (news open, analytics gated) | `shorup-news.mdc`, `frontend.mdc` (`subscription-features.ts`, `SubscriptionPlanCards`, no browse paywall) |
+| Pro vs free (news open; Pro gates e.g. follow story) | `shorup-news.mdc`, `frontend.mdc` (`SUBSCRIPTION_FEATURE_MATRIX`, **`PRO_ONLY_FEATURE_IDS`**, **`getYearlyPlanSavings`** on **`/pro`** + **`PaywallModal`**, **`SignInForm`** → `/pro`; `/rumors` route stays — not every matrix row maps 1:1 to a page) |
 | Admin RSS + ingest | `shorup-news.mdc` admin section, `backend.mdc` / `frontend.mdc` API lists (full ingest, schedule, **per-source** `POST .../admin/sources/{id}/ingest`) |
 | Verification pipeline | `shorup-news.mdc`, `backend.mdc`, `frontend.mdc` (`verifications.ts`, `/verify/*`) |
 | Supabase auth / Pro rows | `supabase.mdc`, `frontend.mdc` auth + `database.types.ts` |
@@ -43,19 +59,24 @@ When you ship a feature, touch the layers that describe it:
 3. **`backend.mdc` / `frontend.mdc` / `supabase.mdc`** — file paths, function names, route handlers, env vars for that tree.
 4. **`backend/.env.example` / `frontend/.env.example`** — any new configuration (rules should reference example files, never real secrets).
 5. **`README.md`** — user-facing setup only; link here for agent-oriented detail.
+6. **`docs/CURSOR_RULES.md`** — add or extend a row in **Product areas → where to document** when the feature is user-visible and agents need a map to the right `.mdc` file.
 
 ## Conventions reflected in rules
 
 - **News data** lives in backend PostgreSQL; **auth / Pro / dossiers** in Supabase.
 - **Reads** on the frontend may fall back to `demo-data.ts` with `ApiDegradedBanner`; **writes** (verify submit, admin, ingest) must surface real API errors.
 - **Admin**: production host `admin.shorup.news`; overview may use Supabase admin; sources/ingest/schedule/users proxies still need legacy `shorup_admin` where documented in `frontend.mdc`.
-- **Home**: top stories via `GET /api/feed/top`; custom RSS is managed in admin and clusters with seed feeds (no separate home custom-feed UI).
+- **Home**: Bangla hero + **`HeaderBanglaDate`**; topic-filtered grid. **`SiteHeader`**: EN tagline under wordmark (Bangla date lives on `/` hero). **`MobileNav`**: Blindspot, Browse, Bias. **`AuthNav`**: Go Pro + menus.
+- **Dark UI**: prefer CSS variables in **`globals.css`** (`.dark` **`--color-ink-*`**, sky accent) over one-off monochrome zinc — existing `text-zinc-*` utilities get dark overrides there.
+- **Pro gates (UI)**: only ids in **`PRO_ONLY_FEATURE_IDS`** get **`PaywallModal`** today (**`follow_story`** live; **`narrative_evolution_timeline`**, **`custom_topic_radar_alerts`** matrix placeholders). Client checks **`GET /api/me/pro`** (not backend Postgres). Matrix rows like **`anti_clickbait_summary`** can show on **`/pro`** without being Pro-only.
 - **Migrations**: backend SQL under `backend/migrations/` (e.g. pgvector, `sources.disabled`, `app_settings`, `articles.image_url`); Supabase SQL under `supabase/migrations/`.
 - **Build artifacts**: do not commit `frontend/tsconfig.tsbuildinfo` or hand-edited generated PWA files (`sw.js`, `workbox-*.js`) — see `frontend.mdc` PWA section.
 
 ## Checklist before merging
 
-- [ ] New routes or proxies appear in `backend.mdc` and/or `frontend.mdc` API lists
+- [ ] New routes or proxies appear in `backend.mdc` and/or `frontend.mdc` API lists (incl. **`app/api/me/*`**)
+- [ ] New **`frontend/src/lib/*`** helpers referenced in `frontend.mdc` domain list when agents should reuse them
+- [ ] Home or nav UX changes reflected in `frontend.mdc` and this doc’s product-area table when behavior moves between routes
 - [ ] Product terms (blindspot, Pro gates, verification) match `shorup-news.mdc` vocabulary
 - [ ] Root `.cursorrules` still points at `.cursor/rules/` and does not contradict the `.mdc` files
 - [ ] No secrets, DSNs, or production keys in any rule file

@@ -4,11 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { AuthNav } from "@/components/auth/AuthNav";
-import { HeaderBanglaDate } from "@/components/HeaderBanglaDate";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { adminSurfacePath, isAdminAppSurface } from "@/lib/admin-host";
-
-const nav = [{ href: "/pro", label: "Pro" }];
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -23,23 +20,16 @@ export function SiteHeader() {
             href={admin ? adminSurfacePath("", host) : "/"}
             className="font-display text-lg tracking-tight text-zinc-50 sm:text-xl"
           >
-            shorup<span className="text-accent dark:text-neutral-500">.</span>news
+            shorup<span className="text-accent">.</span>news
           </Link>
-          {!admin ? <HeaderBanglaDate /> : null}
+          {!admin ? (
+            <p className="text-[11px] leading-snug text-zinc-500 sm:text-xs dark:text-zinc-400">
+              This country deserves a better class of media.
+            </p>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2 sm:gap-4 md:gap-6">
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-5">
-            {!admin && (
-              <nav className="hidden gap-5 text-sm text-zinc-300 md:flex">
-                {nav.map((item) => (
-                  <Link key={item.href} href={item.href} className="hover:text-zinc-900 dark:hover:text-white">
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            )}
-            <ThemeToggle />
-          </div>
+          <ThemeToggle />
           {!admin && <AuthNav />}
         </div>
       </div>

@@ -1,18 +1,18 @@
 ---
-description: Supabase auth, Pro subscriptions, and bKash schema for Shorup News
+description: Supabase auth, Pro subscriptions, and PayEurasia payment schema for Shorup News
 globs: supabase/**
 alwaysApply: false
 ---
 
 # Supabase
 
-Shorup uses Supabase for **auth**, **Pro entitlement**, **user research metadata**, and **planned bKash checkout** — not for articles/clusters or verified claims (those live in backend PostgreSQL).
+Shorup uses Supabase for **auth**, **Pro entitlement**, **user research metadata**, and **planned PayEurasia checkout** — not for articles/clusters or verified claims (those live in backend PostgreSQL).
 
 ## Layout
 
 - `supabase/config.toml` — local CLI project (`project_id = "shorup-news"`, Postgres 15)
 - `supabase/migrations/` — versioned SQL:
-  - `20250301000000_init_profiles_subscriptions.sql` — profiles, subscriptions, bKash tables
+  - `20250301000000_init_profiles_subscriptions.sql` — profiles, subscriptions, payment tables
   - `20250302000000_security_rls_hardening.sql` — `saved_dossiers`, `custom_alerts`, explicit deny INSERT/UPDATE/DELETE on billing tables for anon/authenticated
 - Frontend types: `frontend/src/lib/database.types.ts` — **keep in sync** when migrations change
 
@@ -36,8 +36,8 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 |--------|---------|
 | `public.profiles` | One row per `auth.users`; `locale` `en` \| `bn`; auto-created via `handle_new_user` trigger |
 | `public.subscriptions` | One row per user (`user_id` unique); `subscription_plan` monthly/yearly; `subscription_status` trialing/active/past_due/canceled/expired |
-| `public.bkash_agreements` | Tokenized checkout agreement IDs per user (planned) |
-| `public.payment_transactions` | bKash (default provider) charges linked to `subscription_id`; `metadata` jsonb |
+| `public.bkash_agreements` | Saved PayEurasia customer/agreement refs per user (table name legacy; planned) |
+| `public.payment_transactions` | PayEurasia (default `provider`) charges linked to `subscription_id`; `metadata` jsonb |
 | `public.saved_dossiers` | Per-user research notes + source URLs (full CRUD for owner) |
 | `public.custom_alerts` | Per-user saved search/alert queries (full CRUD for owner) |
 
@@ -45,7 +45,7 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 
 - RLS enabled on all public tables above
 - **Profiles**: users SELECT/UPDATE own row
-- **Subscriptions / bKash / payments**: users SELECT own rows only; **no client INSERT/UPDATE/DELETE** (explicit deny policies in hardening migration) — writes for **service role** only
+- **Subscriptions / payment agreements / payments**: users SELECT own rows only; **no client INSERT/UPDATE/DELETE** (explicit deny policies in hardening migration) — writes for **service role** only
 - **Dossiers / alerts**: users full CRUD on own rows (`auth.uid() = user_id`)
 - Never use `NEXT_PUBLIC_SUPABASE_ANON_KEY` for subscription writes or admin bootstrap; use server routes with `SUPABASE_SERVICE_ROLE_KEY`
 
@@ -62,4 +62,4 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 
 - One logical change per migration file; timestamp prefix `YYYYMMDDHHMMSS_name.sql`
 - Prefer explicit RLS policies and comments on tables intended for service-role writes
-- Do not store news/RSS/cluster/verification data here; do not commit service role keys or bKash secrets
+- Do not store news/RSS/cluster/verification data here; do not commit service role keys or PayEurasia API secrets

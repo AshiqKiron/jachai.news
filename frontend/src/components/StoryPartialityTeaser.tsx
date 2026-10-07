@@ -21,20 +21,20 @@ export function StoryPartialityTeaser({ story }: Props) {
   return (
     <Link
       href={href}
-      className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-violet-500/25 bg-violet-500/10 px-3 py-2 text-sm transition hover:border-violet-400/40 hover:bg-violet-500/15"
+      className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-violet-300/80 bg-violet-50 px-3 py-2 text-sm transition hover:border-violet-400 hover:bg-violet-100/80 dark:border-violet-500/30 dark:bg-violet-950/45 dark:hover:border-violet-400/45 dark:hover:bg-violet-950/60"
     >
-      <span className="shrink-0 rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
+      <span className="shrink-0 rounded-full bg-violet-200/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-900 dark:bg-violet-500/25 dark:text-violet-100">
         পক্ষপাত
       </span>
-      <span className="min-w-0 font-medium text-violet-100">
+      <span className="min-w-0 font-medium text-violet-950 dark:text-violet-100">
         <span className="tabular-nums" style={{ color: leanMeta.color }}>
           {stats.dominantPercent}%
         </span>{" "}
         <span className="font-bengali">{leanMeta.labelBn}</span>
       </span>
-      <span className="w-full text-xs text-violet-200/75 sm:w-auto sm:ml-auto">
+      <span className="w-full text-xs text-violet-800/90 dark:text-violet-200/80 sm:ml-auto sm:w-auto">
         <span className="font-bengali">বিস্তারিত পুরো খবরে</span>
-        <span className="text-violet-200/60"> · Details in full story</span>
+        <span className="text-violet-700/80 dark:text-violet-300/70"> · Details in full story</span>
       </span>
     </Link>
   );
