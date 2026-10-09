@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { ArticleImage } from "@/components/ArticleImage";
 import { SourceDigestPanel } from "@/components/SourceDigestPanel";
+import { SourceOwnershipLine } from "@/components/SourceOwnershipLine";
 import { resolveArticleImageUrl } from "@/lib/article-image-url";
 import type { ArticleWithSource } from "@/lib/coverage";
 import {
@@ -15,8 +16,12 @@ import { buildCoverageDigest, type CoverageDigestFilter } from "@/lib/source-dig
 
 type FilterId = "all" | Perspective;
 
+type HeaderMode = "hero" | "section";
+
 type Props = {
   articles: ArticleWithSource[];
+  /** Story detail uses a quiet section label (counts live in coverage block + tabs). */
+  headerMode?: HeaderMode;
 };
 
 function countByPerspective(articles: ArticleWithSource[]): Record<Perspective, number> {
@@ -48,17 +53,19 @@ function ArticleFeedList({ items }: { items: ArticleWithSource[] }) {
         const meta = PERSPECTIVE_META[article.perspective];
         return (
           <li key={`${article.sourceId}-${article.url}`}>
-            <a
-              href={article.url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex gap-3 px-3 py-3 transition hover:bg-zinc-800/35 sm:px-4 sm:py-3.5"
-            >
-              <ArticleImage
-                src={resolveArticleImageUrl(article.imageUrl)}
-                alt=""
-                className="h-16 w-24 shrink-0 rounded-lg object-cover"
-              />
+            <div className="flex gap-3 px-3 py-3 transition hover:bg-zinc-800/35 sm:px-4 sm:py-3.5">
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0"
+              >
+                <ArticleImage
+                  src={resolveArticleImageUrl(article.imageUrl)}
+                  alt=""
+                  className="h-16 w-24 rounded-lg object-cover"
+                />
+              </a>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="text-sm font-semibold text-zinc-100">{article.sourceName}</span>
@@ -69,9 +76,17 @@ function ArticleFeedList({ items }: { items: ArticleWithSource[] }) {
                     {meta.spectrumTabEn}
                   </span>
                 </div>
-                <p className="mt-1.5 text-sm leading-snug text-zinc-200 line-clamp-3">{article.headline}</p>
+                <SourceOwnershipLine ownership={article.mediaOwnership} className="mt-0.5" />
+                <a
+                  href={article.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1.5 block text-sm leading-snug text-zinc-200 line-clamp-3 hover:text-zinc-50"
+                >
+                  {article.headline}
+                </a>
               </div>
-            </a>
+            </div>
           </li>
         );
       })}
@@ -79,7 +94,7 @@ function ArticleFeedList({ items }: { items: ArticleWithSource[] }) {
   );
 }
 
-export function StoryArticleFeed({ articles }: Props) {
+export function StoryArticleFeed({ articles, headerMode = "hero" }: Props) {
   const [active, setActive] = useState<FilterId>("all");
   const counts = useMemo(() => countByPerspective(articles), [articles]);
 
@@ -100,23 +115,35 @@ export function StoryArticleFeed({ articles }: Props) {
 
   return (
     <section className="min-w-0" aria-labelledby="story-article-feed-heading">
-      <h2
-        id="story-article-feed-heading"
-        className="font-display text-2xl font-semibold tabular-nums text-zinc-50 sm:text-3xl"
-      >
-        {total}{" "}
-        <span className="text-xl font-normal text-zinc-400 sm:text-2xl">
-          {total === 1 ? "Article" : "Articles"}
-        </span>
-        <span className="mt-1 block font-bengali text-base font-normal text-zinc-500">
-          {total === 1 ? "১টি উৎস" : `${total}টি উৎস`}
-        </span>
-      </h2>
+      {headerMode === "hero" ? (
+        <h2
+          id="story-article-feed-heading"
+          className="font-display text-2xl font-semibold tabular-nums text-zinc-50 sm:text-3xl"
+        >
+          {total}{" "}
+          <span className="text-xl font-normal text-zinc-400 sm:text-2xl">
+            {total === 1 ? "Article" : "Articles"}
+          </span>
+          <span className="mt-1 block font-bengali text-base font-normal text-zinc-500">
+            {total === 1 ? "১টি উৎস" : `${total}টি উৎস`}
+          </span>
+        </h2>
+      ) : (
+        <h2
+          id="story-article-feed-heading"
+          className="text-xs font-medium uppercase tracking-widest text-zinc-500"
+        >
+          <span className="font-bengali normal-case tracking-normal">উৎস অনুযায়ী</span> · Articles by
+          source
+        </h2>
+      )}
 
       <div
         role="tablist"
         aria-label="Filter coverage by political spectrum"
-        className="mt-5 flex gap-1 overflow-x-auto border-b border-zinc-800/90 [-webkit-overflow-scrolling:touch]"
+        className={`flex gap-1 overflow-x-auto border-b border-zinc-800/90 [-webkit-overflow-scrolling:touch] ${
+          headerMode === "hero" ? "mt-5" : "mt-4"
+        }`}
       >
         <SpectrumTab
           active={active === "all"}
@@ -142,7 +169,11 @@ export function StoryArticleFeed({ articles }: Props) {
       </div>
 
       <div role="tabpanel" className="mt-4">
-        <SourceDigestPanel snippets={digestSnippets} className="mb-4" />
+        <SourceDigestPanel
+          snippets={digestSnippets}
+          labelBn="উৎসের অংশ"
+          className={`mb-4 ${headerMode === "section" ? "border-zinc-800/60 bg-ink-900/25 px-3 py-3" : ""}`}
+        />
         <ArticleFeedList items={filtered} />
       </div>
     </section>

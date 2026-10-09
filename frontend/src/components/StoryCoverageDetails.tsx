@@ -7,6 +7,9 @@ import { formatRelativeTimeEn } from "@/lib/relative-time";
 
 type Props = {
   story: Story;
+  density?: "default" | "compact";
+  hideHeading?: boolean;
+  className?: string;
 };
 
 const STAT_PERSPECTIVES: Perspective[] = [
@@ -43,7 +46,39 @@ function StatRow({
   );
 }
 
-export function StoryCoverageDetails({ story }: Props) {
+function CompactStatCard({
+  labelBn,
+  labelEn,
+  value,
+  accent,
+}: {
+  labelBn: string;
+  labelEn: string;
+  value: number;
+  accent?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-zinc-800/70 bg-zinc-950/25 px-3 py-2.5">
+      <p
+        className="text-xl font-semibold tabular-nums leading-none text-zinc-100"
+        style={accent ? { color: accent } : undefined}
+      >
+        {value}
+      </p>
+      <p className="mt-2 text-[11px] leading-snug">
+        <span className="font-bengali text-zinc-400">{labelBn}</span>
+        <span className="mt-0.5 block text-[10px] leading-tight text-zinc-600">{labelEn}</span>
+      </p>
+    </div>
+  );
+}
+
+export function StoryCoverageDetails({
+  story,
+  density = "default",
+  hideHeading = false,
+  className = "",
+}: Props) {
   const stats = coverageStats(story);
   if (!stats) return null;
 
@@ -53,21 +88,68 @@ export function StoryCoverageDetails({ story }: Props) {
     (p) => p !== "international" || stats.counts.international > 0,
   );
 
+  if (density === "compact") {
+    return (
+      <div className={className}>
+        <div className="grid grid-cols-2 gap-2 border-t border-zinc-800/80 pt-4 sm:grid-cols-3 lg:grid-cols-5">
+          <CompactStatCard labelBn="মোট উৎস" labelEn="Total sources" value={stats.total} />
+          {perspectiveRows.map((perspective) => {
+            const meta = PERSPECTIVE_META[perspective];
+            return (
+              <CompactStatCard
+                key={perspective}
+                labelBn={meta.shortLabelBn}
+                labelEn={meta.labelEn}
+                value={stats.counts[perspective]}
+                accent={meta.color}
+              />
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex flex-col gap-3 border-t border-zinc-800/80 pt-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <div>
+            <p className="text-[11px] text-zinc-500">
+              <span className="font-bengali text-zinc-400">শেষ আপডেট</span>
+              <span className="mt-0.5 block text-[10px] text-zinc-600">Last updated</span>
+            </p>
+            <p className="mt-1 text-sm font-medium text-zinc-200">{lastUpdated}</p>
+          </div>
+          <div className="sm:text-right">
+            <p className="text-[11px] text-zinc-500">
+              <span className="font-bengali normal-case text-zinc-400">প্রধান ঝুঁক</span>
+              <span className="mt-0.5 block text-[10px] text-zinc-600">Leading lean</span>
+            </p>
+            <p className="mt-1 text-sm leading-snug text-zinc-300">
+              <span style={{ color: dominantMeta.color }} className="font-semibold tabular-nums">
+                {stats.dominantPercent}%
+              </span>{" "}
+              {dominantMeta.labelEn}
+            </p>
+            <p className="mt-0.5 font-bengali text-sm text-zinc-500">{dominantMeta.labelBn}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section
       id="coverage-details"
-      className="scroll-mt-24 rounded-xl border border-zinc-800/90 bg-zinc-900/40 p-4 sm:p-5"
-      aria-labelledby="coverage-details-heading"
+      className={`scroll-mt-24 rounded-xl border border-zinc-800/90 bg-zinc-900/40 p-4 sm:p-5 ${className}`}
+      aria-labelledby={hideHeading ? undefined : "coverage-details-heading"}
     >
-      <h2
-        id="coverage-details-heading"
-        className="text-xs font-medium uppercase tracking-widest text-zinc-500"
-      >
-        <span className="font-bengali normal-case tracking-normal">কভারেজ বিস্তারিত</span> · Coverage
-        details
-      </h2>
+      {!hideHeading ? (
+        <h2
+          id="coverage-details-heading"
+          className="text-xs font-medium uppercase tracking-widest text-zinc-500"
+        >
+          <span className="font-bengali normal-case tracking-normal">কভারেজ বিস্তারিত</span> · Coverage
+          details
+        </h2>
+      ) : null}
 
-      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-5">
+      <dl className={`grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-5 ${hideHeading ? "" : "mt-4"}`}>
         <StatRow labelEn="Total news sources" labelBn="মোট উৎস" value={stats.total} />
         {perspectiveRows.map((perspective) => {
           const meta = PERSPECTIVE_META[perspective];
@@ -107,7 +189,6 @@ export function StoryCoverageDetails({ story }: Props) {
           </span>
         </p>
       </div>
-
     </section>
   );
 }

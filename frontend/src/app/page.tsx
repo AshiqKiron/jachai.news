@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { HeaderBanglaDate } from "@/components/HeaderBanglaDate";
 import { HomeStoryGridClient } from "@/components/HomeStoryGridClient";
 
@@ -17,7 +19,9 @@ export default function HomePage() {
         <HeaderBanglaDate className="mt-4 text-sm text-zinc-500 dark:text-zinc-400" />
       </section>
 
-      <HomeStoryGridClient />
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-zinc-800/30" />}>
+        <HomeStoryGridClient />
+      </Suspense>
     </div>
   );
 }

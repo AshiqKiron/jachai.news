@@ -5,6 +5,7 @@ import {
   resolveArticlePerspective,
   type SourcePerspectiveLookup,
 } from "@/lib/source-perspective";
+import { lookupMediaOwnership, type MediaOwnership } from "@/lib/source-media-ownership";
 
 export type StoryArticleMeta = {
   sourceName?: string;
@@ -15,6 +16,7 @@ export type ArticleWithSource = StoryArticle & {
   sourceName: string;
   perspective: Perspective;
   factuality: string;
+  mediaOwnership: MediaOwnership | null;
 };
 
 export type EnrichArticlesOptions = {
@@ -43,11 +45,13 @@ export function enrichArticles(story: Story, options?: EnrichArticlesOptions): A
     const source = getSourceById(article.sourceId);
     const meta = options?.articleMeta?.[article.sourceId];
     const perspective = articlePerspective(article, options?.lookup, meta);
+    const sourceName = meta?.sourceName ?? source?.name ?? article.sourceId;
     return {
       ...article,
-      sourceName: meta?.sourceName ?? source?.name ?? article.sourceId,
+      sourceName,
       perspective,
       factuality: source?.factuality ?? "mixed",
+      mediaOwnership: lookupMediaOwnership(sourceName),
     };
   });
 }
@@ -84,6 +88,26 @@ export type CoverageStats = {
   dominantPercent: number;
   lastUpdatedIso: string;
 };
+
+/** Earliest article publish time, or cluster `updatedAt` when no articles. */
+export function storyPublishedIso(story: Story): string {
+  let earliestMs: number | null = null;
+
+  for (const article of story.articles) {
+    const articleMs = Date.parse(article.publishedAt);
+    if (Number.isNaN(articleMs)) continue;
+    if (earliestMs === null || articleMs < earliestMs) {
+      earliestMs = articleMs;
+    }
+  }
+
+  if (earliestMs !== null) {
+    return new Date(earliestMs).toISOString();
+  }
+
+  const fallbackMs = Date.parse(story.updatedAt);
+  return Number.isNaN(fallbackMs) ? new Date().toISOString() : story.updatedAt;
+}
 
 function storyLastUpdatedIso(story: Story): string {
   let latestMs = Date.parse(story.updatedAt);

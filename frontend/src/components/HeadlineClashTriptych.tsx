@@ -1,5 +1,6 @@
 import { ArticleImage } from "@/components/ArticleImage";
 import { resolveArticleImageUrl } from "@/lib/article-image-url";
+import { SourceOwnershipLine } from "@/components/SourceOwnershipLine";
 import type { ArticleWithSource } from "@/lib/coverage";
 import { PERSPECTIVE_META, type Perspective } from "@/lib/perspectives";
 
@@ -113,6 +114,7 @@ export function HeadlineClashTriptych({ articles }: Props) {
                       {meta.labelBn}
                     </span>
                   </div>
+                  <SourceOwnershipLine ownership={article.mediaOwnership} className="mt-1" />
                   <h3 className="mt-2 flex-1 break-words font-display text-base leading-snug text-zinc-50">
                     {article.headline}
                   </h3>

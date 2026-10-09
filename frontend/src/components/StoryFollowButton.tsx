@@ -23,7 +23,7 @@ export function StoryFollowButton({
   onLockedClick,
   compact,
 }: Props) {
-  const labelEn = followed ? "Following" : "Follow story";
+  const labelEn = followed ? "Following topic" : "Follow topic";
   const labelBn = followed ? "ফলো করা" : "ফলো টপিক";
 
   function handleClick(event: MouseEvent) {
@@ -50,10 +50,10 @@ export function StoryFollowButton({
         !proKnown
           ? "Checking Pro access…"
           : !isPro
-            ? "Follow stories is a Shorup Pro feature"
+            ? "Follow topic is a Shorup Pro feature"
             : followed
-              ? `Unfollow: ${titleBn}`
-              : `Follow for updates: ${titleBn}`
+              ? `Unfollow topic: ${titleBn}`
+              : `Follow topic for updates: ${titleBn}`
       }
       aria-pressed={followed}
       className={`relative z-20 shrink-0 rounded-full border font-medium font-bengali leading-snug transition disabled:cursor-wait disabled:opacity-70 ${sizeClass} ${
@@ -66,11 +66,6 @@ export function StoryFollowButton({
       <span aria-hidden className="whitespace-nowrap">
         {labelBn}
       </span>
-      {!compact ? (
-        <span className="ml-1.5 hidden text-zinc-500 sm:inline" aria-hidden>
-          · {labelEn}
-        </span>
-      ) : null}
     </button>
   );
 }

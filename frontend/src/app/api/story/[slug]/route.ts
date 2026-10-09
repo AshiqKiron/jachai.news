@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { etagForStory, ifNoneMatchMatches } from "@/lib/feed-etag";
-import { resolveStoryBySlug } from "@/lib/stories";
+import { resolveStoryBySlugDirect } from "@/lib/stories";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
 export async function GET(request: Request, context: RouteContext) {
   const { slug } = await context.params;
-  const resolved = await resolveStoryBySlug(slug);
+  const resolved = await resolveStoryBySlugDirect(slug);
 
   if (!resolved) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });

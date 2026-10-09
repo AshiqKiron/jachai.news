@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { ArticleImage } from "@/components/ArticleImage";
+import { SourceOwnershipLine } from "@/components/SourceOwnershipLine";
 import { resolveArticleImageUrl } from "@/lib/article-image-url";
 import type { ArticleWithSource } from "@/lib/coverage";
 import { PERSPECTIVE_META, perspectiveSegmentStyle, type Perspective } from "@/lib/perspectives";
@@ -61,6 +62,7 @@ export function SourceFilterList({ articles }: Props) {
                     {article.factuality}
                   </span>
                 </div>
+                <SourceOwnershipLine ownership={article.mediaOwnership} className="mt-0.5" />
                 <a
                   href={article.url}
                   target="_blank"

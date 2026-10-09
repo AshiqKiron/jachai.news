@@ -4,19 +4,28 @@ import { useMemo, useState } from "react";
 
 import {
   buildSocialShareUrl,
+  buildStoryEmbedSnippet,
   buildStoryReportIssueHref,
   buildStoryShareUrl,
   SOCIAL_SHARE_NETWORKS,
+  STORY_DETAIL_SHARE_NETWORKS,
   type SocialShareNetwork,
 } from "@/lib/story-share";
 
 type Props = {
   slug: string;
   shareTitle: string;
+  variant?: "default" | "detail";
 };
 
-const iconButtonClass =
+const defaultIconButtonClass =
   "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-800/80 bg-ink-900/50 text-zinc-400 transition-colors hover:bg-zinc-800/80 hover:text-zinc-100";
+
+const detailSocialClass =
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-900 transition hover:bg-white";
+
+const detailUtilityClass =
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-300 transition hover:bg-zinc-800/80 hover:text-zinc-50";
 
 function LinkIcon({ className }: { className?: string }) {
   return (
@@ -74,6 +83,25 @@ function FlagIcon({ className }: { className?: string }) {
   );
 }
 
+function EmbedIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="m16 18 6-6-6-6" />
+      <path d="m8 6-6 6 6 6" />
+    </svg>
+  );
+}
+
 function SocialIcon({ network, className }: { network: SocialShareNetwork; className?: string }) {
   switch (network) {
     case "facebook":
@@ -106,11 +134,35 @@ function SocialIcon({ network, className }: { network: SocialShareNetwork; class
           <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0Zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635Z" />
         </svg>
       );
+    case "reddit":
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+          <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.192-.854 2.847-1.416 4.67-1.487l-.885-4.182a.342.342 0 0 1 .14-.133l2.552-1.096a.335.335 0 0 1 .431.136l.941 1.588a5.71 5.71 0 0 1 3.132-.722zm-8.01 9.6a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5zm4.502 0a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5z" />
+        </svg>
+      );
+    case "email":
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+          aria-hidden
+        >
+          <rect width="20" height="16" x="2" y="4" rx="2" />
+          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+        </svg>
+      );
   }
 }
 
-export function StoryShareBar({ slug, shareTitle }: Props) {
+export function StoryShareBar({ slug, shareTitle, variant = "default" }: Props) {
   const [copied, setCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
 
   const pageUrl = useMemo(() => buildStoryShareUrl(slug), [slug]);
   const reportHref = useMemo(
@@ -118,13 +170,18 @@ export function StoryShareBar({ slug, shareTitle }: Props) {
     [pageUrl, shareTitle, slug],
   );
 
-  async function onCopyLink() {
-    const url = buildStoryShareUrl(slug);
+  const networks = variant === "detail" ? STORY_DETAIL_SHARE_NETWORKS : SOCIAL_SHARE_NETWORKS;
+  const socialClass = variant === "detail" ? detailSocialClass : defaultIconButtonClass;
+  const utilityClass = variant === "detail" ? detailUtilityClass : defaultIconButtonClass;
+  const socialIconSize = variant === "detail" ? "h-3.5 w-3.5" : "h-[1.05rem] w-[1.05rem]";
+  const utilityIconSize = variant === "detail" ? "h-[1.05rem] w-[1.05rem]" : "h-[1.125rem] w-[1.125rem]";
+
+  async function copyText(text: string, onSuccess: () => void) {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(text);
     } catch {
       const input = document.createElement("textarea");
-      input.value = url;
+      input.value = text;
       input.setAttribute("readonly", "");
       input.style.position = "fixed";
       input.style.left = "-9999px";
@@ -133,44 +190,77 @@ export function StoryShareBar({ slug, shareTitle }: Props) {
       document.execCommand("copy");
       document.body.removeChild(input);
     }
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
+    onSuccess();
+  }
+
+  async function onCopyLink() {
+    await copyText(buildStoryShareUrl(slug), () => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  async function onCopyEmbed() {
+    await copyText(buildStoryEmbedSnippet(pageUrl), () => {
+      setEmbedCopied(true);
+      window.setTimeout(() => setEmbedCopied(false), 2000);
+    });
   }
 
   return (
     <div
-      className="flex flex-wrap items-center justify-end gap-1.5"
+      className={`flex flex-wrap items-center ${variant === "detail" ? "gap-1" : "justify-end gap-1.5"}`}
       aria-label="Share and report"
     >
       <span className="sr-only" aria-live="polite">
-        {copied ? "Link copied" : ""}
+        {copied ? "Link copied" : embedCopied ? "Embed code copied" : ""}
       </span>
 
-      {SOCIAL_SHARE_NETWORKS.map((network) => (
+      {networks.map((network) => (
         <a
           key={network.id}
           href={buildSocialShareUrl(network.id, pageUrl, shareTitle)}
           target="_blank"
           rel="noopener noreferrer"
-          className={iconButtonClass}
+          className={socialClass}
           title={`${network.labelEn} · ${network.labelBn}`}
           aria-label={network.labelEn}
         >
-          <SocialIcon network={network.id} className="h-[1.05rem] w-[1.05rem]" />
+          <SocialIcon network={network.id} className={socialIconSize} />
         </a>
       ))}
+
+      {variant === "detail" ? (
+        <button
+          type="button"
+          onClick={() => void onCopyEmbed()}
+          className={detailSocialClass}
+          title={embedCopied ? "Embed copied · এম্বেড কপি হয়েছে" : "Copy embed code · এম্বেড কোড"}
+          aria-label={embedCopied ? "Embed code copied" : "Copy embed code for this story"}
+        >
+          {embedCopied ? (
+            <CheckIcon className={`${socialIconSize} text-emerald-700`} />
+          ) : (
+            <EmbedIcon className={socialIconSize} />
+          )}
+        </button>
+      ) : null}
+
+      {variant === "detail" ? (
+        <span className="mx-0.5 hidden h-5 w-px shrink-0 bg-zinc-700 sm:inline" aria-hidden />
+      ) : null}
 
       <button
         type="button"
         onClick={() => void onCopyLink()}
-        className={iconButtonClass}
+        className={utilityClass}
         title={copied ? "Copied · লিংক কপি হয়েছে" : "Copy link · লিংক কপি"}
         aria-label={copied ? "Link copied" : "Copy link to this story"}
       >
         {copied ? (
-          <CheckIcon className="h-[1.125rem] w-[1.125rem] text-emerald-400" />
+          <CheckIcon className={`${utilityIconSize} text-emerald-400`} />
         ) : (
-          <LinkIcon className="h-[1.125rem] w-[1.125rem]" />
+          <LinkIcon className={utilityIconSize} />
         )}
       </button>
 
@@ -178,11 +268,11 @@ export function StoryShareBar({ slug, shareTitle }: Props) {
         href={reportHref}
         target="_blank"
         rel="noopener noreferrer"
-        className={iconButtonClass}
+        className={utilityClass}
         title="Report an issue · সমস্যা জানান"
         aria-label="Report an issue with this story"
       >
-        <FlagIcon className="h-[1.125rem] w-[1.125rem]" />
+        <FlagIcon className={utilityIconSize} />
       </a>
     </div>
   );

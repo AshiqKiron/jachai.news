@@ -7,13 +7,10 @@ import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { ApiDegradedBanner } from "@/components/ApiDegradedBanner";
 import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
 import { BlindspotBanner } from "@/components/BlindspotBanner";
-import { CoverageBar } from "@/components/CoverageBar";
 import { AntiClickbaitSummaryPanel } from "@/components/AntiClickbaitSummaryPanel";
 import { PartialityBanner } from "@/components/PartialityBanner";
-import { StoryCoverageDetails } from "@/components/StoryCoverageDetails";
 import { PaywallModal } from "@/components/PaywallModal";
-import { StoryFollowButton } from "@/components/StoryFollowButton";
-import { StoryShareBar } from "@/components/StoryShareBar";
+import { StoryDetailMetaBar } from "@/components/StoryDetailMetaBar";
 import { applyBlindspotDetection, type BlindspotAxisPerspective } from "@/lib/blindspot";
 import { analyzePartiality } from "@/lib/partiality";
 import type { Story } from "@/lib/demo-data";
@@ -25,7 +22,8 @@ import {
 import { hydrateClientStory } from "@/lib/client-story-hydrate";
 import { enrichArticles } from "@/lib/coverage";
 import { isStoryFollowed, toggleStoryFollowed } from "@/lib/followed-stories";
-import { topicMetaForStory } from "@/lib/story-topics";
+import { clusterBiasScore } from "@/lib/partiality";
+import { readingTopicIdForStory, recordStoryRead } from "@/lib/reading-history";
 
 const StoryTabs = dynamic(
   () => import("@/components/StoryTabs").then((mod) => mod.StoryTabs),
@@ -38,9 +36,11 @@ type ResolvedStory = { story: Story; fromApi: boolean };
 
 type Props = {
   slug: string;
+  /** Demo/SSR seed so the page is readable before client fetch + when API is offline. */
+  initialStory?: Story | null;
 };
 
-export function StoryDetailPanel({ slug }: Props) {
+export function StoryDetailPanel({ slug, initialStory = null }: Props) {
   const [resolved, setResolved] = useState<ResolvedStory | null>(null);
   const [notFoundState, setNotFoundState] = useState(false);
   const [isPro, setIsPro] = useState(false);
@@ -50,10 +50,16 @@ export function StoryDetailPanel({ slug }: Props) {
 
   useLayoutEffect(() => {
     const cached = readStoryCache(slug);
-    setResolved(cached ? { story: cached, fromApi: true } : null);
+    if (cached) {
+      setResolved({ story: cached, fromApi: true });
+    } else if (initialStory) {
+      setResolved({ story: hydrateClientStory(initialStory), fromApi: false });
+    } else {
+      setResolved(null);
+    }
     setNotFoundState(false);
     setFollowed(isStoryFollowed(slug));
-  }, [slug]);
+  }, [slug, initialStory]);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,10 +83,11 @@ export function StoryDetailPanel({ slug }: Props) {
 
   const handleToggleFollow = useCallback(
     (storySlug: string) => {
-      toggleStoryFollowed(storySlug);
+      const titleBn = resolved?.story.titleBn;
+      toggleStoryFollowed(storySlug, titleBn);
       setFollowed(isStoryFollowed(storySlug));
     },
-    [],
+    [resolved?.story.titleBn],
   );
 
   useEffect(() => {
@@ -131,6 +138,26 @@ export function StoryDetailPanel({ slug }: Props) {
     };
   }, [slug]);
 
+  useEffect(() => {
+    if (!resolved?.story) return;
+    const hydrated = applyBlindspotDetection(resolved.story);
+    recordStoryRead({
+      slug,
+      titleBn: hydrated.titleBn,
+      biasScore: clusterBiasScore(hydrated),
+      topicId: readingTopicIdForStory(hydrated),
+      ...(hydrated.isBlindspot &&
+      hydrated.blindspotPerspective &&
+      (hydrated.blindspotPerspective === "establishment" ||
+        hydrated.blindspotPerspective === "opposition")
+        ? {
+            isBlindspot: true,
+            blindspotPerspective: hydrated.blindspotPerspective as BlindspotAxisPerspective,
+          }
+        : {}),
+    });
+  }, [slug, resolved]);
+
   if (notFoundState) {
     notFound();
   }
@@ -144,50 +171,44 @@ export function StoryDetailPanel({ slug }: Props) {
   const partiality = analyzePartiality(story);
   const articles = enrichArticles(story);
   const summaryBullets = story.summaryBullets ?? [];
-  const topic = topicMetaForStory(story);
-
   return (
     <>
       {fromApi && story.articles.length === 0 ? <ApiDegradedBanner compact /> : null}
 
-      <header className="max-w-3xl space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <p className="text-xs uppercase tracking-widest text-zinc-500">
-            <span className="font-bengali normal-case">{topic.labelBn}</span> · {topic.labelEn} ·
-            Full coverage
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <StoryFollowButton
-              slug={slug}
-              titleBn={story.titleBn}
-              isPro={isPro}
-              proKnown={proKnown}
-              followed={followed}
-              onToggleFollow={handleToggleFollow}
-              onLockedClick={() => setPaywallOpen(true)}
-            />
-            <StoryShareBar slug={slug} shareTitle={story.title || story.titleBn} />
-          </div>
-        </div>
+      <header className="max-w-3xl space-y-5">
         <h1 lang="bn" className="page-title-lg story-title-bn">
           {story.titleBn}
         </h1>
-        <p className="text-lg text-zinc-400">{story.title}</p>
+        <p className="text-base leading-snug text-zinc-500">{story.title}</p>
         {summaryBullets.length > 0 ? (
           <AntiClickbaitSummaryPanel bullets={summaryBullets} className="max-w-3xl" />
         ) : story.summaryBn ? (
           <p className="text-sm leading-relaxed text-zinc-400">{story.summaryBn}</p>
         ) : null}
-        <CoverageBar story={story} />
-        {story.articles.length > 0 ? (
-          <StoryCoverageDetails story={story} />
-        ) : null}
-        {partiality ? <PartialityBanner analysis={partiality} /> : null}
-        {story.isBlindspot &&
-        story.blindspotPerspective &&
-        (story.blindspotPerspective === "establishment" ||
-          story.blindspotPerspective === "opposition") ? (
-          <BlindspotBanner perspective={story.blindspotPerspective as BlindspotAxisPerspective} />
+        <StoryDetailMetaBar
+          story={story}
+          slug={slug}
+          shareTitle={story.title || story.titleBn}
+          titleBn={story.titleBn}
+          isPro={isPro}
+          proKnown={proKnown}
+          followed={followed}
+          onToggleFollow={handleToggleFollow}
+          onLockedClick={() => setPaywallOpen(true)}
+        />
+        {partiality || story.isBlindspot ? (
+          <div className="space-y-2">
+            {partiality ? <PartialityBanner analysis={partiality} comfortable /> : null}
+            {story.isBlindspot &&
+            story.blindspotPerspective &&
+            (story.blindspotPerspective === "establishment" ||
+              story.blindspotPerspective === "opposition") ? (
+              <BlindspotBanner
+                perspective={story.blindspotPerspective as BlindspotAxisPerspective}
+                comfortable
+              />
+            ) : null}
+          </div>
         ) : null}
       </header>
 

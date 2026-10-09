@@ -1,5 +1,6 @@
 import { groupArticlesByPerspective } from "@/components/HeadlinesByPerspective";
 import { PerspectiveSectionHeader } from "@/components/PerspectiveSectionHeader";
+import { SourceOwnershipLine } from "@/components/SourceOwnershipLine";
 import type { ArticleWithSource } from "@/lib/coverage";
 import { PERSPECTIVE_META, type Perspective } from "@/lib/perspectives";
 
@@ -42,15 +43,18 @@ export function CoverageSourcesByCategory({ articles }: Props) {
               <ul className="divide-y divide-zinc-800/70">
                 {items.map((article) => (
                   <li key={`${article.sourceId}-${article.url}`}>
-                    <a
-                      href={article.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex flex-col gap-0.5 px-3 py-2.5 transition hover:bg-zinc-800/40 sm:px-4"
-                    >
+                    <div className="px-3 py-2.5 transition hover:bg-zinc-800/40 sm:px-4">
                       <span className="text-sm font-medium text-zinc-100">{article.sourceName}</span>
-                      <span className="text-sm leading-snug text-zinc-300 line-clamp-2">{article.headline}</span>
-                    </a>
+                      <SourceOwnershipLine ownership={article.mediaOwnership} className="mt-0.5" />
+                      <a
+                        href={article.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 block text-sm leading-snug text-zinc-300 line-clamp-2 hover:text-zinc-100"
+                      >
+                        {article.headline}
+                      </a>
+                    </div>
                   </li>
                 ))}
               </ul>

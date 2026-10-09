@@ -24,6 +24,8 @@ const backendOrigin = (process.env.API_URL ?? `${DEV_BACKEND_ORIGIN}/api/v1`).re
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, ".."),
+  // Avoid Turbopack/webpack splitting @supabase/* into stale SSR chunks in dev.
+  serverExternalPackages: ["@supabase/supabase-js", "@supabase/ssr", "@supabase/auth-js"],
   async rewrites() {
     return [
       { source: "/api/v1/:path*", destination: `${backendOrigin}/api/v1/:path*` },

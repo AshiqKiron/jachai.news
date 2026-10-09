@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { ArticleImage } from "@/components/ArticleImage";
+import { SourceOwnershipLine } from "@/components/SourceOwnershipLine";
 import { resolveArticleImageUrl } from "@/lib/article-image-url";
 import type { ArticleWithSource } from "@/lib/coverage";
 import { PERSPECTIVE_META } from "@/lib/perspectives";
@@ -52,6 +53,7 @@ export function HeadlineCompare({ articles }: Props) {
             {meta.labelBn}
           </span>
         </div>
+        <SourceOwnershipLine ownership={current.mediaOwnership} className="mt-1" />
         <h3 className="mt-3 break-words font-display text-xl leading-snug text-zinc-50 sm:text-2xl">
           {current.headline}
         </h3>

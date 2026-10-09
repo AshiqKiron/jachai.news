@@ -3,11 +3,15 @@
 import { useMemo } from "react";
 
 import { PerspectiveSectionHeader } from "@/components/PerspectiveSectionHeader";
+import { SourceOwnershipLine } from "@/components/SourceOwnershipLine";
 import type { ArticleWithSource } from "@/lib/coverage";
+import { recordArticleClick } from "@/lib/reading-history";
 import { PERSPECTIVE_META, type Perspective } from "@/lib/perspectives";
 
 type Props = {
   articles: ArticleWithSource[];
+  /** When set, Pro article-click tracking can record outbound opens for My News Bias. */
+  storySlug?: string;
   /** When set, only render these perspective buckets (in meta order). */
   perspectives?: Perspective[];
   className?: string;
@@ -36,7 +40,7 @@ export function groupArticlesByPerspective(
   return grouped;
 }
 
-function HeadlineList({ items }: { items: ArticleWithSource[] }) {
+function HeadlineList({ items, storySlug }: { items: ArticleWithSource[]; storySlug?: string }) {
   return (
     <ul className="divide-y divide-zinc-800/80">
       {items.map((article) => (
@@ -47,11 +51,23 @@ function HeadlineList({ items }: { items: ArticleWithSource[] }) {
               {article.factuality}
             </span>
           </div>
+          <SourceOwnershipLine ownership={article.mediaOwnership} className="mt-0.5" />
           <a
             href={article.url}
             target="_blank"
             rel="noreferrer"
             className="mt-1 block text-sm leading-snug text-zinc-100 hover:text-zinc-50"
+            onClick={() => {
+              if (!storySlug) return;
+              recordArticleClick({
+                storySlug,
+                url: article.url,
+                sourceId: article.sourceId,
+                sourceName: article.sourceName,
+                perspective: article.perspective,
+                biasScore: article.biasScore ?? null,
+              });
+            }}
           >
             {article.headline}
           </a>
@@ -66,6 +82,7 @@ function HeadlineList({ items }: { items: ArticleWithSource[] }) {
 
 export function HeadlinesByPerspective({
   articles,
+  storySlug,
   perspectives,
   className,
   listOnly = false,
@@ -91,7 +108,7 @@ export function HeadlinesByPerspective({
 
   if (listOnly) {
     const items = sections.flatMap((section) => section.items);
-    return <HeadlineList items={items} />;
+    return <HeadlineList items={items} storySlug={storySlug} />;
   }
 
   return (
@@ -117,7 +134,7 @@ export function HeadlinesByPerspective({
                 countNoun="headline"
               />
             </div>
-            <HeadlineList items={items} />
+            <HeadlineList items={items} storySlug={storySlug} />
           </div>
         );
       })}

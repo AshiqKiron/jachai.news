@@ -4,9 +4,11 @@ import { biasScoreToPerspective, PERSPECTIVE_META } from "@/lib/perspectives";
 type Props = {
   analysis: PartialityAnalysis;
   compact?: boolean;
+  /** Tighter padding on story detail; keeps EN + BN detail in one block. */
+  comfortable?: boolean;
 };
 
-export function PartialityBanner({ analysis, compact }: Props) {
+export function PartialityBanner({ analysis, compact, comfortable }: Props) {
   const copy = partialityBannerCopy(analysis);
   const leanMeta = PERSPECTIVE_META[biasScoreToPerspective(analysis.clusterBiasScore)];
 
@@ -16,6 +18,21 @@ export function PartialityBanner({ analysis, compact }: Props) {
         <span className="font-semibold">{copy.titleBn}</span>
         <span className="text-violet-900/90 dark:text-violet-100/85"> — {copy.detailBn}</span>
       </p>
+    );
+  }
+
+  if (comfortable) {
+    return (
+      <div
+        className="rounded-lg border border-violet-300/80 bg-violet-50 px-3 py-2.5 dark:border-violet-500/35 dark:bg-violet-500/10"
+        style={{ borderLeftColor: leanMeta.color, borderLeftWidth: 3 }}
+      >
+        <p className="text-sm font-semibold text-violet-950 dark:text-violet-100">{copy.titleBn}</p>
+        <p className="mt-1 text-sm leading-relaxed text-violet-900/95 dark:text-violet-100/90">
+          {copy.detailBn}
+          <span className="text-violet-800/80 dark:text-violet-100/75"> · {copy.detailEn}</span>
+        </p>
+      </div>
     );
   }
 

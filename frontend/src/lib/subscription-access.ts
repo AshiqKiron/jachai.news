@@ -9,7 +9,22 @@ export type ProAccessState = {
   isPro: boolean;
   source: ProAccessSource;
   userId: string | null;
+  /** Set when a signed-in user was resolved (for profile / header copy). */
+  displayName: string | null;
 };
+
+function displayNameFromUser(user: {
+  email?: string | null;
+  user_metadata?: Record<string, unknown>;
+}): string | null {
+  const fromMeta =
+    typeof user.user_metadata?.display_name === "string"
+      ? user.user_metadata.display_name.trim()
+      : "";
+  if (fromMeta) return fromMeta;
+  const local = user.email?.split("@")[0]?.trim();
+  return local || null;
+}
 
 export { isActiveProSubscription } from "@/lib/subscription-entitlement";
 
@@ -19,12 +34,12 @@ export { isActiveProSubscription } from "@/lib/subscription-entitlement";
  */
 export const getProAccessState = cache(async (): Promise<ProAccessState> => {
   if (process.env.NEXT_PUBLIC_MOCK_PRO === "true") {
-    return { isPro: true, source: "mock", userId: null };
+    return { isPro: true, source: "mock", userId: null, displayName: null };
   }
 
   const supabase = await createServerSupabaseClient();
   if (!supabase) {
-    return { isPro: false, source: "none", userId: null };
+    return { isPro: false, source: "none", userId: null, displayName: null };
   }
 
   const {
@@ -33,8 +48,10 @@ export const getProAccessState = cache(async (): Promise<ProAccessState> => {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return { isPro: false, source: "none", userId: null };
+    return { isPro: false, source: "none", userId: null, displayName: null };
   }
+
+  const displayName = displayNameFromUser(user);
 
   const { data: subscription, error: subError } = await supabase
     .from("subscriptions")
@@ -43,7 +60,7 @@ export const getProAccessState = cache(async (): Promise<ProAccessState> => {
     .maybeSingle();
 
   if (subError) {
-    return { isPro: false, source: "none", userId: user.id };
+    return { isPro: false, source: "none", userId: user.id, displayName };
   }
 
   const isPro = isActiveProSubscription(subscription);
@@ -51,6 +68,7 @@ export const getProAccessState = cache(async (): Promise<ProAccessState> => {
     isPro,
     source: isPro ? "subscription" : "none",
     userId: user.id,
+    displayName,
   };
 });
 

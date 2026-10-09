@@ -8,7 +8,6 @@ import { CoverageBar } from "@/components/CoverageBar";
 import { StoryFollowButton } from "@/components/StoryFollowButton";
 import { StoryPartialityTeaser } from "@/components/StoryPartialityTeaser";
 import type { Story } from "@/lib/demo-data";
-import { analyzePartiality } from "@/lib/partiality";
 import { topicMetaForStory } from "@/lib/story-topics";
 
 type StoryFeedCardVariant = "default" | "home";
@@ -56,7 +55,6 @@ export function StoryFeedCard({
   const showFollow = Boolean(onToggleFollow && onFollowLocked);
   const isHome = variant === "home";
   const sourceCount = story.articles.length;
-  const hasPartiality = analyzePartiality(story) !== null;
 
   return (
     <article
@@ -89,12 +87,6 @@ export function StoryFeedCard({
                 <>
                   {" "}
                   · <span className="text-amber-600/90 dark:text-amber-500/90">ব্লাইন্ডস্পট</span>
-                </>
-              ) : null}
-              {hasPartiality ? (
-                <>
-                  {" "}
-                  · <span className="text-violet-600/90 dark:text-violet-400/90">পক্ষপাত</span>
                 </>
               ) : null}
             </span>

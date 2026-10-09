@@ -88,6 +88,7 @@ export function PerspectiveComparison({ story, articles = [] }: Props) {
             {headlineCount > 0 ? (
               <HeadlinesByPerspective
                 articles={articles}
+                storySlug={story.slug}
                 perspectives={[perspective]}
                 listOnly
               />

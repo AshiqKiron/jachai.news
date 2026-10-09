@@ -12,6 +12,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 const signInMenuLink = { href: "/sign-in", label: "Sign in" };
 
 const registeredMenuLinks = [
+  { href: "/profile", label: "Profile" },
   { href: "/blindspot", label: "Blindspot" },
   { href: "/browse", label: "Browse" },
   { href: "/rumors", label: "Rumors" },

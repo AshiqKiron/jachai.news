@@ -12,10 +12,22 @@ const sans = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const display = Newsreader({ subsets: ["latin"], variable: "--font-display" });
 const bengali = Noto_Sans_Bengali({ subsets: ["bengali"], variable: "--font-bengali" });
 
+const siteOrigin =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin),
   title: "Shorup News — Bangladesh multi-source news",
   description:
     "Compare Bangladeshi headlines across outlets. Bias signals, blindspots, and rumor flags — Ground News for BD.",
+  openGraph: {
+    type: "website",
+    siteName: "Shorup News",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
   applicationName: "Shorup News",
   appleWebApp: {
     capable: true,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 import { HomeArchiveLink, HomeStoriesSectionTitle } from "@/components/HomeArchiveLink";
@@ -14,9 +15,14 @@ import {
 } from "@/lib/client-story-cache";
 import { hydrateClientStories } from "@/lib/client-story-hydrate";
 import { DEMO_STORIES, type Story } from "@/lib/demo-data";
-import { readFollowedStorySlugs, toggleStoryFollowed } from "@/lib/followed-stories";
+import {
+  FOLLOWED_STORIES_CHANGED_EVENT,
+  readFollowedStorySlugs,
+  toggleStoryFollowed,
+} from "@/lib/followed-stories";
 import { HOME_TOP_STORIES_LIMIT } from "@/lib/subscription-features";
 import {
+  parseStoryTopicId,
   storyMatchesTopic,
   visibleTopicIdsForStories,
   type StoryTopicId,
@@ -25,6 +31,7 @@ import {
 const INITIAL_STORIES = hydrateClientStories(DEMO_STORIES.slice(0, HOME_TOP_STORIES_LIMIT));
 
 export function HomeStoryGridClient() {
+  const searchParams = useSearchParams();
   const [stories, setStories] = useState<Story[]>(INITIAL_STORIES);
   const [activeTopicId, setActiveTopicId] = useState<StoryTopicId>("all");
   const [isPro, setIsPro] = useState(false);
@@ -39,6 +46,19 @@ export function HomeStoryGridClient() {
     }
     setFollowedSlugs(readFollowedStorySlugs());
   }, []);
+
+  useEffect(() => {
+    const syncFollowed = () => setFollowedSlugs(readFollowedStorySlugs());
+    window.addEventListener(FOLLOWED_STORIES_CHANGED_EVENT, syncFollowed);
+    return () => window.removeEventListener(FOLLOWED_STORIES_CHANGED_EVENT, syncFollowed);
+  }, []);
+
+  useEffect(() => {
+    const fromUrl = parseStoryTopicId(searchParams.get("topic"));
+    if (fromUrl && fromUrl !== "all") {
+      setActiveTopicId(fromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const cached = readTopStoriesCache();
@@ -119,9 +139,13 @@ export function HomeStoryGridClient() {
 
   const followedSet = useMemo(() => new Set(followedSlugs), [followedSlugs]);
 
-  const handleToggleFollow = useCallback((slug: string) => {
-    setFollowedSlugs(toggleStoryFollowed(slug));
-  }, []);
+  const handleToggleFollow = useCallback(
+    (slug: string) => {
+      const story = stories.find((item) => item.slug === slug);
+      setFollowedSlugs(toggleStoryFollowed(slug, story?.titleBn));
+    },
+    [stories],
+  );
 
   const topicFilterProps = {
     activeTopicId,

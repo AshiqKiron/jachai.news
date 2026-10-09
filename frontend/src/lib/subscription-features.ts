@@ -26,6 +26,8 @@ export const HOME_TOP_STORIES_LIMIT = 24;
 /** Features that require an active Pro subscription (checkout not wired yet). */
 export const PRO_ONLY_FEATURE_IDS = [
   "follow_story",
+  "track_article_clicks",
+  "story_shared_ownership_alerts",
   "narrative_evolution_timeline",
   "custom_topic_radar_alerts",
 ] as const;
@@ -85,6 +87,28 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     proNote: "Automated summary briefing",
   },
   {
+    id: "source_ownership_labels",
+    category: "Trust & Bias",
+    categoryBn: "বিশ্বাস ও ঝুঁক",
+    name: "Publisher ownership (per source)",
+    nameBn: "প্রকাশকের মালিকানা (উৎস অনুযায়ী)",
+    free: "yes",
+    pro: "yes",
+    freeNote: "On story detail source lists",
+    proNote: "On story detail source lists",
+  },
+  {
+    id: "story_shared_ownership_alerts",
+    category: "Trust & Bias",
+    categoryBn: "বিশ্বাস ও ঝুঁক",
+    name: "Shared ownership alerts on a story",
+    nameBn: "একই মালিকানায় একাধিক উৎস — সতর্কতা",
+    free: "locked",
+    pro: "yes",
+    proNote:
+      "Highlights when coverage looks multi-source but outlets share the same owner or parent group",
+  },
+  {
     id: "follow_story",
     category: "Core Feed",
     categoryBn: "মূল ফিড",
@@ -93,6 +117,16 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     free: "locked",
     pro: "yes",
     proNote: "We’ll notify you when new outlets pick up the story or the framing changes.",
+  },
+  {
+    id: "track_article_clicks",
+    category: "Trust & Bias",
+    categoryBn: "বিশ্বাস ও ঝুঁক",
+    name: "Article click tracking (My News Bias)",
+    nameBn: "আউটলেট লিংক ট্র্যাকিং (আমার নিউজ bias)",
+    free: "locked",
+    pro: "yes",
+    proNote: "Counts which outlet links you open for your personal bias dashboard.",
   },
   {
     id: "narrative_evolution_timeline",

@@ -107,11 +107,12 @@ export async function getTopStories(limit = 12): Promise<{ stories: Story[]; fro
   return getTopStoriesCached(limit);
 }
 
-async function resolveStoryBySlugUncached(
+/** Route handlers and other non-RSC callers (avoids `unstable_cache` request context). */
+export async function resolveStoryBySlugDirect(
   slug: string,
 ): Promise<{ story: Story; fromApi: boolean } | null> {
   const demo = getStoryBySlug(slug);
-  if (demo) return { story: demo, fromApi: false };
+  if (demo) return { story: finalizeStory(demo), fromApi: false };
 
   const cluster = await tryFetchClusterBySlug(slug);
   if (cluster) return { story: storyFromClusterDetail(cluster), fromApi: true };
@@ -120,7 +121,7 @@ async function resolveStoryBySlugUncached(
 }
 
 const resolveStoryBySlugCached = unstable_cache(
-  async (slug: string) => resolveStoryBySlugUncached(slug),
+  async (slug: string) => resolveStoryBySlugDirect(slug),
   ["resolve-story-by-slug"],
   { revalidate: 60 },
 );

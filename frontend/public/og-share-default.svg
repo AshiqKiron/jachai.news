@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#020617"/>
+      <stop offset="0.45" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1e3a5f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="400" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(980 120) rotate(90) scale(280)">
+      <stop stop-color="#38bdf8" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <rect x="72" y="72" width="120" height="6" rx="3" fill="url(#accent)"/>
+  <text x="72" y="130" fill="#f8fafc" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="42" font-weight="700">Shorup News</text>
+  <text x="72" y="178" fill="#94a3b8" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="24">Ground News for Bangladesh ∑ ¨π¡ Æ¡ñ«∞ èï ñ¨∞</text>
+  <rect x="72" y="240" width="1056" height="2" fill="#334155" opacity="0.8"/>
+  <text x="72" y="320" fill="#e2e8f0" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="36" font-weight="600">Compare headlines across BD outlets</text>
+  <text x="72" y="380" fill="#cbd5e1" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="26">Bias, blindspots, and multi-source coverage on one story.</text>
+  <circle cx="1020" cy="480" r="88" fill="#0f172a" stroke="#38bdf8" stroke-width="4"/>
+  <path d="M980 480h80M1020 440v80" stroke="#7dd3fc" stroke-width="10" stroke-linecap="round"/>
+</svg>

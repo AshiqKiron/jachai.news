@@ -4,6 +4,7 @@ export function isChunkLoadError(error: Error): boolean {
   return (
     error.name === "ChunkLoadError" ||
     /Loading chunk [\s\S]+ failed/i.test(error.message) ||
+    /Failed to load chunk [\s\S]+ from runtime/i.test(error.message) ||
     /ChunkLoadError/i.test(error.message)
   );
 }

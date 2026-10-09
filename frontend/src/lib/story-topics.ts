@@ -3,6 +3,23 @@ import type { Story } from "@/lib/demo-data";
 /** Home feed topic filter ids (distinct from subscription matrix "category" rows). */
 export type StoryTopicId = "all" | "news" | "economy" | "politics" | "environment" | "sports";
 
+const STORY_TOPIC_IDS: StoryTopicId[] = [
+  "all",
+  "news",
+  "economy",
+  "politics",
+  "environment",
+  "sports",
+];
+
+export function parseStoryTopicId(value: string | null | undefined): StoryTopicId | null {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  return STORY_TOPIC_IDS.includes(normalized as StoryTopicId)
+    ? (normalized as StoryTopicId)
+    : null;
+}
+
 export type StoryTopic = {
   id: Exclude<StoryTopicId, "all">;
   labelEn: string;
