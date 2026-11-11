@@ -1,7 +1,7 @@
 import type { Story } from "@/lib/demo-data";
 import { hydrateClientStories, hydrateClientStory } from "@/lib/client-story-hydrate";
 
-const TOP_STORIES_KEY = "shorup:top-stories:v3";
+const TOP_STORIES_KEY = "shorup:top-stories:v5";
 const LEGACY_TOP_STORIES_KEY = "shorup:top-stories:v2";
 const STORY_KEY_PREFIX = "shorup:story:v1:";
 const TOP_FETCHED_AT_KEY = "shorup:top-stories-fetched-at:v1";

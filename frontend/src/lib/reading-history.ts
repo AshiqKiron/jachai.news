@@ -182,8 +182,12 @@ export function computeMyNewsBiasStats(
   const storyCount = history.storyReads.length;
   const articleCount = includeArticles ? history.articleClicks.length : 0;
 
-  const storyBuckets = countBuckets(history.storyReads);
-  const articleBuckets = includeArticles ? countBuckets(history.articleClicks) : { left: 0, center: 0, right: 0 };
+  const politicalReads = history.storyReads.filter((read) => read.topicId === "politics");
+  const politicalSlugs = new Set(politicalReads.map((read) => read.slug));
+  const storyBuckets = countBuckets(politicalReads);
+  const articleBuckets = includeArticles
+    ? countBuckets(history.articleClicks.filter((click) => politicalSlugs.has(click.storySlug)))
+    : { left: 0, center: 0, right: 0 };
 
   const leftTotal = storyBuckets.left + articleBuckets.left;
   const centerTotal = storyBuckets.center + articleBuckets.center;

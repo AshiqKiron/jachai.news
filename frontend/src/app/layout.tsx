@@ -18,21 +18,21 @@ const siteOrigin =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
-  title: "Shorup News — Bangladesh multi-source news",
+  title: "khatinews.com — Bangladesh multi-source news",
   description:
     "Compare Bangladeshi headlines across outlets. Bias signals, blindspots, and rumor flags — Ground News for BD.",
   openGraph: {
     type: "website",
-    siteName: "Shorup News",
+    siteName: "khatinews.com",
   },
   twitter: {
     card: "summary_large_image",
   },
-  applicationName: "Shorup News",
+  applicationName: "khatinews.com",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Shorup",
+    title: "khatinews.com",
   },
   manifest: "/manifest.webmanifest",
   icons: {

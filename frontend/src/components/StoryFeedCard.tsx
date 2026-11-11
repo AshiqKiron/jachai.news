@@ -8,7 +8,8 @@ import { CoverageBar } from "@/components/CoverageBar";
 import { StoryFollowButton } from "@/components/StoryFollowButton";
 import { StoryPartialityTeaser } from "@/components/StoryPartialityTeaser";
 import type { Story } from "@/lib/demo-data";
-import { topicMetaForStory } from "@/lib/story-topics";
+import { hasBengaliScript, storySubtitle } from "@/lib/mixed-script-text";
+import { coverageSpectrumModeForStory, topicMetaForStory } from "@/lib/story-topics";
 
 type StoryFeedCardVariant = "default" | "home";
 
@@ -49,12 +50,13 @@ export function StoryFeedCard({
   onToggleFollow,
   onFollowLocked,
 }: Props) {
-  const axis = blindspotAxis(story);
+  const axis = coverageSpectrumModeForStory(story) === "government" ? blindspotAxis(story) : null;
   const leadImage = resolveStoryLeadImageUrl(story);
   const topic = topicMetaForStory(story);
   const showFollow = Boolean(onToggleFollow && onFollowLocked);
   const isHome = variant === "home";
   const sourceCount = story.articles.length;
+  const subtitle = storySubtitle(story.title, story.titleBn);
 
   return (
     <article
@@ -111,7 +113,7 @@ export function StoryFeedCard({
         ) : null}
       </div>
       <h2
-        lang="bn"
+        lang={hasBengaliScript(story.titleBn) ? "bn" : "en"}
         className={
           isHome
             ? "story-title-bn mt-1.5 text-base leading-snug text-zinc-100 group-hover:text-white sm:text-lg"
@@ -120,7 +122,9 @@ export function StoryFeedCard({
       >
         <Link href={`/story/${story.slug}`}>{story.titleBn}</Link>
       </h2>
-      {!isHome ? <p className="mt-1 text-sm text-zinc-500 line-clamp-1">{story.title}</p> : null}
+      {!isHome && subtitle ? (
+        <p className="mt-1 line-clamp-1 text-sm text-zinc-500">{subtitle}</p>
+      ) : null}
       {isHome ? (
         <p className="mt-2 text-sm leading-relaxed text-zinc-500 line-clamp-2">{homeCardSummary(story)}</p>
       ) : story.summaryBullets && story.summaryBullets.length > 0 ? (

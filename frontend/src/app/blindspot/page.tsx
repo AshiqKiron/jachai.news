@@ -16,7 +16,7 @@ export default async function BlindspotPage() {
         </h1>
         <p className="mt-4 text-zinc-400">
           When opposition and international outlets cover a scandal but pro-government press stays silent,
-          Shorup flags a <strong className="font-medium text-amber-200/90">সরকারের পক্ষে blindspot</strong>.
+          khatinews.com flags a <strong className="font-medium text-amber-200/90">সরকারের পক্ষে blindspot</strong>.
           When ruling-aligned media hypes a story opposition ignores, we flag a{" "}
           <strong className="font-medium text-amber-200/90">সরকারের বিপক্ষে blindspot</strong>.
         </p>

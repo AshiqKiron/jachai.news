@@ -28,7 +28,7 @@ export const PRO_ONLY_FEATURE_IDS = [
   "follow_story",
   "track_article_clicks",
   "story_shared_ownership_alerts",
-  "narrative_evolution_timeline",
+  "story_unnamed_source",
   "custom_topic_radar_alerts",
 ] as const;
 
@@ -105,8 +105,20 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     nameBn: "একই মালিকানায় একাধিক উৎস — সতর্কতা",
     free: "locked",
     pro: "yes",
+    freeNote: "Outlet and owner count on the story page",
     proNote:
-      "Highlights when coverage looks multi-source but outlets share the same owner or parent group",
+      "Names the shared owner or parent when coverage looks multi-source but outlets belong to the same group",
+  },
+  {
+    id: "story_unnamed_source",
+    category: "Trust & Bias",
+    categoryBn: "বিশ্বাস ও ঝুঁক",
+    name: "The unnamed source",
+    nameBn: "নামহীন সূত্র",
+    free: "locked",
+    pro: "yes",
+    freeNote: "How many outlets attribute the story to someone they don't name",
+    proNote: "Which papers hid the name, and which outlet printed one",
   },
   {
     id: "follow_story",
@@ -127,16 +139,6 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     free: "locked",
     pro: "yes",
     proNote: "Counts which outlet links you open for your personal bias dashboard.",
-  },
-  {
-    id: "narrative_evolution_timeline",
-    category: "Pro Analytics",
-    categoryBn: "Pro বিশ্লেষণ",
-    name: "Narrative Evolution Timeline",
-    nameBn: "আখ্যান বিবর্তন টাইমলাইন",
-    free: "locked",
-    pro: "yes",
-    proNote: "30-day graphs tracking media bias shifts",
   },
   {
     id: "custom_topic_radar_alerts",

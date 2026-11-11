@@ -1,4 +1,5 @@
 import type { Story } from "@/lib/demo-data";
+import type { CoverageSpectrumMode } from "@/lib/perspectives";
 
 /** Home feed topic filter ids (distinct from subscription matrix "category" rows). */
 export type StoryTopicId = "all" | "news" | "economy" | "politics" | "environment" | "sports";
@@ -67,6 +68,17 @@ for (const topic of HOME_STORY_TOPICS) {
   for (const key of topic.categoryKeys) {
     TOPIC_BY_CATEGORY.set(key.toLowerCase(), topic.id);
   }
+}
+
+export function isPoliticalStory(story: Pick<Story, "category" | "categoryBn">): boolean {
+  return topicIdForStory(story as Story) === "politics";
+}
+
+/** Politics uses for / against government. Other topics use clickbait, mixed, factual, and rumor. */
+export function coverageSpectrumModeForStory(
+  story: Pick<Story, "category" | "categoryBn">,
+): CoverageSpectrumMode {
+  return isPoliticalStory(story) ? "government" : "reporting";
 }
 
 export function topicIdForStory(story: Story): Exclude<StoryTopicId, "all"> {

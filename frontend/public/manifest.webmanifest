@@ -1,6 +1,6 @@
 {
-  "name": "Shorup News",
-  "short_name": "Shorup",
+  "name": "khatinews.com",
+  "short_name": "khatinews.com",
   "description": "Ground News-style multi-source news for Bangladesh",
   "start_url": "/",
   "display": "standalone",

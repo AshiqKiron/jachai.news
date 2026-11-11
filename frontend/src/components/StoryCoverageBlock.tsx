@@ -3,7 +3,9 @@
 import { CoverageBar } from "@/components/CoverageBar";
 import type { Story } from "@/lib/demo-data";
 import { coverageStats } from "@/lib/coverage";
-import { PERSPECTIVE_META } from "@/lib/perspectives";
+import { PERSPECTIVE_META, spectrumCopy } from "@/lib/perspectives";
+import { REPORTING_TONE_META, reportingStats } from "@/lib/reporting-spectrum";
+import { coverageSpectrumModeForStory } from "@/lib/story-topics";
 
 type Props = {
   story: Story;
@@ -11,6 +13,30 @@ type Props = {
 };
 
 function coverageCaption(story: Story): { lineBn: string; lineEn?: string } | null {
+  const mode = coverageSpectrumModeForStory(story);
+  if (mode === "reporting") {
+    const stats = reportingStats(story);
+    if (!stats || stats.total === 0) return null;
+    const nonZero = Object.values(stats.counts).filter((n) => n > 0);
+    const max = Math.max(...nonZero);
+    const min = Math.min(...nonZero);
+    const balanced = max - min <= 1 && stats.dominantPercent <= 34;
+    if (balanced && nonZero.length >= 2) {
+      return { lineBn: `${stats.total}টি উৎস · একাধিক ধরনের রিপোর্ট` };
+    }
+    if (stats.dominantPercent >= 45 && stats.total >= 2) {
+      const copy = REPORTING_TONE_META[stats.dominantTone];
+      return {
+        lineBn: `${stats.total}টি উৎস · ${stats.dominantPercent}% ${copy.labelBn}`,
+        lineEn: `${stats.total} sources · ${stats.dominantPercent}% ${copy.labelEn.toLowerCase()}`,
+      };
+    }
+    return {
+      lineBn: `${stats.total}টি উৎস`,
+      lineEn: `${stats.total} source${stats.total === 1 ? "" : "s"}`,
+    };
+  }
+
   const stats = coverageStats(story);
   if (!stats || stats.total === 0) return null;
 
@@ -28,10 +54,10 @@ function coverageCaption(story: Story): { lineBn: string; lineEn?: string } | nu
   }
 
   if (stats.dominantPercent >= 45 && stats.total >= 2) {
-    const meta = PERSPECTIVE_META[stats.dominantPerspective];
+    const copy = spectrumCopy(stats.dominantPerspective, "government");
     return {
-      lineBn: `${stats.total}টি উৎস · ${stats.dominantPercent}% ${meta.labelBn} দিকে ঝুঁক`,
-      lineEn: `${stats.total} sources · ${stats.dominantPercent}% lean ${meta.labelEn.toLowerCase()}`,
+      lineBn: `${stats.total}টি উৎস · ${stats.dominantPercent}% ${copy.labelBn} দিকে ঝুঁক`,
+      lineEn: `${stats.total} sources · ${stats.dominantPercent}% lean ${copy.labelEn.toLowerCase()}`,
     };
   }
 

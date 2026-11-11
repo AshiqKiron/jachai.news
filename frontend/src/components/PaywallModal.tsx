@@ -13,6 +13,7 @@ import {
   SUBSCRIPTION_PAYMENT_PROVIDER,
   SUBSCRIPTION_PLANS,
   formatPlanPrice,
+  formatPlanPriceSuffix,
   getYearlyPlanSavings,
 } from "@/lib/subscription-plans";
 
@@ -67,7 +68,7 @@ export function PaywallModal({ open, onClose, featureId }: Props) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 id="paywall-title" className="font-display text-xl text-zinc-50">
-              Upgrade to Shorup Pro
+              Upgrade to khatinews Pro
             </h2>
             <p className="mt-1.5 text-sm text-zinc-400">{PRO_TIER_TAGLINE}</p>
           </div>
@@ -121,6 +122,7 @@ export function PaywallModal({ open, onClose, featureId }: Props) {
                       </span>
                     ) : null}
                   </p>
+                  {plan.note ? <p className="mt-1 text-xs text-zinc-500">{plan.note}</p> : null}
                   {isYearly && yearlySavings ? (
                     <p className="mt-1.5 inline-flex w-fit rounded-md border border-emerald-700/20 bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-900 dark:border-emerald-400/35 dark:bg-emerald-500/20 dark:text-emerald-100">
                       Save {formatPlanPrice(yearlySavings.amountBdt)}/yr ({yearlySavings.percentOff}%
@@ -137,7 +139,7 @@ export function PaywallModal({ open, onClose, featureId }: Props) {
                 <p className="font-display text-lg text-zinc-50">
                   {formatPlanPrice(plan.amountBdt)}
                   <span className="text-sm font-sans text-zinc-500">
-                    /{plan.interval === "monthly" ? "mo" : "yr"}
+                    {formatPlanPriceSuffix(plan.interval)}
                   </span>
                 </p>
               </li>
@@ -154,7 +156,7 @@ export function PaywallModal({ open, onClose, featureId }: Props) {
           >
             {monthlyPlan
               ? `Get Pro — ${formatPlanPrice(monthlyPlan.amountBdt)}/mo`
-              : "Get Shorup Pro"}
+              : "Get khatinews Pro"}
           </button>
           <p className="text-center text-xs leading-relaxed text-zinc-500">
             Secure checkout with {SUBSCRIPTION_PAYMENT_PROVIDER} opens soon. Cancel anytime — news

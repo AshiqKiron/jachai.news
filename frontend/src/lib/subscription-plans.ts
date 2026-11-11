@@ -1,6 +1,6 @@
-/** Shorup Pro — planned billing (not wired yet). Feature matrix: `subscription-features.ts`. */
+/** khatinews Pro — planned billing (not wired yet). Feature matrix: `subscription-features.ts`. */
 
-export type SubscriptionInterval = "monthly" | "yearly";
+export type SubscriptionInterval = "day" | "monthly" | "yearly";
 
 export type SubscriptionPlan = {
   id: SubscriptionInterval;
@@ -8,6 +8,8 @@ export type SubscriptionPlan = {
   labelBn: string;
   amountBdt: number;
   interval: SubscriptionInterval;
+  /** Extra line under the plan name. Day pass is a one-time 24-hour window. */
+  note?: string;
 };
 
 /** Checkout gateway (REST + HMAC webhooks; supports bKash/Nagad/bank in BD). */
@@ -31,10 +33,50 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     amountBdt: 399,
     interval: "yearly",
   },
+  {
+    id: "day",
+    label: "Day pass",
+    labelBn: "এক দিনের পাস",
+    amountBdt: 15,
+    interval: "day",
+    note: "One-time Pro access for 24 hours.",
+  },
 ];
 
 export function formatPlanPrice(amountBdt: number): string {
   return `৳${amountBdt.toLocaleString("en-BD")}`;
+}
+
+/** Compact cadence next to a price: `/24h`, `/mo`, `/yr`. */
+export function formatPlanPriceSuffix(interval: SubscriptionInterval): string {
+  switch (interval) {
+    case "day":
+      return "/24h";
+    case "yearly":
+      return "/yr";
+    case "monthly":
+      return "/mo";
+  }
+}
+
+/** Paid window starting at `start`. A day pass lasts 24 hours. */
+export function subscriptionPeriodEnd(start: Date, interval: SubscriptionInterval): Date {
+  const end = new Date(start.getTime());
+  if (interval === "day") {
+    end.setTime(end.getTime() + 24 * 60 * 60 * 1000);
+    return end;
+  }
+  if (interval === "yearly") {
+    end.setFullYear(end.getFullYear() + 1);
+    return end;
+  }
+  end.setMonth(end.getMonth() + 1);
+  return end;
+}
+
+/** Day pass ends when the 24-hour window ends. Monthly and yearly renew. */
+export function planRenews(interval: SubscriptionInterval): boolean {
+  return interval !== "day";
 }
 
 export type YearlyPlanSavings = {

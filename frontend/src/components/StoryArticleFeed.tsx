@@ -8,13 +8,21 @@ import { SourceOwnershipLine } from "@/components/SourceOwnershipLine";
 import { resolveArticleImageUrl } from "@/lib/article-image-url";
 import type { ArticleWithSource } from "@/lib/coverage";
 import {
-  COVERAGE_SPECTRUM_TAB_ORDER,
   PERSPECTIVE_META,
+  spectrumCopy,
+  spectrumOrder,
+  type CoverageSpectrumMode,
   type Perspective,
 } from "@/lib/perspectives";
+import {
+  REPORTING_TONE_META,
+  REPORTING_TONE_ORDER,
+  reportingToneForArticle,
+  type ReportingTone,
+} from "@/lib/reporting-spectrum";
 import { buildCoverageDigest, type CoverageDigestFilter } from "@/lib/source-digest";
 
-type FilterId = "all" | Perspective;
+type FilterId = "all" | Perspective | ReportingTone;
 
 type HeaderMode = "hero" | "section";
 
@@ -22,6 +30,8 @@ type Props = {
   articles: ArticleWithSource[];
   /** Story detail uses a quiet section label (counts live in coverage block + tabs). */
   headerMode?: HeaderMode;
+  /** Politics: government axis. Other stories: clickbait, mixed, factual, rumor. */
+  spectrumMode?: CoverageSpectrumMode;
 };
 
 function countByPerspective(articles: ArticleWithSource[]): Record<Perspective, number> {
@@ -38,7 +48,13 @@ function countByPerspective(articles: ArticleWithSource[]): Record<Perspective, 
   return counts;
 }
 
-function ArticleFeedList({ items }: { items: ArticleWithSource[] }) {
+function ArticleFeedList({
+  items,
+  spectrumMode,
+}: {
+  items: ArticleWithSource[];
+  spectrumMode: CoverageSpectrumMode;
+}) {
   if (items.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-zinc-800 px-4 py-8 text-center text-sm text-zinc-500">
@@ -50,7 +66,12 @@ function ArticleFeedList({ items }: { items: ArticleWithSource[] }) {
   return (
     <ul className="divide-y divide-zinc-800/90 rounded-xl border border-zinc-800/90 bg-ink-900/30">
       {items.map((article) => {
-        const meta = PERSPECTIVE_META[article.perspective];
+        const reporting = spectrumMode === "reporting";
+        const tone = reporting ? reportingToneForArticle(article) : null;
+        const copy = tone
+          ? REPORTING_TONE_META[tone]
+          : spectrumCopy(article.perspective, "government");
+        const color = tone ? REPORTING_TONE_META[tone].color : PERSPECTIVE_META[article.perspective].color;
         return (
           <li key={`${article.sourceId}-${article.url}`}>
             <div className="flex gap-3 px-3 py-3 transition hover:bg-zinc-800/35 sm:px-4 sm:py-3.5">
@@ -71,9 +92,9 @@ function ArticleFeedList({ items }: { items: ArticleWithSource[] }) {
                   <span className="text-sm font-semibold text-zinc-100">{article.sourceName}</span>
                   <span
                     className="rounded-full px-2 py-0.5 text-[10px] font-medium leading-none"
-                    style={{ backgroundColor: `${meta.color}28`, color: meta.color }}
+                    style={{ backgroundColor: `${color}28`, color }}
                   >
-                    {meta.spectrumTabEn}
+                    {copy.shortLabelEn}
                   </span>
                 </div>
                 <SourceOwnershipLine ownership={article.mediaOwnership} className="mt-0.5" />
@@ -94,21 +115,44 @@ function ArticleFeedList({ items }: { items: ArticleWithSource[] }) {
   );
 }
 
-export function StoryArticleFeed({ articles, headerMode = "hero" }: Props) {
+export function StoryArticleFeed({
+  articles,
+  headerMode = "hero",
+  spectrumMode = "reporting",
+}: Props) {
   const [active, setActive] = useState<FilterId>("all");
   const counts = useMemo(() => countByPerspective(articles), [articles]);
+  const toneCounts = useMemo(() => {
+    const next = { clickbait: 0, mixed: 0, factual: 0, rumor: 0 } as Record<ReportingTone, number>;
+    if (spectrumMode !== "reporting") return next;
+    for (const article of articles) {
+      next[reportingToneForArticle(article)] += 1;
+    }
+    return next;
+  }, [articles, spectrumMode]);
 
-  const spectrumTabs = COVERAGE_SPECTRUM_TAB_ORDER.filter((p) => counts[p] > 0);
+  const spectrumTabs =
+    spectrumMode === "reporting"
+      ? REPORTING_TONE_ORDER.filter((tone) => toneCounts[tone] > 0)
+      : spectrumOrder("government").filter((perspective) => counts[perspective] > 0);
 
   const filtered = useMemo(() => {
     const list =
-      active === "all" ? articles : articles.filter((a) => a.perspective === active);
+      active === "all"
+        ? articles
+        : spectrumMode === "reporting"
+          ? articles.filter((article) => reportingToneForArticle(article) === active)
+          : articles.filter((article) => article.perspective === active);
     return [...list].sort((a, b) => a.sourceName.localeCompare(b.sourceName, "en"));
-  }, [active, articles]);
+  }, [active, articles, spectrumMode]);
 
   const digestSnippets = useMemo(
-    () => buildCoverageDigest(articles, active as CoverageDigestFilter),
-    [active, articles],
+    () =>
+      buildCoverageDigest(
+        spectrumMode === "reporting" ? filtered : articles,
+        spectrumMode === "reporting" ? "all" : (active as CoverageDigestFilter),
+      ),
+    [active, articles, filtered, spectrumMode],
   );
 
   const total = articles.length;
@@ -140,7 +184,11 @@ export function StoryArticleFeed({ articles, headerMode = "hero" }: Props) {
 
       <div
         role="tablist"
-        aria-label="Filter coverage by political spectrum"
+        aria-label={
+          spectrumMode === "government"
+            ? "Filter coverage by for or against government"
+            : "Filter coverage by clickbait, factual, rumor, and mixed"
+        }
         className={`flex gap-1 overflow-x-auto border-b border-zinc-800/90 [-webkit-overflow-scrolling:touch] ${
           headerMode === "hero" ? "mt-5" : "mt-4"
         }`}
@@ -152,17 +200,28 @@ export function StoryArticleFeed({ articles, headerMode = "hero" }: Props) {
           count={total}
           onClick={() => setActive("all")}
         />
-        {spectrumTabs.map((perspective) => {
-          const meta = PERSPECTIVE_META[perspective];
+        {spectrumTabs.map((bucket) => {
+          const copy =
+            spectrumMode === "reporting"
+              ? REPORTING_TONE_META[bucket as ReportingTone]
+              : spectrumCopy(bucket as Perspective, "government");
+          const accent =
+            spectrumMode === "reporting"
+              ? REPORTING_TONE_META[bucket as ReportingTone].color
+              : PERSPECTIVE_META[bucket as Perspective].color;
+          const count =
+            spectrumMode === "reporting"
+              ? toneCounts[bucket as ReportingTone]
+              : counts[bucket as Perspective];
           return (
             <SpectrumTab
-              key={perspective}
-              active={active === perspective}
-              labelEn={meta.spectrumTabEn}
-              labelBn={meta.shortLabelBn}
-              count={counts[perspective]}
-              accent={meta.color}
-              onClick={() => setActive(perspective)}
+              key={bucket}
+              active={active === bucket}
+              labelEn={copy.shortLabelEn}
+              labelBn={copy.shortLabelBn}
+              count={count}
+              accent={accent}
+              onClick={() => setActive(bucket)}
             />
           );
         })}
@@ -174,7 +233,7 @@ export function StoryArticleFeed({ articles, headerMode = "hero" }: Props) {
           labelBn="উৎসের অংশ"
           className={`mb-4 ${headerMode === "section" ? "border-zinc-800/60 bg-ink-900/25 px-3 py-3" : ""}`}
         />
-        <ArticleFeedList items={filtered} />
+        <ArticleFeedList items={filtered} spectrumMode={spectrumMode} />
       </div>
     </section>
   );

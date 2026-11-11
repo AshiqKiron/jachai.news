@@ -4,37 +4,26 @@ import { isAdminEmail } from "@/lib/admin-auth";
 import type { AdminUserPlan, AdminUserRecord, AdminUsersListResponse } from "@/lib/admin-user-types";
 import type { Database, SubscriptionPlan } from "@/lib/database.types";
 import { isActiveProSubscription } from "@/lib/subscription-entitlement";
+import { planRenews, subscriptionPeriodEnd } from "@/lib/subscription-plans";
 import { createServiceRoleSupabaseClient } from "@/lib/supabase/service";
 
 type SubscriptionRow = Database["public"]["Tables"]["subscriptions"]["Row"];
 
 const LIST_PAGE_SIZE = 100;
 
-function addMonths(date: Date, months: number): Date {
-  const next = new Date(date);
-  next.setMonth(next.getMonth() + months);
-  return next;
-}
-
-function addYears(date: Date, years: number): Date {
-  const next = new Date(date);
-  next.setFullYear(next.getFullYear() + years);
-  return next;
-}
-
 function buildActiveSubscriptionRow(
   userId: string,
   plan: SubscriptionPlan = "monthly",
 ): Database["public"]["Tables"]["subscriptions"]["Insert"] {
   const start = new Date();
-  const end = plan === "yearly" ? addYears(start, 1) : addMonths(start, 1);
+  const end = subscriptionPeriodEnd(start, plan);
   return {
     user_id: userId,
     plan,
     status: "active",
     current_period_start: start.toISOString(),
     current_period_end: end.toISOString(),
-    cancel_at_period_end: false,
+    cancel_at_period_end: !planRenews(plan),
   };
 }
 

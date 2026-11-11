@@ -4,11 +4,35 @@ import { useState } from "react";
 
 import type { Story } from "@/lib/demo-data";
 import { coverageCounts } from "@/lib/coverage";
-import { PERSPECTIVE_META, perspectiveSegmentStyle, type Perspective } from "@/lib/perspectives";
+import {
+  PERSPECTIVE_META,
+  perspectiveSegmentStyle,
+  spectrumCopy,
+  spectrumOrder,
+} from "@/lib/perspectives";
+import {
+  REPORTING_TONE_META,
+  REPORTING_TONE_ORDER,
+  reportingCounts,
+  type ReportingToneCopy,
+} from "@/lib/reporting-spectrum";
+import { coverageSpectrumModeForStory } from "@/lib/story-topics";
 
 type Props = {
   story: Story;
   compact?: boolean;
+};
+
+type SegmentSpec = {
+  id: string;
+  width: number;
+  label: string;
+  tooltip: string;
+  labelBn: string;
+  labelEn: string;
+  count: number;
+  fill: string;
+  textColor: string;
 };
 
 function coveragePercent(count: number, total: number): number {
@@ -23,42 +47,82 @@ function formatPercent(count: number, total: number): string {
 
 const HOVER_CONTEXT_BN = "এই সংবাদ";
 
-function segmentTooltip(perspective: Perspective, count: number, total: number): string {
-  const meta = PERSPECTIVE_META[perspective];
-  return `${HOVER_CONTEXT_BN} · ${meta.labelBn} · ${formatPercent(count, total)} · ${count} source${count === 1 ? "" : "s"}`;
-}
-
-function segmentLabel(
-  perspective: Perspective,
+function segmentLabelText(
+  copy: Pick<ReportingToneCopy, "labelBn" | "shortLabelBn">,
   count: number,
   total: number,
   widthPct: number,
 ): string {
-  const meta = PERSPECTIVE_META[perspective];
   const pct = formatPercent(count, total);
   if (widthPct < 18) return pct;
-  if (widthPct < 32) return `${meta.shortLabelBn} ${pct}`;
-  return `${meta.labelBn} ${pct}`;
+  if (widthPct < 32) return `${copy.shortLabelBn} ${pct}`;
+  return `${copy.labelBn} ${pct}`;
+}
+
+function sourceTooltip(labelBn: string, count: number, total: number): string {
+  return `${HOVER_CONTEXT_BN} · ${labelBn} · ${formatPercent(count, total)} · ${count} source${count === 1 ? "" : "s"}`;
+}
+
+function politicalSegments(story: Story, total: number): SegmentSpec[] {
+  const counts = coverageCounts(story);
+  return spectrumOrder("government")
+    .filter((perspective) => counts[perspective] > 0)
+    .map((perspective) => {
+      const count = counts[perspective];
+      const width = coveragePercent(count, total);
+      const copy = spectrumCopy(perspective, "government");
+      const style = perspectiveSegmentStyle(PERSPECTIVE_META[perspective].color);
+      return {
+        id: perspective,
+        width,
+        label: segmentLabelText(copy, count, total, width),
+        tooltip: sourceTooltip(copy.labelBn, count, total),
+        labelBn: copy.labelBn,
+        labelEn: copy.labelEn,
+        count,
+        fill: style.backgroundColor,
+        textColor: style.color,
+      };
+    });
+}
+
+function reportingSegments(story: Story, total: number): SegmentSpec[] {
+  const counts = reportingCounts(story);
+  return REPORTING_TONE_ORDER.filter((tone) => counts[tone] > 0).map((tone) => {
+    const count = counts[tone];
+    const width = coveragePercent(count, total);
+    const copy = REPORTING_TONE_META[tone];
+    const style = perspectiveSegmentStyle(copy.color);
+    return {
+      id: tone,
+      width,
+      label: segmentLabelText(copy, count, total, width),
+      tooltip: sourceTooltip(copy.labelBn, count, total),
+      labelBn: copy.labelBn,
+      labelEn: copy.labelEn,
+      count,
+      fill: style.backgroundColor,
+      textColor: style.color,
+    };
+  });
 }
 
 export function CoverageBar({ story, compact }: Props) {
-  const [active, setActive] = useState<Perspective | null>(null);
-  const counts = coverageCounts(story);
+  const [active, setActive] = useState<string | null>(null);
   const total = story.articles.length || 1;
-  const segments = (Object.keys(PERSPECTIVE_META) as Perspective[])
-    .filter((p) => counts[p] > 0)
-    .sort((a, b) => PERSPECTIVE_META[a].order - PERSPECTIVE_META[b].order);
+  const mode = coverageSpectrumModeForStory(story);
+  const segments =
+    mode === "reporting" ? reportingSegments(story, total) : politicalSegments(story, total);
 
   if (segments.length === 0) {
     return null;
   }
 
-  const activeMeta = active ? PERSPECTIVE_META[active] : null;
-  const activeCount = active ? counts[active] : 0;
+  const activeSegment = segments.find((segment) => segment.id === active) ?? null;
 
   return (
     <div className="relative">
-      {active && activeMeta ? (
+      {activeSegment ? (
         <div
           className="pointer-events-none absolute bottom-full left-0 right-0 z-50 mb-2 flex justify-center"
           role="tooltip"
@@ -68,14 +132,14 @@ export function CoverageBar({ story, compact }: Props) {
               {HOVER_CONTEXT_BN}
             </p>
             <p className="mt-1 text-[11px] font-medium leading-snug text-zinc-900 dark:text-zinc-50">
-              {activeMeta.labelBn}
+              {activeSegment.labelBn}
             </p>
-            <p className="text-[10px] text-zinc-600 dark:text-zinc-400">{activeMeta.labelEn}</p>
+            <p className="text-[10px] text-zinc-600 dark:text-zinc-400">{activeSegment.labelEn}</p>
             <p className="mt-1 text-xs font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
-              {formatPercent(activeCount, total)}
+              {formatPercent(activeSegment.count, total)}
               <span className="font-normal text-zinc-600 dark:text-zinc-400">
                 {" "}
-                · {activeCount} {activeCount === 1 ? "source" : "sources"}
+                · {activeSegment.count} {activeSegment.count === 1 ? "source" : "sources"}
               </span>
             </p>
           </div>
@@ -86,34 +150,29 @@ export function CoverageBar({ story, compact }: Props) {
         className="flex w-full overflow-hidden rounded-md bg-zinc-800/80"
         onMouseLeave={() => setActive(null)}
       >
-        {segments.map((perspective) => {
-          const count = counts[perspective];
-          const width = coveragePercent(count, total);
-          const meta = PERSPECTIVE_META[perspective];
-          const isActive = active === perspective;
-          const label = segmentLabel(perspective, count, total, width);
-          const segmentStyle = perspectiveSegmentStyle(meta.color);
+        {segments.map((segment) => {
+          const isActive = active === segment.id;
           return (
             <button
-              key={perspective}
+              key={segment.id}
               type="button"
               className={`flex ${compact ? "min-h-8" : "min-h-9"} min-w-[2.5rem] shrink-0 items-center justify-center border-0 px-2 py-1.5 transition-opacity ${
                 isActive ? "opacity-100 ring-2 ring-inset ring-white/40" : "opacity-95 hover:opacity-100"
               }`}
-              style={{ width: `${width}%`, backgroundColor: segmentStyle.backgroundColor }}
-              title={segmentTooltip(perspective, count, total)}
-              aria-label={segmentTooltip(perspective, count, total)}
-              onMouseEnter={() => setActive(perspective)}
-              onFocus={() => setActive(perspective)}
+              style={{ width: `${segment.width}%`, backgroundColor: segment.fill }}
+              title={segment.tooltip}
+              aria-label={segment.tooltip}
+              onMouseEnter={() => setActive(segment.id)}
+              onFocus={() => setActive(segment.id)}
               onBlur={() => setActive(null)}
             >
               <span
                 className={`max-w-full truncate text-center font-normal leading-snug tabular-nums font-bengali ${
                   compact ? "text-[11px]" : "text-xs"
                 }`}
-                style={{ color: segmentStyle.color }}
+                style={{ color: segment.textColor }}
               >
-                {label}
+                {segment.label}
               </span>
             </button>
           );

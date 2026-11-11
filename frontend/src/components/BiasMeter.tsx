@@ -14,7 +14,7 @@ export function BiasMeter({ score, label, labelBn }: Props) {
   const meta = PERSPECTIVE_META[perspective];
   const value = score ?? 0;
   const clamped = Math.max(-1, Math.min(1, value));
-  /** Left = pro-government, center = neutral, right = opposition. */
+  /** Left = for government, center = neutral, right = against government. */
   const percent = ((1 - clamped) / 2) * 100;
 
   return (

@@ -1,11 +1,12 @@
 import type { Story } from "@/lib/demo-data";
 import { STORY_IMAGE_PLACEHOLDER } from "@/lib/article-image-url";
+import { hasBengaliScript } from "@/lib/mixed-script-text";
 
 const DEFAULT_GITHUB_ISSUES_NEW =
   "https://github.com/AshiqKiron/jachai.news/issues/new";
 
 const DEFAULT_SHARE_DESCRIPTION =
-  "Compare Bangladeshi headlines across outlets. Bias signals, blindspots, and rumor flags — Shorup News.";
+  "Compare Bangladeshi headlines across outlets. Bias signals, blindspots, and rumor flags — khatinews.com.";
 
 /** Branded static fallback when a story has no RSS lead image (also used in dynamic OG art). */
 export const OG_SHARE_DEFAULT_PATH = "/og-share-default.svg";
@@ -61,8 +62,8 @@ export function pickStoryShareLeadImage(story: Story): string | null {
 export function buildStoryShareTitle(story: Story): string {
   const bn = story.titleBn?.trim();
   const en = story.title?.trim();
-  if (bn && en && bn !== en) return `${bn} | ${en}`;
-  return bn || en || "Shorup News story";
+  if (bn && hasBengaliScript(bn)) return bn;
+  return en || bn || "khatinews.com story";
 }
 
 export function buildStoryShareDescription(story: Story): string {
@@ -86,18 +87,20 @@ export type StoryShareOpenGraph = {
   title: string;
   description: string;
   pageUrl: string;
-  /** Absolute HTTPS image for crawlers, or null → use route `opengraph-image`. */
+  /**
+   * Kept null so crawlers use the square reveal card from `opengraph-image.tsx`
+   * (the count, or the khatinews mark). Pro names stay off this public image.
+   */
   imageUrl: string | null;
 };
 
 export function buildStoryShareOpenGraph(story: Story, slug: string): StoryShareOpenGraph {
   const origin = resolveMetadataBaseOrigin();
-  const lead = pickStoryShareLeadImage(story);
   return {
     title: buildStoryShareTitle(story),
     description: buildStoryShareDescription(story),
     pageUrl: buildStoryShareUrl(slug, origin),
-    imageUrl: lead ? toAbsoluteShareUrl(lead, origin) : null,
+    imageUrl: null,
   };
 }
 
@@ -137,7 +140,7 @@ export function buildSocialShareUrl(
 }
 
 export function buildStoryEmbedSnippet(pageUrl: string): string {
-  return `<iframe src="${pageUrl}" width="600" height="400" style="border:0;" loading="lazy" title="Shorup News story"></iframe>`;
+  return `<iframe src="${pageUrl}" width="600" height="400" style="border:0;" loading="lazy" title="khatinews.com story"></iframe>`;
 }
 
 export function buildStoryReportIssueHref(slug: string, title: string, pageUrl: string): string {
@@ -148,7 +151,7 @@ export function buildStoryReportIssueHref(slug: string, title: string, pageUrl: 
   }
 
   const email = process.env.NEXT_PUBLIC_REPORT_ISSUES_EMAIL?.trim();
-  const subject = encodeURIComponent(`Shorup story report: ${title}`);
+  const subject = encodeURIComponent(`khatinews.com story report: ${title}`);
   const body = encodeURIComponent(
     `Please describe the issue (wrong cluster, broken link, offensive content, etc.):\n\nStory: ${title}\nURL: ${pageUrl}\n`,
   );
@@ -171,7 +174,7 @@ export const SOCIAL_SHARE_NETWORKS: {
 }[] = [
   { id: "facebook", labelEn: "Share on Facebook", labelBn: "ফেসবুকে শেয়ার" },
   { id: "x", labelEn: "Share on X", labelBn: "X-এ শেয়ার" },
-  { id: "whatsapp", labelEn: "Share on WhatsApp", labelBn: "হোয়াটসঅ্যাপে শেয়ার" },
+  { id: "whatsapp", labelEn: "Send image on WhatsApp", labelBn: "হোয়াটসঅ্যাপে ছবি পাঠান" },
   { id: "linkedin", labelEn: "Share on LinkedIn", labelBn: "লিংকডইনে শেয়ার" },
   { id: "telegram", labelEn: "Share on Telegram", labelBn: "টেলিগ্রামে শেয়ার" },
 ];
@@ -182,6 +185,7 @@ export const STORY_DETAIL_SHARE_NETWORKS: {
   labelEn: string;
   labelBn: string;
 }[] = [
+  { id: "whatsapp", labelEn: "Send image on WhatsApp", labelBn: "হোয়াটসঅ্যাপে ছবি পাঠান" },
   { id: "facebook", labelEn: "Share on Facebook", labelBn: "ফেসবুকে শেয়ার" },
   { id: "x", labelEn: "Share on X", labelBn: "X-এ শেয়ার" },
   { id: "linkedin", labelEn: "Share on LinkedIn", labelBn: "লিংকডইনে শেয়ার" },

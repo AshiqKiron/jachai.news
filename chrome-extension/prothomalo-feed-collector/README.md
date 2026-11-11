@@ -1,6 +1,6 @@
-# Prothom Alo Feed Collector (Chrome Extension)
+# News Collector (Chrome Extension)
 
-Collects **article titles, images, section, and RSS categories** from Prothom Alo (and optional extra RSS URLs), **merges multiple feeds**, saves to **Downloads**, and runs on a **configurable schedule**.
+Collects **article titles, images, section, and RSS categories** from major Bangladesh outlets (and optional extra RSS URLs), **merges multiple feeds**, saves to **Downloads**, and runs on a **configurable schedule**.
 
 ## Install
 

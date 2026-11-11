@@ -17,14 +17,14 @@ type Props = {
 
 function sideLabel(side: BlindspotReadingSide): { en: string; bn: string } {
   if (side === "left") {
-    return { en: "left", bn: "বাম" };
+    return { en: "against-government", bn: "সরকারের বিপক্ষে" };
   }
-  return { en: "right", bn: "ডান" };
+  return { en: "for-government", bn: "সরকারের পক্ষে" };
 }
 
 function insightCopy(dominantSide: BlindspotReadingSide): string {
   const side = sideLabel(dominantSide).en;
-  return ` more blindspots for the ${side}`;
+  return ` more ${side} blindspots`;
 }
 
 export function BlindspotReadingInsight({ demo, historyVersion = 0 }: Props) {
@@ -48,7 +48,7 @@ export function BlindspotReadingInsight({ demo, historyVersion = 0 }: Props) {
       <span className="font-semibold tabular-nums text-[#c5a377]">{insight.excessPct}%</span>
       {insightCopy(insight.dominantSide)}
       <span className="mt-0.5 block font-bengali text-xs text-zinc-600">
-        {labels.bn} পক্ষের ব্লাইন্ডস্পট —{" "}
+        {labels.bn} ব্লাইন্ডস্পট —{" "}
         <Link href="/blindspot" className="text-zinc-500 underline-offset-2 hover:text-accent hover:underline">
           ব্লাইন্ডস্পট ফিড
         </Link>

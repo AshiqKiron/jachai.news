@@ -68,6 +68,11 @@ function mapClusterArticles(cluster: Cluster | ClusterDetail): Story["articles"]
     publishedAt: article.published_at ?? cluster.created_at,
     sourceName: article.source_name ?? undefined,
     biasScore: article.bias_score ?? undefined,
+    ownerName: article.owner_name ?? undefined,
+    ownerUrl: article.owner_url ?? undefined,
+    parentName: article.parent_name ?? undefined,
+    parentUrl: article.parent_url ?? undefined,
+    isRumor: article.is_rumor || undefined,
   }));
 }
 

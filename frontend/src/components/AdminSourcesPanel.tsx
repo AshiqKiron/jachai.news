@@ -207,7 +207,7 @@ export function AdminSourcesPanel({ sources, onFeedsChanged }: Props) {
 
   async function handleRemove(source: AdminSourceStat) {
     const confirmRemove = window.confirm(
-      `Remove "${source.name}" from RSS ingest? All articles from this feed will be deleted from Shorup.`,
+      `Remove "${source.name}" from RSS ingest? All articles from this feed will be deleted from khatinews.com.`,
     );
     if (!confirmRemove) return;
 

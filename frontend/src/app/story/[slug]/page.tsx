@@ -17,32 +17,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const resolved = await resolveStoryBySlug(slug);
   if (!resolved) {
-    return { title: "Story not found · Shorup News" };
+    return { title: "Story not found · khatinews.com" };
   }
 
   const story = applySourceDerivedSummaries(resolved.story);
   const og = buildStoryShareOpenGraph(story, slug);
 
-  const openGraphImages = og.imageUrl
-    ? [{ url: og.imageUrl, width: 1200, height: 630, alt: og.title }]
-    : undefined;
-
   return {
-    title: `${og.title} · Shorup News`,
+    title: `${og.title} · khatinews.com`,
     description: og.description,
     openGraph: {
       type: "article",
       url: og.pageUrl,
       title: og.title,
       description: og.description,
-      siteName: "Shorup News",
-      images: openGraphImages,
+      siteName: "khatinews.com",
     },
     twitter: {
       card: "summary_large_image",
       title: og.title,
       description: og.description,
-      images: openGraphImages?.map((img) => img.url),
     },
   };
 }

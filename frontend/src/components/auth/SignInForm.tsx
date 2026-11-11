@@ -90,7 +90,7 @@ export function SignInForm() {
         {loading ? "Signing in…" : "Sign in"}
       </button>
       <p className="text-center text-sm text-zinc-500">
-        Want Shorup Pro?{" "}
+        Want khatinews Pro?{" "}
         <Link href="/pro" className="text-accent hover:underline">
           Go Pro
         </Link>

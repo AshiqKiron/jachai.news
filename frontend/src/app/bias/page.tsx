@@ -10,8 +10,8 @@ export default async function BiasPage() {
       <header>
         <h1 className="page-title break-words">বাংলাদেশি outlet map</h1>
         <p className="mt-2 max-w-2xl text-zinc-400">
-          Perspective lean for major Bangladeshi and Bangla-language international outlets (−1 opposition lean → +1
-          establishment lean). Demo ratings until your backend seed is calibrated.
+          For or against the government, for major Bangladeshi outlets (−1 against government → +1 for
+          government). Demo ratings until your backend seed is calibrated.
         </p>
         {!fromApi ? <div className="mt-4"><ApiDegradedBanner compact /></div> : null}
       </header>

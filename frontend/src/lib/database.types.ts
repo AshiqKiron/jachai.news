@@ -5,7 +5,7 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-export type SubscriptionPlan = "monthly" | "yearly";
+export type SubscriptionPlan = "day" | "monthly" | "yearly";
 
 export type SubscriptionStatus =
   | "trialing"

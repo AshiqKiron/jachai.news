@@ -68,7 +68,7 @@ export function TopicInsightsSection({ demo, historyVersion = 0 }: Props) {
       <div className="px-4 py-5">
         <ProfileHorizontalBars
           rows={rows}
-          emptyMessage="Open story pages on Shorup to see which topics you read most."
+          emptyMessage="Open story pages on khatinews.com to see which topics you read most."
           emptyMessageBn="কোন বিষয়ে বেশি পড়ছেন তা দেখতে স্টোরি পেজ খুলুন।"
         />
         {topTopic ? (

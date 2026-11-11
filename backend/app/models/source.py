@@ -13,5 +13,9 @@ class Source(Base):
     bias_score: Mapped[float | None] = mapped_column(Float, nullable=True)  # -1 left .. +1 right
     disabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     ingest_mode: Mapped[str] = mapped_column(String(16), default="rss", server_default="rss")
+    owner_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    owner_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    parent_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    parent_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
 
     articles: Mapped[list["Article"]] = relationship(back_populates="source")

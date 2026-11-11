@@ -21,6 +21,10 @@ export const SEED_SOURCE_NAMES = new Set([
   "Somoy News",
   "Dhaka Post",
   "BBC Bangla",
+  "Jugantor",
+  "Risingbd",
+  "Weekly Blitz",
+  "Sangbad Pratidin",
 ]);
 
 export function isCustomRssSource(name: string): boolean {

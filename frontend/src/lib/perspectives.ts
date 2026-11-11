@@ -8,34 +8,34 @@ export const PERSPECTIVE_META: Record<
     labelEn: string;
     labelBn: string;
     shortLabelBn: string;
-    /** Ground News–style spectrum tab (coverage feed). */
+    /** Short English name on political coverage tabs. */
     spectrumTabEn: string;
     color: string;
     order: number;
   }
 > = {
   establishment: {
-    labelEn: "Pro-government",
+    labelEn: "For government",
     labelBn: "সরকারের পক্ষে",
     shortLabelBn: "পক্ষে",
-    spectrumTabEn: "Right",
+    spectrumTabEn: "For government",
     color: "#6B94C8",
     order: 0,
+  },
+  opposition: {
+    labelEn: "Against government",
+    labelBn: "সরকারের বিপক্ষে",
+    shortLabelBn: "বিপক্ষে",
+    spectrumTabEn: "Against government",
+    color: "#C48888",
+    order: 1,
   },
   neutral: {
     labelEn: "Neutral",
     labelBn: "নিরপেক্ষ",
     shortLabelBn: "নিরপেক্ষ",
-    spectrumTabEn: "Center",
+    spectrumTabEn: "Neutral",
     color: "#787880",
-    order: 1,
-  },
-  opposition: {
-    labelEn: "Against the government",
-    labelBn: "সরকারের বিপক্ষে",
-    shortLabelBn: "বিপক্ষে",
-    spectrumTabEn: "Left",
-    color: "#C48888",
     order: 2,
   },
   international: {
@@ -48,13 +48,68 @@ export const PERSPECTIVE_META: Record<
   },
 };
 
-/** Left → Center → Right → International (Ground News–style feed tabs). */
-export const COVERAGE_SPECTRUM_TAB_ORDER: Perspective[] = [
+/** Political stories use a government axis. Other topics use the reporting spectrum. */
+export type CoverageSpectrumMode = "government" | "reporting";
+
+export type SpectrumCopy = {
+  labelEn: string;
+  labelBn: string;
+  shortLabelEn: string;
+  shortLabelBn: string;
+};
+
+/** For government → against government → neutral → international. */
+export const GOVERNMENT_SPECTRUM_ORDER: Perspective[] = [
+  "establishment",
   "opposition",
   "neutral",
-  "establishment",
   "international",
 ];
+
+const GOVERNMENT_SPECTRUM: Record<Perspective, SpectrumCopy> = {
+  establishment: {
+    labelEn: "For government",
+    labelBn: "সরকারের পক্ষে",
+    shortLabelEn: "For",
+    shortLabelBn: "পক্ষে",
+  },
+  opposition: {
+    labelEn: "Against government",
+    labelBn: "সরকারের বিপক্ষে",
+    shortLabelEn: "Against",
+    shortLabelBn: "বিপক্ষে",
+  },
+  neutral: {
+    labelEn: "Neutral",
+    labelBn: "নিরপেক্ষ",
+    shortLabelEn: "Neutral",
+    shortLabelBn: "নিরপেক্ষ",
+  },
+  international: {
+    labelEn: "International",
+    labelBn: "আন্তর্জাতিক",
+    shortLabelEn: "International",
+    shortLabelBn: "আন্তর্জাতিক",
+  },
+};
+
+export function spectrumOrder(mode: "government"): Perspective[] {
+  void mode;
+  return GOVERNMENT_SPECTRUM_ORDER;
+}
+
+export function spectrumCopy(perspective: Perspective, mode: "government"): SpectrumCopy {
+  void mode;
+  return GOVERNMENT_SPECTRUM[perspective];
+}
+
+export function compareSpectrumOrder(
+  a: Perspective,
+  b: Perspective,
+  mode: "government",
+): number {
+  return spectrumOrder(mode).indexOf(a) - spectrumOrder(mode).indexOf(b);
+}
 
 const SEGMENT_FILL_MIX_TARGET = "#141418";
 /** Darken accent colors for small-label segments (coverage bar, chips). */

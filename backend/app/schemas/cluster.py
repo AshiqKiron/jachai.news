@@ -8,6 +8,10 @@ from app.schemas.article import ArticleRead
 class ClusterArticleRead(ArticleRead):
     source_name: str
     bias_score: float | None = None
+    owner_name: str | None = None
+    owner_url: str | None = None
+    parent_name: str | None = None
+    parent_url: str | None = None
 
 
 class ClusterRead(BaseModel):

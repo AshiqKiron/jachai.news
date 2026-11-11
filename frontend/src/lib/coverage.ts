@@ -5,7 +5,11 @@ import {
   resolveArticlePerspective,
   type SourcePerspectiveLookup,
 } from "@/lib/source-perspective";
-import { lookupMediaOwnership, type MediaOwnership } from "@/lib/source-media-ownership";
+import {
+  lookupMediaOwnership,
+  mediaOwnershipFromLinks,
+  type MediaOwnership,
+} from "@/lib/source-media-ownership";
 
 export type StoryArticleMeta = {
   sourceName?: string;
@@ -45,13 +49,19 @@ export function enrichArticles(story: Story, options?: EnrichArticlesOptions): A
     const source = getSourceById(article.sourceId);
     const meta = options?.articleMeta?.[article.sourceId];
     const perspective = articlePerspective(article, options?.lookup, meta);
-    const sourceName = meta?.sourceName ?? source?.name ?? article.sourceId;
+    const sourceName = meta?.sourceName ?? article.sourceName ?? source?.name ?? article.sourceId;
     return {
       ...article,
       sourceName,
       perspective,
       factuality: source?.factuality ?? "mixed",
-      mediaOwnership: lookupMediaOwnership(sourceName),
+      mediaOwnership:
+        mediaOwnershipFromLinks(
+          article.ownerName,
+          article.ownerUrl,
+          article.parentName,
+          article.parentUrl,
+        ) ?? lookupMediaOwnership(sourceName),
     };
   });
 }

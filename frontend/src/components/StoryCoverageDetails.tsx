@@ -2,8 +2,10 @@
 
 import type { Story } from "@/lib/demo-data";
 import { coverageStats } from "@/lib/coverage";
-import { PERSPECTIVE_META, type Perspective } from "@/lib/perspectives";
+import { PERSPECTIVE_META, spectrumCopy, spectrumOrder } from "@/lib/perspectives";
 import { formatRelativeTimeEn } from "@/lib/relative-time";
+import { REPORTING_TONE_META, REPORTING_TONE_ORDER, reportingStats } from "@/lib/reporting-spectrum";
+import { coverageSpectrumModeForStory } from "@/lib/story-topics";
 
 type Props = {
   story: Story;
@@ -11,13 +13,6 @@ type Props = {
   hideHeading?: boolean;
   className?: string;
 };
-
-const STAT_PERSPECTIVES: Perspective[] = [
-  "opposition",
-  "establishment",
-  "neutral",
-  "international",
-];
 
 function StatRow({
   labelEn,
@@ -82,29 +77,51 @@ export function StoryCoverageDetails({
   const stats = coverageStats(story);
   if (!stats) return null;
 
-  const dominantMeta = PERSPECTIVE_META[stats.dominantPerspective];
+  const spectrumMode = coverageSpectrumModeForStory(story);
+  const reporting = spectrumMode === "reporting" ? reportingStats(story) : null;
+  const dominantCopy = reporting
+    ? REPORTING_TONE_META[reporting.dominantTone]
+    : spectrumCopy(stats.dominantPerspective, "government");
+  const dominantColor = reporting
+    ? REPORTING_TONE_META[reporting.dominantTone].color
+    : PERSPECTIVE_META[stats.dominantPerspective].color;
+  const dominantPercent = reporting ? reporting.dominantPercent : stats.dominantPercent;
   const lastUpdated = formatRelativeTimeEn(stats.lastUpdatedIso);
-  const perspectiveRows = STAT_PERSPECTIVES.filter(
-    (p) => p !== "international" || stats.counts.international > 0,
-  );
+  const perspectiveRows = reporting
+    ? REPORTING_TONE_ORDER.filter((tone) => reporting.counts[tone] > 0).map((tone) => ({
+        id: tone,
+        labelEn: REPORTING_TONE_META[tone].labelEn,
+        labelBn: REPORTING_TONE_META[tone].labelBn,
+        count: reporting.counts[tone],
+        color: REPORTING_TONE_META[tone].color,
+      }))
+    : spectrumOrder("government")
+        .filter((perspective) => perspective !== "international" || stats.counts.international > 0)
+        .map((perspective) => {
+          const copy = spectrumCopy(perspective, "government");
+          return {
+            id: perspective,
+            labelEn: copy.labelEn,
+            labelBn: copy.labelBn,
+            count: stats.counts[perspective],
+            color: PERSPECTIVE_META[perspective].color,
+          };
+        });
 
   if (density === "compact") {
     return (
       <div className={className}>
         <div className="grid grid-cols-2 gap-2 border-t border-zinc-800/80 pt-4 sm:grid-cols-3 lg:grid-cols-5">
           <CompactStatCard labelBn="মোট উৎস" labelEn="Total sources" value={stats.total} />
-          {perspectiveRows.map((perspective) => {
-            const meta = PERSPECTIVE_META[perspective];
-            return (
-              <CompactStatCard
-                key={perspective}
-                labelBn={meta.shortLabelBn}
-                labelEn={meta.labelEn}
-                value={stats.counts[perspective]}
-                accent={meta.color}
-              />
-            );
-          })}
+          {perspectiveRows.map((row) => (
+            <CompactStatCard
+              key={row.id}
+              labelBn={row.labelBn}
+              labelEn={row.labelEn}
+              value={row.count}
+              accent={row.color}
+            />
+          ))}
         </div>
 
         <div className="mt-3 flex flex-col gap-3 border-t border-zinc-800/80 pt-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
@@ -121,12 +138,12 @@ export function StoryCoverageDetails({
               <span className="mt-0.5 block text-[10px] text-zinc-600">Leading lean</span>
             </p>
             <p className="mt-1 text-sm leading-snug text-zinc-300">
-              <span style={{ color: dominantMeta.color }} className="font-semibold tabular-nums">
-                {stats.dominantPercent}%
+              <span style={{ color: dominantColor }} className="font-semibold tabular-nums">
+                {dominantPercent}%
               </span>{" "}
-              {dominantMeta.labelEn}
+              {dominantCopy.labelEn}
             </p>
-            <p className="mt-0.5 font-bengali text-sm text-zinc-500">{dominantMeta.labelBn}</p>
+            <p className="mt-0.5 font-bengali text-sm text-zinc-500">{dominantCopy.labelBn}</p>
           </div>
         </div>
       </div>
@@ -151,18 +168,15 @@ export function StoryCoverageDetails({
 
       <dl className={`grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-5 ${hideHeading ? "" : "mt-4"}`}>
         <StatRow labelEn="Total news sources" labelBn="মোট উৎস" value={stats.total} />
-        {perspectiveRows.map((perspective) => {
-          const meta = PERSPECTIVE_META[perspective];
-          return (
-            <StatRow
-              key={perspective}
-              labelEn={meta.labelEn}
-              labelBn={meta.labelBn}
-              value={stats.counts[perspective]}
-              accent={meta.color}
-            />
-          );
-        })}
+        {perspectiveRows.map((row) => (
+          <StatRow
+            key={row.id}
+            labelEn={row.labelEn}
+            labelBn={row.labelBn}
+            value={row.count}
+            accent={row.color}
+          />
+        ))}
         <div className="col-span-2 sm:col-span-1">
           <dt className="text-[11px] text-zinc-500">
             <span className="font-bengali">শেষ আপডেট</span>
@@ -176,16 +190,23 @@ export function StoryCoverageDetails({
 
       <div className="mt-5 border-t border-zinc-800/80 pt-4">
         <p className="text-[11px] uppercase tracking-wide text-zinc-500">
-          <span className="font-bengali normal-case">পক্ষপাত বিন্যাস</span> · Bias distribution
+          <span className="font-bengali normal-case">
+            {reporting ? "রিপোর্টিং বিন্যাস" : "পক্ষপাত বিন্যাস"}
+          </span>{" "}
+          · {reporting ? "Reporting mix" : "Bias distribution"}
         </p>
         <p className="mt-2 font-display text-3xl font-semibold tabular-nums text-zinc-50">
-          <span style={{ color: dominantMeta.color }}>{stats.dominantPercent}%</span>{" "}
-          <span className="text-xl font-normal text-zinc-300">{dominantMeta.labelEn}</span>
+          <span style={{ color: dominantColor }}>{dominantPercent}%</span>{" "}
+          <span className="text-xl font-normal text-zinc-300">{dominantCopy.labelEn}</span>
         </p>
         <p className="mt-1 text-sm text-zinc-400">
-          {stats.dominantPercent}% of sources lean {dominantMeta.labelEn.toLowerCase()}
+          {reporting
+            ? `${dominantPercent}% of sources are ${dominantCopy.labelEn.toLowerCase()}`
+            : `${dominantPercent}% of sources lean ${dominantCopy.labelEn.toLowerCase()}`}
           <span className="mt-0.5 block font-bengali text-zinc-500">
-            {stats.dominantPercent}% উৎস {dominantMeta.labelBn} দিকে ঝুঁকছে
+            {reporting
+              ? `${dominantPercent}% উৎস ${dominantCopy.labelBn}`
+              : `${dominantPercent}% উৎস ${dominantCopy.labelBn} দিকে ঝুঁকছে`}
           </span>
         </p>
       </div>

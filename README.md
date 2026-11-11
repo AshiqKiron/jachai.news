@@ -1,4 +1,4 @@
-# Shorup News
+# khatinews.com
 
 **Ground News for Bangladesh** — a installable PWA that clusters the same story across Prothom Alo, Daily Star, bdnews24, BBC Bangla, and more. Compare headlines, perspective lean (establishment / opposition / neutral / international), blindspots, and rumor flags.
 
@@ -6,7 +6,7 @@ Stack: FastAPI backend (RSS + clustering) and Next.js App Router frontend with o
 
 ## Architecture
 
-Shorup splits **news intelligence** (clusters, articles, verified claims) in **backend PostgreSQL** from **user accounts and billing** in **Supabase**. The Next.js app talks to FastAPI for feeds and verification, and to Supabase for auth and Pro entitlements.
+khatinews.com splits **news intelligence** (clusters, articles, verified claims) in **backend PostgreSQL** from **user accounts and billing** in **Supabase**. The Next.js app talks to FastAPI for feeds and verification, and to Supabase for auth and Pro entitlements.
 
 ```mermaid
 flowchart LR
@@ -70,7 +70,7 @@ flowchart LR
 
 ### Admin (internal)
 
-Production dashboard on **`admin.shorup.news`** (local: `/admin`). Backend `GET /api/v1/admin/overview` and source add/remove; frontend proxies under `app/api/admin/*` with legacy `shorup_admin` cookie (see [Admin panel](#admin-panel-internal) below).
+Production dashboard on **`admin.khatinews.com`** (local: `/admin`). Backend `GET /api/v1/admin/overview` and source add/remove; frontend proxies under `app/api/admin/*` with legacy `shorup_admin` cookie (see [Admin panel](#admin-panel-internal) below).
 
 ### Monitoring (optional)
 
@@ -79,7 +79,7 @@ Sentry on backend (`SENTRY_DSN`) and frontend (`@sentry/nextjs`). Ingest cron ca
 ## Structure
 
 ```
-shorup.news/
+khatinews.com/
 ├── backend/              # FastAPI, SQLAlchemy, Celery tasks, RSS + verification
 ├── frontend/             # Next.js App Router, PWA, Supabase client
 ├── supabase/             # Migrations (profiles, Pro, dossiers/alerts)
@@ -139,9 +139,9 @@ App: [http://localhost:3000](http://localhost:3000)
 
 ### Admin panel (internal)
 
-Password-protected dashboard at **`https://admin.shorup.news`** (local dev: **`/admin`**). The main site redirects `/admin` to the admin subdomain in production. API health, DB counts, sources, recent clusters, and manual RSS ingest.
+Password-protected dashboard at **`https://admin.khatinews.com`** (local dev: **`/admin`**). The main site redirects `/admin` to the admin subdomain in production. API health, DB counts, sources, recent clusters, and manual RSS ingest.
 
-Add **`admin.shorup.news`** as a domain on your frontend host (same Next.js deployment as `shorup.news`). Optional env: `ADMIN_HOST`, `NEXT_PUBLIC_SITE_URL`.
+Add **`admin.khatinews.com`** as a domain on your frontend host (same Next.js deployment as `khatinews.com`). Optional env: `ADMIN_HOST`, `NEXT_PUBLIC_SITE_URL`.
 
 | Variable | Where | Description |
 |----------|--------|-------------|
@@ -159,10 +159,11 @@ The UI ships with **Bangladeshi demo stories** when the API is offline. Connect 
 
 Optional Supabase auth: set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`. Apply the schema in `supabase/migrations/` via [Supabase CLI](https://supabase.com/docs/guides/cli) (`supabase db push`) or the SQL editor in the dashboard.
 
-## Shorup Pro (subscriptions — planned)
+## khatinews Pro (subscriptions — planned)
 
 | Plan | Price (BDT) |
 |------|-------------|
+| Day pass | ৳15 / 24 hours (one-time) |
 | Monthly | ৳49 / month |
 | Yearly | ৳399 / year |
 
@@ -197,8 +198,8 @@ Large exports and assets go through `app/services/object_storage.py` (Supabase S
 ## Docker (API image only)
 
 ```bash
-docker build -t shorup-api ./backend
-docker run --rm -p 3001:8000 -e DATABASE_URL=postgresql+asyncpg://... shorup-api
+docker build -t khatinews-api ./backend
+docker run --rm -p 3001:8000 -e DATABASE_URL=postgresql+asyncpg://... khatinews-api
 ```
 
 ## RSS ingestion

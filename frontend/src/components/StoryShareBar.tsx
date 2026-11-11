@@ -11,6 +11,7 @@ import {
   STORY_DETAIL_SHARE_NETWORKS,
   type SocialShareNetwork,
 } from "@/lib/story-share";
+import { storyShareCardPath } from "@/lib/story-share-card";
 
 type Props = {
   slug: string;
@@ -160,9 +161,22 @@ function SocialIcon({ network, className }: { network: SocialShareNetwork; class
   }
 }
 
+function browserCanShareImageFile(): boolean {
+  if (typeof navigator.share !== "function" || typeof navigator.canShare !== "function") {
+    return false;
+  }
+  try {
+    const file = new File([new Uint8Array([0])], "khatinews-card.png", { type: "image/png" });
+    return navigator.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
+}
+
 export function StoryShareBar({ slug, shareTitle, variant = "default" }: Props) {
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
+  const [sharingImage, setSharingImage] = useState(false);
 
   const pageUrl = useMemo(() => buildStoryShareUrl(slug), [slug]);
   const reportHref = useMemo(
@@ -200,6 +214,40 @@ export function StoryShareBar({ slug, shareTitle, variant = "default" }: Props) 
     });
   }
 
+  function openWhatsAppLink() {
+    window.open(buildSocialShareUrl("whatsapp", pageUrl, shareTitle), "_blank", "noopener,noreferrer");
+  }
+
+  async function onShareWhatsApp() {
+    if (!browserCanShareImageFile()) {
+      openWhatsAppLink();
+      return;
+    }
+
+    setSharingImage(true);
+    try {
+      const response = await fetch(storyShareCardPath(slug), { credentials: "same-origin" });
+      if (!response.ok) {
+        openWhatsAppLink();
+        return;
+      }
+      const blob = await response.blob();
+      const file = new File([blob], "khatinews-card.png", { type: "image/png" });
+      const text = `${shareTitle}\n${pageUrl}`;
+      const payload = { files: [file], text, title: shareTitle };
+      if (!navigator.canShare?.(payload)) {
+        openWhatsAppLink();
+        return;
+      }
+      await navigator.share(payload);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      openWhatsAppLink();
+    } finally {
+      setSharingImage(false);
+    }
+  }
+
   async function onCopyEmbed() {
     await copyText(buildStoryEmbedSnippet(pageUrl), () => {
       setEmbedCopied(true);
@@ -216,19 +264,34 @@ export function StoryShareBar({ slug, shareTitle, variant = "default" }: Props) 
         {copied ? "Link copied" : embedCopied ? "Embed code copied" : ""}
       </span>
 
-      {networks.map((network) => (
-        <a
-          key={network.id}
-          href={buildSocialShareUrl(network.id, pageUrl, shareTitle)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={socialClass}
-          title={`${network.labelEn} · ${network.labelBn}`}
-          aria-label={network.labelEn}
-        >
-          <SocialIcon network={network.id} className={socialIconSize} />
-        </a>
-      ))}
+      {networks.map((network) =>
+        network.id === "whatsapp" ? (
+          <button
+            key={network.id}
+            type="button"
+            onClick={() => void onShareWhatsApp()}
+            disabled={sharingImage}
+            className={`${socialClass} disabled:cursor-wait disabled:opacity-70`}
+            title={`${network.labelEn} · ${network.labelBn}`}
+            aria-label={sharingImage ? "Preparing story card" : network.labelEn}
+            aria-busy={sharingImage}
+          >
+            <SocialIcon network={network.id} className={socialIconSize} />
+          </button>
+        ) : (
+          <a
+            key={network.id}
+            href={buildSocialShareUrl(network.id, pageUrl, shareTitle)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={socialClass}
+            title={`${network.labelEn} · ${network.labelBn}`}
+            aria-label={network.labelEn}
+          >
+            <SocialIcon network={network.id} className={socialIconSize} />
+          </a>
+        ),
+      )}
 
       {variant === "detail" ? (
         <button

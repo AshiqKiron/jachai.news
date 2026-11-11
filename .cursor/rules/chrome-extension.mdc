@@ -1,5 +1,5 @@
 ---
-description: Chrome extension conventions for Shorup News feed collection
+description: Chrome extension conventions for khatinews.com feed collection
 globs: chrome-extension/**
 alwaysApply: false
 ---
@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Purpose
 
-**`chrome-extension/prothomalo-feed-collector/`** — Manifest V3 extension that collects Prothom Alo sections, a bundled Bangladesh catalog, and optional custom RSS into **JSON/CSV** under `~/Downloads/prothomalo-feed/`. Admins upload those files into Shorup via **file** ingest mode (`POST /api/v1/admin/sources/{id}/import` — proxied as **`POST /api/admin/sources/[id]/import`**). Not part of the Next.js or FastAPI bundles. The server seed in `bd_sources_seed.py` is a separate, smaller pull list (one source per outlet).
+**`chrome-extension/prothomalo-feed-collector/`** — Manifest V3 extension that collects Prothom Alo sections, a bundled Bangladesh catalog, and optional custom RSS into **JSON/CSV** under `~/Downloads/prothomalo-feed/`. Admins upload those files into khatinews.com via **file** ingest mode (`POST /api/v1/admin/sources/{id}/import` — proxied as **`POST /api/admin/sources/[id]/import`**). Not part of the Next.js or FastAPI bundles. The server seed in `bd_sources_seed.py` is a separate, smaller pull list (one source per outlet).
 
 ## Layout
 

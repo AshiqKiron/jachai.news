@@ -7,12 +7,12 @@ import { getProAccessState } from "@/lib/subscription-access";
 export const metadata = {
   title: "Profile · My News Bias",
   description:
-    "Personal reading habits, followed stories, topics, and people — plus Shorup Pro preferences on this device.",
+    "Personal reading habits, followed stories, topics, and people — plus khatinews Pro preferences on this device.",
 };
 
 export default async function ProfilePage() {
   const pro = await getProAccessState();
-  const displayName = pro.displayName ?? "Shorup reader";
+  const displayName = pro.displayName ?? "khatinews reader";
 
   return (
     <div className="mx-auto max-w-2xl">

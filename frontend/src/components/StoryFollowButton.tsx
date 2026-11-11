@@ -50,7 +50,7 @@ export function StoryFollowButton({
         !proKnown
           ? "Checking Pro access…"
           : !isPro
-            ? "Follow topic is a Shorup Pro feature"
+            ? "Follow topic is a khatinews Pro feature"
             : followed
               ? `Unfollow topic: ${titleBn}`
               : `Follow topic for updates: ${titleBn}`

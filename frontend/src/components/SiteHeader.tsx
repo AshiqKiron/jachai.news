@@ -20,7 +20,7 @@ export function SiteHeader() {
             href={admin ? adminSurfacePath("", host) : "/"}
             className="font-display text-lg tracking-tight text-zinc-50 sm:text-xl"
           >
-            shorup<span className="text-accent">.</span>news
+            khatinews<span className="text-accent">.</span>com
           </Link>
           {!admin ? (
             <p className="text-[11px] leading-snug text-zinc-500 sm:text-xs dark:text-zinc-400">

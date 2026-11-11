@@ -72,6 +72,7 @@ type Props = {
 export function SubscriptionPlanCards({ onBuyPro }: Props) {
   const monthly = SUBSCRIPTION_PLANS.find((p) => p.id === "monthly");
   const yearly = SUBSCRIPTION_PLANS.find((p) => p.id === "yearly");
+  const dayPass = SUBSCRIPTION_PLANS.find((p) => p.id === "day");
   const yearlySavings = getYearlyPlanSavings();
 
   return (
@@ -89,7 +90,7 @@ export function SubscriptionPlanCards({ onBuyPro }: Props) {
       <article className="flex flex-col rounded-xl border border-accent/40 bg-zinc-900/50 shadow-lg shadow-accent/5">
         <header className="border-b border-accent/20 bg-accent/5 px-5 py-4">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <h2 className="font-display text-xl text-zinc-50">Shorup Pro</h2>
+            <h2 className="font-display text-xl text-zinc-50">khatinews Pro</h2>
             {monthly ? (
               <p className="font-display text-xl text-zinc-50">
                 {formatPlanPrice(monthly.amountBdt)}
@@ -112,6 +113,13 @@ export function SubscriptionPlanCards({ onBuyPro }: Props) {
                 </span>
               ) : null}
             </div>
+          ) : null}
+          {dayPass ? (
+            <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
+              or {formatPlanPrice(dayPass.amountBdt)} day pass
+              <span className="font-bengali"> ({dayPass.labelBn})</span>
+              <span className="text-zinc-500"> · 24 hours</span>
+            </p>
           ) : null}
         </header>
         <div className="flex flex-1 flex-col px-5 py-4">

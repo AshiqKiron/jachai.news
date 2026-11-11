@@ -10,6 +10,8 @@ import { BlindspotBanner } from "@/components/BlindspotBanner";
 import { AntiClickbaitSummaryPanel } from "@/components/AntiClickbaitSummaryPanel";
 import { PartialityBanner } from "@/components/PartialityBanner";
 import { PaywallModal } from "@/components/PaywallModal";
+import { SharedOwnershipReveal } from "@/components/SharedOwnershipReveal";
+import { UnnamedSourceReveal } from "@/components/UnnamedSourceReveal";
 import { StoryDetailMetaBar } from "@/components/StoryDetailMetaBar";
 import { applyBlindspotDetection, type BlindspotAxisPerspective } from "@/lib/blindspot";
 import { analyzePartiality } from "@/lib/partiality";
@@ -20,10 +22,14 @@ import {
   writeStoryCache,
 } from "@/lib/client-story-cache";
 import { hydrateClientStory } from "@/lib/client-story-hydrate";
+import { hasBengaliScript, storySubtitle } from "@/lib/mixed-script-text";
 import { enrichArticles } from "@/lib/coverage";
 import { isStoryFollowed, toggleStoryFollowed } from "@/lib/followed-stories";
 import { clusterBiasScore } from "@/lib/partiality";
 import { readingTopicIdForStory, recordStoryRead } from "@/lib/reading-history";
+import { pickSharpestRevealKind } from "@/lib/story-share-card";
+import { coverageSpectrumModeForStory } from "@/lib/story-topics";
+import type { ProOnlyFeatureId } from "@/lib/subscription-features";
 
 const StoryTabs = dynamic(
   () => import("@/components/StoryTabs").then((mod) => mod.StoryTabs),
@@ -46,7 +52,7 @@ export function StoryDetailPanel({ slug, initialStory = null }: Props) {
   const [isPro, setIsPro] = useState(false);
   const [proKnown, setProKnown] = useState(false);
   const [followed, setFollowed] = useState(false);
-  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallFeature, setPaywallFeature] = useState<ProOnlyFeatureId | null>(null);
 
   useLayoutEffect(() => {
     const cached = readStoryCache(slug);
@@ -168,18 +174,21 @@ export function StoryDetailPanel({ slug, initialStory = null }: Props) {
 
   const { fromApi } = resolved;
   const story = applyBlindspotDetection(resolved.story);
-  const partiality = analyzePartiality(story);
+  const politicalSpectrum = coverageSpectrumModeForStory(story) === "government";
+  const partiality = politicalSpectrum ? analyzePartiality(story) : null;
   const articles = enrichArticles(story);
+  const revealKind = pickSharpestRevealKind(articles);
   const summaryBullets = story.summaryBullets ?? [];
+  const subtitle = storySubtitle(story.title, story.titleBn);
   return (
     <>
       {fromApi && story.articles.length === 0 ? <ApiDegradedBanner compact /> : null}
 
       <header className="max-w-3xl space-y-5">
-        <h1 lang="bn" className="page-title-lg story-title-bn">
+        <h1 lang={hasBengaliScript(story.titleBn) ? "bn" : "en"} className="page-title-lg story-title-bn">
           {story.titleBn}
         </h1>
-        <p className="text-base leading-snug text-zinc-500">{story.title}</p>
+        {subtitle ? <p className="text-base leading-snug text-zinc-500">{subtitle}</p> : null}
         {summaryBullets.length > 0 ? (
           <AntiClickbaitSummaryPanel bullets={summaryBullets} className="max-w-3xl" />
         ) : story.summaryBn ? (
@@ -194,12 +203,30 @@ export function StoryDetailPanel({ slug, initialStory = null }: Props) {
           proKnown={proKnown}
           followed={followed}
           onToggleFollow={handleToggleFollow}
-          onLockedClick={() => setPaywallOpen(true)}
+          onLockedClick={() => setPaywallFeature("follow_story")}
         />
-        {partiality || story.isBlindspot ? (
+        {revealKind === "ownership" ? (
+          <SharedOwnershipReveal
+            articles={articles}
+            isPro={isPro}
+            proKnown={proKnown}
+            onLockedClick={() => setPaywallFeature("story_shared_ownership_alerts")}
+          />
+        ) : null}
+        {revealKind === "unnamed" ? (
+          <UnnamedSourceReveal
+            articles={articles}
+            isPro={isPro}
+            proKnown={proKnown}
+            onLockedClick={() => setPaywallFeature("story_unnamed_source")}
+          />
+        ) : null}
+        {partiality || (politicalSpectrum && story.isBlindspot) ? (
           <div className="space-y-2">
-            {partiality ? <PartialityBanner analysis={partiality} comfortable /> : null}
-            {story.isBlindspot &&
+            {partiality ? (
+              <PartialityBanner analysis={partiality} spectrumMode="government" comfortable />
+            ) : null}
+            {politicalSpectrum && story.isBlindspot &&
             story.blindspotPerspective &&
             (story.blindspotPerspective === "establishment" ||
               story.blindspotPerspective === "opposition") ? (
@@ -216,9 +243,9 @@ export function StoryDetailPanel({ slug, initialStory = null }: Props) {
         <StoryTabs story={story} articles={articles} />
       </ClientErrorBoundary>
       <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
-        featureId="follow_story"
+        open={paywallFeature !== null}
+        onClose={() => setPaywallFeature(null)}
+        featureId={paywallFeature ?? undefined}
       />
     </>
   );

@@ -13,6 +13,7 @@ import {
   setStoryFollowed,
   type FollowedStoryRecord,
 } from "@/lib/followed-stories";
+import { storySubtitle } from "@/lib/mixed-script-text";
 import { readReadingHistory } from "@/lib/reading-history";
 
 type Props = {
@@ -135,7 +136,7 @@ export function ProfileSavedNewsSection({ isPro, proKnown }: Props) {
       <ProfileProUpsell
         titleEn="Saved news"
         titleBn="সংরক্ষিত খবর"
-        bodyEn="Follow stories on home or story pages with Shorup Pro — they’ll show up here for quick access."
+        bodyEn="Follow stories on home or story pages with khatinews Pro — they’ll show up here for quick access."
         bodyBn="Pro-তে খবর ফলো করুন — এখানে দ্রুত খুঁজে পাবেন"
       />
     );
@@ -167,7 +168,7 @@ export function ProfileSavedNewsSection({ isPro, proKnown }: Props) {
                 >
                   {row.titleBn}
                 </Link>
-                {row.titleEn ? (
+                {row.titleEn && storySubtitle(row.titleEn, row.titleBn) ? (
                   <p className="mt-0.5 truncate text-xs text-zinc-500">{row.titleEn}</p>
                 ) : null}
                 {typeof row.sourceCount === "number" ? (

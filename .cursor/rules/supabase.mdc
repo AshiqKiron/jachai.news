@@ -1,12 +1,12 @@
 ---
-description: Supabase auth, Pro subscriptions, and PayEurasia payment schema for Shorup News
+description: Supabase auth, Pro subscriptions, and PayEurasia payment schema for khatinews.com
 globs: supabase/**
 alwaysApply: false
 ---
 
 # Supabase
 
-Shorup uses Supabase for **auth**, **Pro entitlement**, **user research metadata**, and **planned PayEurasia checkout** — not for articles/clusters or verified claims (those live in backend PostgreSQL).
+khatinews.com uses Supabase for **auth**, **Pro entitlement**, **user research metadata**, and **planned PayEurasia checkout** — not for articles/clusters or verified claims (those live in backend PostgreSQL).
 
 ## Layout
 
@@ -14,6 +14,7 @@ Shorup uses Supabase for **auth**, **Pro entitlement**, **user research metadata
 - `supabase/migrations/` — versioned SQL:
   - `20250301000000_init_profiles_subscriptions.sql` — profiles, subscriptions, payment tables
   - `20250302000000_security_rls_hardening.sql` — `saved_dossiers`, `custom_alerts`, explicit deny INSERT/UPDATE/DELETE on billing tables for anon/authenticated
+  - `20251112031500_subscription_plan_day_pass.sql` — adds `subscription_plan` value **`day`** (24-hour Pro pass; checkout still service-role)
 - Frontend types: `frontend/src/lib/database.types.ts` — **keep in sync** when migrations change
 
 ## Apply schema
@@ -35,7 +36,7 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 | Object | Purpose |
 |--------|---------|
 | `public.profiles` | One row per `auth.users`; `locale` `en` \| `bn`; auto-created via `handle_new_user` trigger |
-| `public.subscriptions` | One row per user (`user_id` unique); `subscription_plan` monthly/yearly; `subscription_status` trialing/active/past_due/canceled/expired |
+| `public.subscriptions` | One row per user (`user_id` unique); `subscription_plan` day/monthly/yearly; `subscription_status` trialing/active/past_due/canceled/expired |
 | `public.bkash_agreements` | Saved PayEurasia customer/agreement refs per user (table name legacy; planned) |
 | `public.payment_transactions` | PayEurasia (default `provider`) charges linked to `subscription_id`; `metadata` jsonb |
 | `public.saved_dossiers` | Per-user research notes + source URLs (full CRUD for owner) |

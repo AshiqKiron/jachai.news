@@ -8,7 +8,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -18,6 +18,7 @@ from app.models.cluster import Cluster
 from app.models.source import Source
 from app.services.rss_parser import ParsedFeedItem, fetch_feed_items
 from app.services.source_ingest_mode import source_uses_rss_pull
+from app.services.story_match import cross_lingual_score, prefer_bangla_title
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,39 @@ def title_similarity(a: str, b: str) -> float:
     return intersection / union if union else 0.0
 
 
+def headline_match_score(a: str, b: str) -> float:
+    """Same-language wording overlap, or a shared place/topic across Bangla and English."""
+    return max(title_similarity(a, b), cross_lingual_score(a, b))
+
+
+def _apply_seed_ownership(source: Source, row: dict) -> None:
+    source.owner_name = row.get("owner_name")
+    source.owner_url = row.get("owner_url")
+    source.parent_name = row.get("parent_name")
+    source.parent_url = row.get("parent_url")
+
+
+async def _stamp_ownership_aliases(session: AsyncSession, row: dict) -> None:
+    """Copy publisher fields onto duplicate rows for the same outlet."""
+    if not row.get("owner_name"):
+        return
+    aliases = (
+        await session.scalars(
+            select(Source).where(
+                Source.name != row["name"],
+                or_(
+                    func.lower(Source.name) == row["name"].lower(),
+                    Source.feed_url == row["feed_url"],
+                    func.lower(Source.name).like(row["name"].lower() + " %"),
+                    func.lower(Source.name).like(row["name"].lower() + "(%"),
+                ),
+            )
+        )
+    ).all()
+    for alias in aliases:
+        _apply_seed_ownership(alias, row)
+
+
 async def ensure_sources_seeded(session: AsyncSession) -> None:
     for row in BD_SOURCE_SEED:
         existing = await session.scalar(select(Source).where(Source.name == row["name"]))
@@ -84,11 +118,19 @@ async def ensure_sources_seeded(session: AsyncSession) -> None:
                     name=row["name"],
                     feed_url=row["feed_url"],
                     bias_score=row.get("bias_score"),
+                    ingest_mode=row.get("ingest_mode", "rss"),
+                    owner_name=row.get("owner_name"),
+                    owner_url=row.get("owner_url"),
+                    parent_name=row.get("parent_name"),
+                    parent_url=row.get("parent_url"),
                 )
             )
-        elif not existing.disabled:
-            existing.feed_url = row["feed_url"]
-            existing.bias_score = row.get("bias_score")
+        else:
+            if not existing.disabled:
+                existing.feed_url = row["feed_url"]
+                existing.bias_score = row.get("bias_score")
+            _apply_seed_ownership(existing, row)
+        await _stamp_ownership_aliases(session, row)
 
 
 async def unique_cluster_slug(session: AsyncSession, base_title: str) -> str:
@@ -113,16 +155,86 @@ async def find_matching_cluster(
         .where(Cluster.created_at >= since)
         .order_by(Cluster.created_at.desc())
         .limit(200)
+        .execution_options(populate_existing=True)
     )
     best: Cluster | None = None
     best_score = CLUSTER_SIMILARITY_THRESHOLD
     for cluster in result.scalars():
         for article in cluster.articles:
-            score = title_similarity(title, article.title)
+            score = headline_match_score(title, article.title)
             if score > best_score:
                 best_score = score
                 best = cluster
     return best
+
+
+def _clusters_share_story(left: Cluster, right: Cluster) -> bool:
+    for left_article in left.articles:
+        for right_article in right.articles:
+            if headline_match_score(left_article.title, right_article.title) > CLUSTER_SIMILARITY_THRESHOLD:
+                return True
+    return False
+
+
+async def merge_cross_language_clusters(session: AsyncSession, since: datetime) -> None:
+    """Join recent clusters that title wording split by language. Keep the older slug."""
+    rows = (
+        await session.execute(
+            select(Cluster)
+            .options(selectinload(Cluster.articles))
+            .where(Cluster.created_at >= since)
+            .order_by(Cluster.created_at.asc())
+            .execution_options(populate_existing=True)
+        )
+    ).scalars().unique().all()
+    clusters = list(rows)
+    if not clusters:
+        return
+
+    parent = {cluster.id: cluster.id for cluster in clusters}
+
+    def find(cluster_id: int) -> int:
+        while parent[cluster_id] != cluster_id:
+            parent[cluster_id] = parent[parent[cluster_id]]
+            cluster_id = parent[cluster_id]
+        return cluster_id
+
+    def union(left_id: int, right_id: int) -> None:
+        left_root = find(left_id)
+        right_root = find(right_id)
+        if left_root != right_root:
+            parent[right_root] = left_root
+
+    for index, left in enumerate(clusters):
+        if not left.articles:
+            continue
+        for right in clusters[index + 1 :]:
+            if not right.articles or find(left.id) == find(right.id):
+                continue
+            if _clusters_share_story(left, right):
+                union(left.id, right.id)
+
+    grouped: dict[int, list[Cluster]] = {}
+    for cluster in clusters:
+        grouped.setdefault(find(cluster.id), []).append(cluster)
+
+    for members in grouped.values():
+        keeper = min(members, key=lambda cluster: (cluster.created_at, cluster.id))
+        title = keeper.title
+        for member in members:
+            for article in member.articles:
+                title = prefer_bangla_title(title, article.title)
+        for other in members:
+            if other.id == keeper.id:
+                continue
+            for article in list(other.articles):
+                article.cluster = keeper
+            await session.flush()
+            await session.delete(other)
+        if title != keeper.title:
+            keeper.title = title
+
+    await session.flush()
 
 
 async def maybe_refresh_cluster_summary(session: AsyncSession, cluster: Cluster) -> bool:
@@ -153,11 +265,14 @@ async def persist_feed_items(
             result.clusters_created += 1
         else:
             result.clusters_updated += 1
+            bangla_title = prefer_bangla_title(cluster.title, item.title)
+            if bangla_title != cluster.title:
+                cluster.title = bangla_title
 
         session.add(
             Article(
                 source_id=source.id,
-                cluster_id=cluster.id,
+                cluster=cluster,
                 title=item.title,
                 url=item.url,
                 excerpt=item.excerpt,
@@ -170,6 +285,8 @@ async def persist_feed_items(
 
         if await maybe_refresh_cluster_summary(session, cluster):
             result.clusters_updated += 1
+
+    await merge_cross_language_clusters(session, since)
 
 
 async def ingest_source(session: AsyncSession, source: Source, result: IngestResult) -> None:

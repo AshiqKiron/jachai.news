@@ -6,10 +6,17 @@ type Props = {
   compact?: boolean;
   /** Tighter padding on story detail; keeps EN + BN detail in one block. */
   comfortable?: boolean;
+  /** Political stories name for / against government. */
+  spectrumMode?: "government";
 };
 
-export function PartialityBanner({ analysis, compact, comfortable }: Props) {
-  const copy = partialityBannerCopy(analysis);
+export function PartialityBanner({
+  analysis,
+  compact,
+  comfortable,
+  spectrumMode = "government",
+}: Props) {
+  const copy = partialityBannerCopy(analysis, spectrumMode);
   const leanMeta = PERSPECTIVE_META[biasScoreToPerspective(analysis.clusterBiasScore)];
 
   if (compact) {

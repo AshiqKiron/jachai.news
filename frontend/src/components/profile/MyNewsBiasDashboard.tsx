@@ -29,15 +29,15 @@ type Props = {
 
 function BiasBar({ stats }: { stats: MyNewsBiasStats }) {
   const segments = [
-    { key: "left" as const, label: "L", pct: stats.leftPct, className: "bg-[#8b3a3a]" },
-    { key: "center" as const, label: "C", pct: stats.centerPct, className: "bg-zinc-200 text-zinc-900" },
-    { key: "right" as const, label: "R", pct: stats.rightPct, className: "bg-[#3d5a80]" },
+    { key: "right" as const, label: "For", pct: stats.rightPct, className: "bg-[#3d5a80]" },
+    { key: "center" as const, label: "Neutral", pct: stats.centerPct, className: "bg-zinc-200 text-zinc-900" },
+    { key: "left" as const, label: "Against", pct: stats.leftPct, className: "bg-[#8b3a3a]" },
   ].filter((segment) => segment.pct > 0);
 
   if (segments.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-zinc-800 px-4 py-6 text-sm text-zinc-500">
-        Read a few stories on Shorup to see your bias breakdown here.
+        Read a few stories on khatinews.com to see your bias breakdown here.
       </p>
     );
   }
@@ -65,22 +65,22 @@ function BreakdownList({ stats, trackArticles }: { stats: MyNewsBiasStats; track
   if (stats.leftStories > 0) {
     lines.push({
       count: stats.leftStories,
-      textEn: "stories you read lean left.",
-      textBn: "টি খবর বাম ঝোঁকের দিকে।",
+      textEn: "political stories you read are against government.",
+      textBn: "টি রাজনৈতিক খবর সরকারের বিপক্ষে।",
     });
   }
   if (stats.centerStories > 0) {
     lines.push({
       count: stats.centerStories,
-      textEn: "stories you read were balanced.",
-      textBn: "টি খবর মধ্যম ঝোঁকের।",
+      textEn: "political stories you read are neutral.",
+      textBn: "টি রাজনৈতিক খবর নিরপেক্ষ।",
     });
   }
   if (stats.rightStories > 0) {
     lines.push({
       count: stats.rightStories,
-      textEn: "stories you read lean right.",
-      textBn: "টি খবর ডান ঝোঁকের দিকে।",
+      textEn: "political stories you read are for government.",
+      textBn: "টি রাজনৈতিক খবর সরকারের পক্ষে।",
     });
   }
 
@@ -88,22 +88,22 @@ function BreakdownList({ stats, trackArticles }: { stats: MyNewsBiasStats; track
     if (stats.leftArticles > 0) {
       lines.push({
         count: stats.leftArticles,
-        textEn: "outlet links you opened lean left.",
-        textBn: "টি বাম ঝোঁকের আউটলেট লিংক খুলেছেন।",
+        textEn: "outlet links you opened are against government.",
+        textBn: "টি সরকারের বিপক্ষে আউটলেট লিংক খুলেছেন।",
       });
     }
     if (stats.centerArticles > 0) {
       lines.push({
         count: stats.centerArticles,
-        textEn: "outlet links you opened were balanced.",
-        textBn: "টি মধ্যম ঝোঁকের আউটলেট লিংক।",
+        textEn: "outlet links you opened are neutral.",
+        textBn: "টি নিরপেক্ষ আউটলেট লিংক খুলেছেন।",
       });
     }
     if (stats.rightArticles > 0) {
       lines.push({
         count: stats.rightArticles,
-        textEn: "outlet links you opened lean right.",
-        textBn: "টি ডান ঝোঁকের আউটলেট লিংক।",
+        textEn: "outlet links you opened are for government.",
+        textBn: "টি সরকারের পক্ষে আউটলেট লিংক খুলেছেন।",
       });
     }
   }
@@ -210,7 +210,7 @@ export function MyNewsBiasDashboard({ displayName, isPro, proKnown }: Props) {
           <ProfileProUpsell
             titleEn="Stories Read"
             titleBn="পড়া খবর"
-            bodyEn="See how your reading pace changes over time with Shorup Pro."
+            bodyEn="See how your reading pace changes over time with khatinews Pro."
             bodyBn="সময়ের সাথে কত খবর পড়েছেন — Pro-তে দেখুন"
           />
           <ProfileProUpsell

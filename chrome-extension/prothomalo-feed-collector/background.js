@@ -28,12 +28,12 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         ? ` Saved to Downloads/${settings.downloadFolder || "prothomalo-feed"}.`
         : "";
     notify(
-      "Prothom Alo collection complete",
+      "News collection complete",
       `Collected ${count} articles.${fileHint}`,
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    notify("Prothom Alo collection failed", message);
+    notify("News collection failed", message);
     console.error("[prothomalo-collector]", err);
   }
 });

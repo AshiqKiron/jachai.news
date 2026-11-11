@@ -3,6 +3,7 @@ import { getSourceById, type Story, type StoryArticle } from "@/lib/demo-data";
 import {
   biasScoreToPerspective,
   PERSPECTIVE_META,
+  spectrumCopy,
   type Perspective,
 } from "@/lib/perspectives";
 
@@ -73,32 +74,35 @@ function formatList(items: string[], conjunction: string): string {
   return `${items.slice(0, -1).join(", ")} ${conjunction} ${items[items.length - 1]}`;
 }
 
-export function partialityBannerCopy(analysis: PartialityAnalysis): {
+export function partialityBannerCopy(
+  analysis: PartialityAnalysis,
+  mode: "government" = "government",
+): {
   titleEn: string;
   titleBn: string;
   detailEn: string;
   detailBn: string;
 } {
   const missingBn = formatList(
-    analysis.missingPerspectives.map((p) => PERSPECTIVE_META[p].labelBn),
+    analysis.missingPerspectives.map((p) => spectrumCopy(p, mode).labelBn),
     "ও",
   );
   const missingEn = formatList(
-    analysis.missingPerspectives.map((p) => PERSPECTIVE_META[p].labelEn),
+    analysis.missingPerspectives.map((p) => spectrumCopy(p, mode).labelEn),
     "and",
   );
-  const leanMeta = PERSPECTIVE_META[biasScoreToPerspective(analysis.clusterBiasScore)];
-  const dominantMeta = analysis.dominantPerspective
-    ? PERSPECTIVE_META[analysis.dominantPerspective]
+  const leanCopy = spectrumCopy(biasScoreToPerspective(analysis.clusterBiasScore), mode);
+  const dominantCopy = analysis.dominantPerspective
+    ? spectrumCopy(analysis.dominantPerspective, mode)
     : null;
 
-  const dominantBn = dominantMeta?.labelBn ?? leanMeta.labelBn;
-  const dominantEn = dominantMeta?.labelEn ?? leanMeta.labelEn;
+  const dominantBn = dominantCopy?.labelBn ?? leanCopy.labelBn;
+  const dominantEn = dominantCopy?.labelEn ?? leanCopy.labelEn;
 
   return {
     titleEn: "Partial coverage",
     titleBn: "পক্ষপাতিত্ব সতর্কতা",
-    detailBn: `এই খবরে সব ধরনের outlet নেই — ${missingBn} কোনো উৎস কভার করছে না। বেশিরভাগ রিপোর্ট ${dominantBn} দিক থেকে, তাই সমগ্র কভারেজ ${leanMeta.labelBn} দিকে ঝুঁকছে।`,
-    detailEn: `Not every outlet type is covering this story — no ${missingEn} sources yet. Most reports come from ${dominantEn} outlets, so overall coverage leans ${leanMeta.labelEn.toLowerCase()}.`,
+    detailBn: `এই খবরে সব ধরনের outlet নেই — ${missingBn} কোনো উৎস কভার করছে না। বেশিরভাগ রিপোর্ট ${dominantBn} দিক থেকে, তাই সমগ্র কভারেজ ${leanCopy.labelBn} দিকে ঝুঁকছে।`,
+    detailEn: `Not every outlet type is covering this story — no ${missingEn} sources yet. Most reports come from ${dominantEn} outlets, so overall coverage leans ${leanCopy.labelEn.toLowerCase()}.`,
   };
 }

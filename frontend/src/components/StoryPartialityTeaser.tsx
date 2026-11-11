@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import type { Story } from "@/lib/demo-data";
 import { coverageStats } from "@/lib/coverage";
-import { PERSPECTIVE_META } from "@/lib/perspectives";
+import { PERSPECTIVE_META, spectrumCopy } from "@/lib/perspectives";
+import { coverageSpectrumModeForStory } from "@/lib/story-topics";
 
 const MIN_SOURCES = 2;
 
@@ -12,10 +13,12 @@ type Props = {
 
 /** Home / feed: signal that coverage lean exists; full stats live on the story page. */
 export function StoryPartialityTeaser({ story }: Props) {
+  if (coverageSpectrumModeForStory(story) !== "government") return null;
   const stats = coverageStats(story);
   if (!stats || stats.total < MIN_SOURCES) return null;
 
   const leanMeta = PERSPECTIVE_META[stats.dominantPerspective];
+  const leanCopy = spectrumCopy(stats.dominantPerspective, "government");
   const href = `/story/${story.slug}#coverage-details`;
 
   return (
@@ -30,7 +33,7 @@ export function StoryPartialityTeaser({ story }: Props) {
         <span className="tabular-nums" style={{ color: leanMeta.color }}>
           {stats.dominantPercent}%
         </span>{" "}
-        <span className="font-bengali">{leanMeta.labelBn}</span>
+        <span className="font-bengali">{leanCopy.labelBn}</span>
       </span>
       <span className="w-full text-xs text-violet-800/90 dark:text-violet-200/80 sm:ml-auto sm:w-auto">
         <span className="font-bengali">বিস্তারিত পুরো খবরে</span>

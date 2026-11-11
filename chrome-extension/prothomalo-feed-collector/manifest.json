@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Prothom Alo Feed Collector",
-  "version": "1.5.1",
-  "description": "Collects RSS from Prothom Alo, major Bangladesh outlets, and custom URLs, saves locally, on a configurable schedule.",
+  "name": "News Collector",
+  "version": "1.6.0",
+  "description": "Collects RSS from major Bangladesh outlets and custom URLs, saves locally, on a configurable schedule.",
   "permissions": ["alarms", "storage", "tabs", "notifications", "downloads"],
   "host_permissions": [
     "https://www.prothomalo.com/*",
@@ -16,7 +16,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Prothom Alo Feed Collector"
+    "default_title": "News Collector"
   },
   "options_ui": {
     "page": "options.html",

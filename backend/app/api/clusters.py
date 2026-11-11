@@ -25,6 +25,10 @@ def cluster_to_detail(cluster: Cluster) -> ClusterDetail:
             is_rumor=article.is_rumor,
             source_name=article.source.name,
             bias_score=article.source.bias_score,
+            owner_name=article.source.owner_name,
+            owner_url=article.source.owner_url,
+            parent_name=article.source.parent_name,
+            parent_url=article.source.parent_url,
         )
         for article in cluster.articles
     ]

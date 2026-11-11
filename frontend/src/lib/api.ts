@@ -20,6 +20,10 @@ export type Article = {
   /** Present on cluster detail payloads when the API joins source metadata. */
   source_name?: string | null;
   bias_score?: number | null;
+  owner_name?: string | null;
+  owner_url?: string | null;
+  parent_name?: string | null;
+  parent_url?: string | null;
 };
 
 export type Cluster = {

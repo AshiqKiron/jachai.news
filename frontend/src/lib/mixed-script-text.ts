@@ -19,6 +19,15 @@ export function hasBengaliScript(text: string): boolean {
   return BENGALI_RE.test(text);
 }
 
+/** Second story-title line. Hidden once the story title is Bangla, and when both lines are the same. */
+export function storySubtitle(title: string, titleBn: string): string | null {
+  const bn = titleBn.trim();
+  const en = title.trim();
+  if (!en || en === bn) return null;
+  if (hasBengaliScript(bn)) return null;
+  return en;
+}
+
 export function hasLatinScript(text: string): boolean {
   return LATIN_RE.test(text);
 }

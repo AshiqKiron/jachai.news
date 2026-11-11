@@ -45,12 +45,12 @@ export function TrackArticleClicksSetting({ isPro, proKnown, onChange }: Props) 
           </span>
           <span className="mt-1 block font-bengali text-sm leading-snug text-zinc-400">
             কোন আউটলেটের লিংকে ক্লিক করেছেন তা ট্র্যাক করে &quot;My News Bias&quot; তে
-            আর্টিকেল হিসাব দেখায়। শুধু এই ডিভাইসে সংরক্ষিত; Shorup Pro প্রয়োজন।
+            আর্টিকেল হিসাব দেখায়। শুধু এই ডিভাইসে সংরক্ষিত; khatinews Pro প্রয়োজন।
           </span>
           {!proKnown ? (
             <span className="mt-2 block text-xs text-zinc-500">Checking Pro access…</span>
           ) : !isPro ? (
-            <span className="mt-2 block text-xs text-zinc-500">Shorup Pro feature</span>
+            <span className="mt-2 block text-xs text-zinc-500">khatinews Pro feature</span>
           ) : null}
         </span>
       </label>
