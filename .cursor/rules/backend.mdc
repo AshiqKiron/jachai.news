@@ -14,7 +14,7 @@ alwaysApply: false
 - Workers: `app/workers/` — `celery_app`, `ingest_tasks`, verification tasks; queues `ingest` + `verification`
 - Monitoring: `app/core/sentry_init.py` — call `init_sentry()` from `main.py` (not inside lifespan)
 - Rate limits: `app/core/rate_limit.py`, `app/middleware/rate_limit_middleware.py` — Redis when `REDIS_URL` set; tiered limits for verify (anon/auth/Pro JWT), ingest, admin
-- Seed data: `app/data/bd_sources_seed.py`
+- Seed data: `app/data/bd_sources_seed.py` — one outlet per row; optional **`additional_feed_urls`**; Google News search RSS when the native feed is not server-pullable. Keep **`frontend/src/lib/seed-source-names.ts`** names in lockstep.
 - Config: `app/core/config.py` (`Settings`, prefix `/api/v1`, `ingest_api_key`, `admin_api_key`, pool modes, `redis_url`, `ingest_async_enabled`, **`ingest_interval_minutes_default`**, **`ingest_scheduler_enabled`**, rate limits, semantic cache, optional `sentry_*`, `healthchecks_*`, `telegram_*`, object storage)
 - DB: `app/core/database.py` (`SessionLocal`, `get_db`); ORM `create_all` + **`apply_sql_migrations`** (`backend/migrations/*.sql` — `001_verified_claims_pgvector_fts.sql`, **`002_sources_disabled.sql`**, **`003_app_settings.sql`**, **`004_articles_image_url.sql`**, **`005_sources_ingest_mode.sql`**) in `app/main.py` lifespan
 - CLI: `backend/scripts/ingest_rss.py` (`npm run ingest:backend`); optional `backend/scripts/verification_worker.py` for local verification queue debugging
@@ -36,7 +36,9 @@ alwaysApply: false
 ## RSS ingestion
 
 - Entry point: `run_rss_ingest(session)` in `app/services/rss_ingestion.py`
-- **`rss_parser.py`**: `extract_entry_image_url` (media thumbnails, enclosures, `img` in content) → optional **`image_url`** on new articles (`004_articles_image_url.sql`)
+- **`rss_parser.py`**: **`fetch_feed_items`** uses **`follow_redirects=True`** and a browser User-Agent (`_FEED_REQUEST_HEADERS`) so 301/302 feeds and soft bot blocks succeed. **`extract_entry_image_url`** (media thumbnails, enclosures, `img` in content) → optional **`image_url`** on new articles (`004_articles_image_url.sql`)
+- **`bd_sources_seed.py`**: one `Source` per outlet so coverage counts one row per name. **`feed_url`** is the broadest feed; extra section URLs go in **`additional_feed_urls`** (not stored on the row — admin custom sources stay a single `feed_url`). Native-feed gaps use Google News `site:` search RSS. Leave out outlets that only return a Cloudflare/JS challenge (Jugantor, Risingbd, Jagonews24 section feeds, Weekly Blitz); those belong in admin **file** import.
+- **`feed_urls_for_source`**: primary URL plus seed **`additional_feed_urls`** for that name. **`ingest_source`** fetches each URL, records a per-feed error, and continues.
 - Seeds/updates `Source` rows from `BD_SOURCE_SEED` (does not overwrite feed URL/bias on **disabled** rows), fetches only **non-disabled** sources with **`source_uses_rss_pull`** via `fetch_feed_items`, skips duplicate URLs, assigns articles to existing clusters by title similarity or creates new `Cluster` with unique slug
 - **`feed_file_import.py`**: admin upload path — JSON array / RSS XML / CSV; **`MAX_UPLOAD_BYTES`** 15 MB; **`persist_feed_items`** shared with live pull
 - **`source_ingest_mode.py`**: **`INGEST_MODE_RSS`** \| **`INGEST_MODE_FILE`**, placeholder host **`import.shorup.local`**, **`rss_pull_enabled_for_source`** / **`source_uses_rss_pull`**

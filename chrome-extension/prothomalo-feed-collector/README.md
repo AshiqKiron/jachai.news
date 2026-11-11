@@ -14,6 +14,12 @@ Collects **article titles, images, section, and RSS categories** from Prothom Al
 
 Under **Automatic schedule**, choose **every N minute(s)**, **hour(s)**, or **day(s)**. Chrome’s alarm API runs at least **every 1 minute** (smaller values are clamped). Uncheck **Run collection on a repeating schedule** to disable.
 
+## Bundled Bangladesh news feeds
+
+The extension ships with a verified catalog of major Bangladesh outlets (Prothom Alo BN/EN sections, The Daily Star, TBS, Jagonews24, Jugantor, Bangla Tribune, Dhaka Tribune, BBC Bangla, Risingbd, Channel i, Ajker Patrika, Energy Bangla, and Google News site searches for Kaler Kantho, Ittefaq, Samakal, Somoy News, Dhaka Post, and more). These are defined in `lib/bd-sources.js`.
+
+They appear in the **Section feeds** checklist and are **enabled by default** (opt-out) — a fresh install downloads articles from all of them each run. Uncheck any you don't want and **Save**. Upload the resulting JSON/CSV files via the admin **Sources** → **file** ingest flow.
+
 ## Extra feed URLs
 
 In **More RSS URLs**, add label + URL pairs (e.g. another news site’s RSS). They appear in the checklist with Prothom Alo sections — **check** the ones to include each run. The extension needs **`<all_urls>`** host permission to fetch arbitrary HTTPS feeds (Chrome will show this on install/reload).

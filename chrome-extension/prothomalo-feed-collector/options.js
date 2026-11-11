@@ -1,4 +1,4 @@
-import { buildFeedCatalog } from "./lib/feeds.js";
+import { buildFeedCatalog, isFeedEnabled } from "./lib/feeds.js";
 import { getSettings, saveSettings } from "./lib/storage.js";
 
 const form = document.getElementById("settingsForm");
@@ -101,7 +101,7 @@ async function renderSectionList() {
     label.querySelector(".section-label").textContent = feed.label;
     label.querySelector(".section-url").textContent = feed.url;
     const input = label.querySelector("input");
-    input.checked = Boolean(s.enabledSectionIds?.[feed.id]);
+    input.checked = isFeedEnabled(s, feed.id);
     sectionList.appendChild(label);
   }
 }

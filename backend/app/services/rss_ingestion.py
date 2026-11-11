@@ -24,6 +24,20 @@ logger = logging.getLogger(__name__)
 CLUSTER_LOOKBACK_HOURS = 72
 CLUSTER_SIMILARITY_THRESHOLD = 0.42
 
+# Extra section feeds that belong to the same outlet (keyed by seed source name).
+_SEED_ADDITIONAL_FEEDS: dict[str, list[str]] = {
+    row["name"]: list(row.get("additional_feed_urls", [])) for row in BD_SOURCE_SEED
+}
+
+
+def feed_urls_for_source(source: Source) -> list[str]:
+    """Primary feed plus any seed-defined section feeds for the same outlet."""
+    urls = [source.feed_url]
+    for extra in _SEED_ADDITIONAL_FEEDS.get(source.name, []):
+        if extra and extra not in urls:
+            urls.append(extra)
+    return urls
+
 
 @dataclass
 class IngestResult:
@@ -163,16 +177,17 @@ async def ingest_source(session: AsyncSession, source: Source, result: IngestRes
         return
 
     result.sources_processed += 1
-    try:
-        items = await fetch_feed_items(source.feed_url)
-    except Exception as exc:  # noqa: BLE001 — collect per-source errors and continue
-        message = f"{source.name}: {exc}"
-        logger.warning("RSS fetch failed: %s", message)
-        result.errors.append(message)
-        return
+    for feed_url in feed_urls_for_source(source):
+        try:
+            items = await fetch_feed_items(feed_url)
+        except Exception as exc:  # noqa: BLE001 — collect per-feed errors and continue
+            message = f"{source.name} ({feed_url}): {exc}"
+            logger.warning("RSS fetch failed: %s", message)
+            result.errors.append(message)
+            continue
 
-    result.articles_fetched += len(items)
-    await persist_feed_items(session, source, items, result)
+        result.articles_fetched += len(items)
+        await persist_feed_items(session, source, items, result)
 
 
 async def run_rss_ingest_for_source(session: AsyncSession, source_id: int) -> IngestResult:

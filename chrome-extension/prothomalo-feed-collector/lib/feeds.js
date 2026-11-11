@@ -1,9 +1,24 @@
 import { parseProthomAloFeed } from "./feed-parser.js";
+import { BD_NEWS_FEEDS, BD_NEWS_FEED_ID_SET } from "./bd-sources.js";
 import {
   MAIN_LATEST_FEED,
   PROTHOMALO_SECTIONS,
   toSectionFeed,
 } from "./prothomalo-sections.js";
+
+/**
+ * Whether a catalog feed is active for collection. Bundled BD feeds default to
+ * on (opt-out); everything else is opt-in via the enabled map.
+ * @param {import("./storage.js").ExtensionSettings} settings
+ * @param {string} feedId
+ */
+export function isFeedEnabled(settings, feedId) {
+  const map = settings.enabledSectionIds ?? {};
+  if (Object.prototype.hasOwnProperty.call(map, feedId)) {
+    return Boolean(map[feedId]);
+  }
+  return BD_NEWS_FEED_ID_SET.has(feedId);
+}
 
 /**
  * @param {import("./storage.js").ExtensionSettings} settings
@@ -33,8 +48,7 @@ export function resolveActiveFeeds(settings) {
   }
 
   const catalog = buildFeedCatalog(settings);
-  const enabled = settings.enabledSectionIds ?? {};
-  const picked = catalog.filter((f) => enabled[f.id]);
+  const picked = catalog.filter((f) => isFeedEnabled(settings, f.id));
 
   if (picked.length === 0) {
     return [MAIN_LATEST_FEED];
@@ -57,6 +71,10 @@ export function buildFeedCatalog(settings) {
 
   for (const section of PROTHOMALO_SECTIONS) {
     const feed = toSectionFeed(section);
+    byId.set(feed.id, feed);
+  }
+
+  for (const feed of BD_NEWS_FEEDS) {
     byId.set(feed.id, feed);
   }
 

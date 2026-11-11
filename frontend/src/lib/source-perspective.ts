@@ -8,6 +8,7 @@ const INTERNATIONAL_SOURCE_NAMES = new Set([
   "DW Bangla",
   "Al Jazeera Bangla",
   "Voice of America Bangla",
+  "Sangbad Pratidin",
 ]);
 
 const SOURCE_BY_NAME = new Map(BD_SOURCES.map((s) => [s.name.toLowerCase(), s]));

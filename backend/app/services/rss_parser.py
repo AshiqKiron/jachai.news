@@ -12,6 +12,17 @@ from app.core.config import settings
 
 IMAGE_SRC_RE = re.compile(r"""<img[^>]+src=["']([^"']+)["']""", re.IGNORECASE)
 
+# Some outlets 301/302 their feed paths to a canonical URL and/or block the
+# default httpx User-Agent with a 403. Follow redirects and present a common
+# browser UA so server-side pulls match what a browser sees.
+_FEED_REQUEST_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+}
+
 
 @dataclass
 class ParsedFeedItem:
@@ -89,7 +100,11 @@ def extract_entry_image_url(entry: Any, excerpt: str | None) -> str | None:
 
 
 async def fetch_feed_items(feed_url: str) -> list[ParsedFeedItem]:
-    async with httpx.AsyncClient(timeout=settings.rss_fetch_timeout_seconds) as client:
+    async with httpx.AsyncClient(
+        timeout=settings.rss_fetch_timeout_seconds,
+        follow_redirects=True,
+        headers=_FEED_REQUEST_HEADERS,
+    ) as client:
         response = await client.get(feed_url)
         response.raise_for_status()
         parsed = feedparser.parse(response.text)
