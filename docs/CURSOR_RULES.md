@@ -11,6 +11,7 @@ Cursor loads project context from the repo root **`.cursorrules`** file and from
 | [`.cursor/rules/backend.mdc`](../.cursor/rules/backend.mdc) | Editing `backend/**/*.py` — routes, services, migrations, Celery, verification |
 | [`.cursor/rules/frontend.mdc`](../.cursor/rules/frontend.mdc) | Editing `frontend/**/*.{ts,tsx}` — App Router, lib helpers, Pro gating, admin proxies |
 | [`.cursor/rules/supabase.mdc`](../.cursor/rules/supabase.mdc) | Editing `supabase/**` — auth, RLS, subscriptions, type generation |
+| [`.cursor/rules/chrome-extension.mdc`](../.cursor/rules/chrome-extension.mdc) | Editing `chrome-extension/**` — Prothom Alo feed collector (JSON export → admin file ingest) |
 
 Scoped rules use YAML frontmatter (`description`, `globs`, `alwaysApply`). See Cursor’s rule format in the create-rule skill or [Cursor docs](https://docs.cursor.com/context/rules).
 
@@ -53,6 +54,8 @@ The always-on file was renamed from legacy **`jachai-news.mdc`** to **`shorup-ne
 | Story slug resolution (SSR + API + OG) | `frontend.mdc` — **`resolveStoryBySlug`** (`unstable_cache` for RSC/metadata) vs **`resolveStoryBySlugDirect`** (route handlers, OG image — no cache request context) |
 | Pro vs free (news open; Pro gates e.g. follow story) | `shorup-news.mdc`, `frontend.mdc` (`SUBSCRIPTION_FEATURE_MATRIX`, **`PRO_TIER_TAGLINE`**, **`PRO_ONLY_FEATURE_IDS`**, **`getYearlyPlanSavings`** on **`/pro`** + **`PaywallModal`** (a11y dialog; defers checkout on `/pro`), **`SignInForm`** → `/pro`; `/rumors` route stays — not every matrix row maps 1:1 to a page) |
 | Admin RSS + ingest | `shorup-news.mdc` admin section, `backend.mdc` / `frontend.mdc` API lists (full ingest, schedule, **per-source** `POST .../admin/sources/{id}/ingest`) |
+| Source **file** ingest (`ingest_mode`) | `shorup-news.mdc` RSS + admin, `backend.mdc` (**`source_ingest_mode`**, **`feed_file_import`**, migration **`005_sources_ingest_mode.sql`**), `frontend.mdc` (**`AdminSourcesPanel`**, **`admin-input.ts`** **`FILE_IMPORT_PLACEHOLDER_HOST`**, **`importAdminSourceFile`**, **`postAdminFormRoute`**, **`PATCH /api/admin/sources/[id]`**, **`POST .../import`**) — scheduled RSS + **Pull now** skip **`ingest_mode=file`** or placeholder `import.shorup.local` URLs |
+| Prothom Alo feed collector (Chrome) | `chrome-extension.mdc`, upstream **`chrome-extension/prothomalo-feed-collector/README.md`** — section/custom RSS → Downloads JSON; upload in admin **file** mode |
 | Verification pipeline | `shorup-news.mdc`, `backend.mdc`, `frontend.mdc` (`verifications.ts`, `/verify/*`) |
 | Supabase auth / Pro rows | `supabase.mdc`, `frontend.mdc` auth + `database.types.ts` |
 
@@ -77,12 +80,14 @@ When you ship a feature, touch the layers that describe it:
 - **Dark UI**: prefer CSS variables in **`globals.css`** (`.dark` **`--color-ink-*`**, sky accent) over one-off monochrome zinc — existing `text-zinc-*` utilities get dark overrides there.
 - **Pro gates (UI)**: ids in **`PRO_ONLY_FEATURE_IDS`** get **`PaywallModal`** — **`follow_story`** (follow/saved stories), **`custom_topic_radar_alerts`** (profile topic + people follows); **`narrative_evolution_timeline`** still a matrix placeholder. Client checks **`GET /api/me/pro`** (not backend Postgres). Matrix rows like **`anti_clickbait_summary`** can show on **`/pro`** without being Pro-only.
 - **Profile**: reading stats stay on-device (**`reading-history.ts`**) until server dossiers ship; article-click tracking is opt-in via **`TrackArticleClicksSetting`**.
-- **Migrations**: backend SQL under `backend/migrations/` (e.g. pgvector, `sources.disabled`, `app_settings`, `articles.image_url`); Supabase SQL under `supabase/migrations/`.
+- **Migrations**: backend SQL under `backend/migrations/` (e.g. pgvector, `sources.disabled`, `app_settings`, `articles.image_url`, **`sources.ingest_mode`**); Supabase SQL under `supabase/migrations/`.
+- **File ingest**: admin can create sources in **`file`** mode, upload `.json` / `.rss` / `.xml` / `.csv` (≤15 MB), then **`PATCH`** live **`feed_url`** to switch to **`rss`** pulls; articles persist across the switch.
 - **Build artifacts**: do not commit `frontend/tsconfig.tsbuildinfo` or hand-edited generated PWA files (`sw.js`, `workbox-*.js`) — see `frontend.mdc` PWA section.
 
 ## Checklist before merging
 
-- [ ] New routes or proxies appear in `backend.mdc` and/or `frontend.mdc` API lists (incl. **`app/api/me/*`**)
+- [ ] New routes or proxies appear in `backend.mdc` and/or `frontend.mdc` API lists (incl. **`app/api/me/*`**, admin **`sources/[id]/import`**)
+- [ ] New top-level packages get a scoped `.mdc` (e.g. **`chrome-extension.mdc`**) and a row in the **File map** above
 - [ ] New **`frontend/src/lib/*`** helpers referenced in `frontend.mdc` domain list when agents should reuse them
 - [ ] Home or nav UX changes reflected in `frontend.mdc` and this doc’s product-area table when behavior moves between routes
 - [ ] Story share/OG or detail chrome changes reflected in `frontend.mdc`, `story-share.ts` row here, and `.env.example` when new public env vars are added

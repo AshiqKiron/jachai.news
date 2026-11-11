@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { AdminIngestPanel } from "@/components/AdminIngestPanel";
 import { AdminSourcesPanel } from "@/components/AdminSourcesPanel";
 import { AdminUsersPanel } from "@/components/admin/AdminUsersPanel";
 import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
@@ -54,16 +55,14 @@ type Props = {
   initialOverview: AdminOverview | null;
   initialApiHealthy: boolean;
   systemInfo: AdminSystemInfo;
-  ingestPanel: ReactNode;
 };
 
 export function AdminDashboardPanel({
   initialOverview,
   initialApiHealthy,
   systemInfo,
-  ingestPanel,
 }: Props) {
-  const [tab, setTab] = useState<TabId>("overview");
+  const [tab, setTab] = useState<TabId>("general");
   const [data, setData] = useState<DashboardPayload>(() => ({
     overview: initialOverview,
     apiHealthy: initialApiHealthy,
@@ -274,7 +273,9 @@ export function AdminDashboardPanel({
           <ClientErrorBoundary title="Sources panel could not load">
             <AdminSourcesPanel sources={overview?.sources ?? []} />
           </ClientErrorBoundary>
-          {ingestPanel}
+          <ClientErrorBoundary title="Ingest panel could not load">
+            <AdminIngestPanel initialSchedule={overview?.ingest_schedule ?? null} />
+          </ClientErrorBoundary>
         </div>
       ) : null}
 

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prothom Alo Collector</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Prothom Alo</h1>
+      <p class="sub">Feed collector · saves to your computer</p>
+      <p class="version" id="popupVersion"></p>
+    </header>
+
+    <section class="status" id="status">Loading…</section>
+
+    <div class="actions">
+      <button type="button" id="runNow" class="primary">Collect now</button>
+      <button type="button" id="exportJson">Export JSON…</button>
+      <button type="button" id="exportCsv">Export CSV…</button>
+    </div>
+
+    <p class="hint">
+      Opens
+      <a href="https://www.prothomalo.com/stories.rss" target="_blank" rel="noreferrer"
+        >stories.rss</a
+      >
+      in a new tab each run. Pick section feeds in
+      <a href="#" id="openOptions">Settings</a>.
+    </p>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

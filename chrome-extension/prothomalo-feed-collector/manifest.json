@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Prothom Alo Feed Collector",
+  "version": "1.4.2",
+  "description": "Collects RSS from Prothom Alo and custom URLs, saves locally, on a configurable schedule.",
+  "permissions": ["alarms", "storage", "tabs", "notifications", "downloads"],
+  "host_permissions": [
+    "https://www.prothomalo.com/*",
+    "https://media.prothomalo.com/*",
+    "https://www.prothomalo.com/sitemap/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Prothom Alo Feed Collector"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -16,7 +16,8 @@ from app.data.bd_sources_seed import BD_SOURCE_SEED
 from app.models.article import Article
 from app.models.cluster import Cluster
 from app.models.source import Source
-from app.services.rss_parser import fetch_feed_items
+from app.services.rss_parser import ParsedFeedItem, fetch_feed_items
+from app.services.source_ingest_mode import source_uses_rss_pull
 
 logger = logging.getLogger(__name__)
 
@@ -115,17 +116,12 @@ async def maybe_refresh_cluster_summary(session: AsyncSession, cluster: Cluster)
     return False
 
 
-async def ingest_source(session: AsyncSession, source: Source, result: IngestResult) -> None:
-    result.sources_processed += 1
-    try:
-        items = await fetch_feed_items(source.feed_url)
-    except Exception as exc:  # noqa: BLE001 — collect per-source errors and continue
-        message = f"{source.name}: {exc}"
-        logger.warning("RSS fetch failed: %s", message)
-        result.errors.append(message)
-        return
-
-    result.articles_fetched += len(items)
+async def persist_feed_items(
+    session: AsyncSession,
+    source: Source,
+    items: list[ParsedFeedItem],
+    result: IngestResult,
+) -> None:
     since = datetime.now(timezone.utc) - timedelta(hours=CLUSTER_LOOKBACK_HOURS)
 
     for item in items:
@@ -162,6 +158,23 @@ async def ingest_source(session: AsyncSession, source: Source, result: IngestRes
             result.clusters_updated += 1
 
 
+async def ingest_source(session: AsyncSession, source: Source, result: IngestResult) -> None:
+    if not source_uses_rss_pull(source):
+        return
+
+    result.sources_processed += 1
+    try:
+        items = await fetch_feed_items(source.feed_url)
+    except Exception as exc:  # noqa: BLE001 — collect per-source errors and continue
+        message = f"{source.name}: {exc}"
+        logger.warning("RSS fetch failed: %s", message)
+        result.errors.append(message)
+        return
+
+    result.articles_fetched += len(items)
+    await persist_feed_items(session, source, items, result)
+
+
 async def run_rss_ingest_for_source(session: AsyncSession, source_id: int) -> IngestResult:
     result = IngestResult()
     source = await session.get(Source, source_id)
@@ -169,6 +182,10 @@ async def run_rss_ingest_for_source(session: AsyncSession, source_id: int) -> In
         raise LookupError("Source not found.")
     if source.disabled:
         raise ValueError("Source is disabled and will not be ingested.")
+    if not source_uses_rss_pull(source):
+        raise ValueError(
+            "This source is in file-import mode. Upload a feed file or save a live RSS URL to switch.",
+        )
     await ingest_source(session, source, result)
     await session.commit()
     return result

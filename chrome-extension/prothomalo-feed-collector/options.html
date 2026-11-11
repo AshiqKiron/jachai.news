@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prothom Alo Collector — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Settings</h1>
+      <p class="version" id="extVersion"></p>
+
+      <form id="settingsForm">
+        <fieldset class="mode">
+          <legend>What to collect</legend>
+          <label class="radio">
+            <input type="radio" name="collectionMode" value="sections" />
+            Section feeds + custom URLs (recommended)
+          </label>
+          <label class="radio">
+            <input type="radio" name="collectionMode" value="single" />
+            Single primary URL + extra RSS URLs (no Prothom Alo section list)
+          </label>
+        </fieldset>
+
+        <section id="sectionsPanel" class="sections-panel">
+          <div class="sections-toolbar">
+            <button type="button" id="selectAllSections">Select all</button>
+            <button type="button" id="clearSections">Clear</button>
+            <button type="button" id="discoverFeeds">Discover from sitemap</button>
+          </div>
+          <p class="help">
+            Prothom Alo exposes top-level sections as
+            <code>/api/v1/collections/{name}.rss</code>. Nested pages like
+            <code>bangladesh/capital</code> usually share the parent section
+            feed — there is no separate RSS for every sub-page.
+          </p>
+          <div id="sectionList" class="section-list"></div>
+          <p id="discoverStatus" class="discover-status" aria-live="polite"></p>
+        </section>
+
+        <section id="customFeedsSection" class="custom-feeds">
+          <h2>More RSS URLs</h2>
+          <p class="help">
+            Add any RSS/Atom feed URL (e.g. other newspapers). Give each a short
+            label — they appear in the list above so you can enable/disable them
+            like section feeds.
+          </p>
+          <div id="customFeedRows"></div>
+          <button type="button" id="addCustomFeed" class="secondary-btn">
+            + Add URL
+          </button>
+        </section>
+
+        <label id="singleFeedWrap">
+          Custom feed URL
+          <input
+            type="url"
+            id="feedUrl"
+            name="feedUrl"
+            placeholder="https://www.prothomalo.com/stories.rss"
+          />
+        </label>
+
+        <label>
+          Downloads subfolder
+          <input
+            type="text"
+            id="downloadFolder"
+            name="downloadFolder"
+            placeholder="prothomalo-feed"
+          />
+        </label>
+
+        <label>
+          File format
+          <select id="saveFormat" name="saveFormat">
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+            <option value="both">JSON + CSV</option>
+          </select>
+        </label>
+
+        <label class="checkbox">
+          <input type="checkbox" id="autoSaveToDisk" name="autoSaveToDisk" />
+          Save to disk after each collection
+        </label>
+
+        <label class="checkbox">
+          <input type="checkbox" id="saveLatestCopy" name="saveLatestCopy" />
+          Per feed: overwrite <code>{feed-id}.json</code> (and <code>.csv</code>);
+          combined: <code>latest.json</code> when that option is on
+        </label>
+
+        <label class="checkbox">
+          <input
+            type="checkbox"
+            id="savePerFeedFiles"
+            name="savePerFeedFiles"
+          />
+          Save <strong>separate files per RSS feed</strong> (e.g.
+          <code>bangladesh.json</code>, <code>bangladesh-2026-….json</code>)
+        </label>
+
+        <label class="checkbox">
+          <input
+            type="checkbox"
+            id="saveMergedSummary"
+            name="saveMergedSummary"
+          />
+          Also save one <strong>combined</strong> merged file
+          (<code>prothomalo-feed-*.json</code> + <code>latest.json</code>)
+        </label>
+
+        <fieldset class="schedule">
+          <legend>Automatic schedule</legend>
+          <label class="checkbox">
+            <input type="checkbox" id="scheduleEnabled" name="scheduleEnabled" />
+            Run collection on a repeating schedule
+          </label>
+          <div class="schedule-row">
+            <label>
+              Every
+              <input
+                type="number"
+                id="scheduleIntervalValue"
+                name="scheduleIntervalValue"
+                min="1"
+                step="1"
+                value="1"
+              />
+            </label>
+            <label>
+              <select id="scheduleIntervalUnit" name="scheduleIntervalUnit">
+                <option value="minutes">minute(s)</option>
+                <option value="hours">hour(s)</option>
+                <option value="days">day(s)</option>
+              </select>
+            </label>
+          </div>
+          <p class="help">
+            Chrome’s timer allows at least <strong>1 minute</strong> between
+            runs (values smaller than 1 are treated as 1 minute).
+          </p>
+        </fieldset>
+
+        <div class="actions">
+          <button type="submit" class="primary">Save</button>
+          <span id="saveMsg" class="save-msg" aria-live="polite"></span>
+        </div>
+      </form>
+    </main>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

@@ -5,6 +5,8 @@ export type AdminIngestSchedule = {
   last_scheduled_at: string | null;
 };
 
+export type SourceIngestMode = "rss" | "file";
+
 export type AdminSourceStat = {
   source_id: number;
   name: string;
@@ -12,6 +14,7 @@ export type AdminSourceStat = {
   article_count: number;
   bias_score: number | null;
   disabled: boolean;
+  ingest_mode: SourceIngestMode;
 };
 
 export type IngestResponse = {

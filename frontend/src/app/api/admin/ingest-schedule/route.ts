@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 import { fetchAdminIngestSchedule, updateAdminIngestSchedule } from "@/lib/admin-api";
-import { ADMIN_COOKIE_NAME, verifyAdminSession } from "@/lib/admin-auth";
+import { requireAdminRouteAuthorized } from "@/lib/admin-route-auth";
 
 export async function GET() {
-  const session = (await cookies()).get(ADMIN_COOKIE_NAME)?.value;
-  if (!(await verifyAdminSession(session))) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
+  const unauthorized = await requireAdminRouteAuthorized();
+  if (unauthorized) return unauthorized;
 
   try {
     const schedule = await fetchAdminIngestSchedule();
@@ -23,10 +20,8 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const session = (await cookies()).get(ADMIN_COOKIE_NAME)?.value;
-  if (!(await verifyAdminSession(session))) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
+  const unauthorized = await requireAdminRouteAuthorized();
+  if (unauthorized) return unauthorized;
 
   let body: { interval_minutes?: number };
   try {

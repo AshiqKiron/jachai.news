@@ -12,5 +12,6 @@ class Source(Base):
     feed_url: Mapped[str] = mapped_column(String(2048))
     bias_score: Mapped[float | None] = mapped_column(Float, nullable=True)  # -1 left .. +1 right
     disabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    ingest_mode: Mapped[str] = mapped_column(String(16), default="rss", server_default="rss")
 
     articles: Mapped[list["Article"]] = relationship(back_populates="source")

@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
 
-import { AdminIngestPanel } from "@/components/AdminIngestPanel";
 import { AdminLogoutButton } from "@/components/AdminLogoutButton";
 import { AdminDashboardPanel } from "@/components/admin/AdminDashboardPanel";
-import { ClientErrorBoundary } from "@/components/ClientErrorBoundary";
 import { fetchAdminOverview, fetchApiHealth } from "@/lib/admin-api";
 import { isAdminRouteAuthorized } from "@/lib/admin-route-auth";
 import { buildAdminSystemInfo } from "@/lib/admin-system-info";
@@ -35,11 +33,6 @@ export default async function AdminPage() {
         initialOverview={overview}
         initialApiHealthy={apiHealthy}
         systemInfo={systemInfo}
-        ingestPanel={
-          <ClientErrorBoundary title="Ingest panel could not load">
-            <AdminIngestPanel initialSchedule={overview?.ingest_schedule ?? null} />
-          </ClientErrorBoundary>
-        }
       />
     </div>
   );

@@ -1,6 +1,11 @@
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
+
+
+IngestMode = Literal["rss", "file"]
 
 
 class AdminSourceStat(BaseModel):
@@ -10,12 +15,20 @@ class AdminSourceStat(BaseModel):
     article_count: int
     bias_score: float | None
     disabled: bool = False
+    ingest_mode: IngestMode = "rss"
 
 
 class AdminSourceCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
-    feed_url: str = Field(min_length=8, max_length=2048)
+    feed_url: str | None = Field(default=None, max_length=2048)
     bias_score: float | None = Field(default=None, ge=-1.0, le=1.0)
+    ingest_mode: IngestMode = "rss"
+
+
+class AdminSourceUpdate(BaseModel):
+    feed_url: str | None = Field(default=None, min_length=8, max_length=2048)
+    bias_score: float | None = Field(default=None, ge=-1.0, le=1.0)
+    ingest_mode: IngestMode | None = None
 
 
 class AdminClusterPreview(BaseModel):

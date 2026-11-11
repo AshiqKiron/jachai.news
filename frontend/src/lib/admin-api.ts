@@ -160,8 +160,9 @@ function adminBackendActionError(error: unknown, action: string): Error {
 
 export async function createAdminSource(payload: {
   name: string;
-  feed_url: string;
+  feed_url?: string;
   bias_score?: number | null;
+  ingest_mode?: "rss" | "file";
 }): Promise<AdminSourceStat> {
   const result = await fetchJsonSafe<AdminSourceStat>(`${API_BASE}/admin/sources`, {
     method: "POST",
@@ -172,6 +173,44 @@ export async function createAdminSource(payload: {
   });
   if (!result.ok) {
     throw adminBackendActionError(result.error, "add RSS feed");
+  }
+  return result.data;
+}
+
+export async function importAdminSourceFile(
+  sourceId: number,
+  file: Blob | Buffer,
+  filename: string,
+): Promise<IngestResponse> {
+  const form = new FormData();
+  const blob = file instanceof Blob ? file : new Blob([file]);
+  form.append("file", blob, filename);
+  const result = await fetchJsonSafe<IngestResponse>(`${API_BASE}/admin/sources/${sourceId}/import`, {
+    method: "POST",
+    headers: adminHeaders(),
+    body: form,
+    cache: "no-store",
+    timeoutMs: ADMIN_SOURCE_INGEST_TIMEOUT_MS,
+  });
+  if (!result.ok) {
+    throw adminBackendActionError(result.error, "import feed file");
+  }
+  return result.data;
+}
+
+export async function updateAdminSource(
+  sourceId: number,
+  payload: { feed_url?: string; bias_score?: number | null; ingest_mode?: "rss" | "file" },
+): Promise<AdminSourceStat> {
+  const result = await fetchJsonSafe<AdminSourceStat>(`${API_BASE}/admin/sources/${sourceId}`, {
+    method: "PATCH",
+    headers: { ...adminHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
+    timeoutMs: API_WRITE_TIMEOUT_MS,
+  });
+  if (!result.ok) {
+    throw adminBackendActionError(result.error, "update RSS feed");
   }
   return result.data;
 }

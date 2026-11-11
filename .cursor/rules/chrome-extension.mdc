@@ -1,0 +1,33 @@
+---
+description: Chrome extension conventions for Shorup News feed collection
+globs: chrome-extension/**
+alwaysApply: false
+---
+
+# Chrome extension (feed collector)
+
+## Purpose
+
+**`chrome-extension/prothomalo-feed-collector/`** — Manifest V3 extension that collects Prothom Alo (and optional custom) RSS feeds into **JSON/CSV** under `~/Downloads/prothomalo-feed/`. Admins upload those files into Shorup via **file** ingest mode (`POST /api/v1/admin/sources/{id}/import` — proxied as **`POST /api/admin/sources/[id]/import`**). Not part of the Next.js or FastAPI bundles.
+
+## Layout
+
+- **`manifest.json`** — permissions (`downloads`, `alarms`, `storage`, `<all_urls>` for arbitrary RSS URLs)
+- **`background.js`** — scheduled collection via `chrome.alarms`
+- **`popup.*`** — manual **Collect now**
+- **`options.*`** — section feed checklist, extra RSS URLs, schedule, export format
+- **`lib/`** — `collect.js`, `feeds.js`, `feed-parser.js`, `export-local.js`, `schedule.js`, `prothomalo-sections.js`, `storage.js`
+
+## Conventions
+
+- Vanilla JS (no bundler); bump **`manifest.json` version** when shipping UX fixes so testers know to **Reload** on `chrome://extensions`
+- JSON article shape should stay compatible with **`feed_file_import.py`** — at minimum `title` + `link`/`url`; optional `imageUrl`/`image_url`, `pubDate`, excerpt fields
+- Duplicates merged by article URL in the collector; backend dedupes by URL on import (same clustering path as live RSS via **`persist_feed_items`**)
+- User-facing setup: **`chrome-extension/prothomalo-feed-collector/README.md`** (install, schedule, section RSS table, file naming)
+
+## Product link
+
+1. Extension saves e.g. `stories.json` or merged export.
+2. Admin **Sources** → create **file** mode source (or upload on existing file-mode row) → later **PATCH** live RSS URL to switch to automatic pulls without losing articles.
+
+Do not store admin API keys or backend URLs in the extension — upload is manual through the admin UI.

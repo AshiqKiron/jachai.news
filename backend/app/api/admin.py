@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -9,11 +9,14 @@ from app.schemas.admin import (
     AdminOverviewResponse,
     AdminSourceCreate,
     AdminSourceStat,
+    AdminSourceUpdate,
 )
 from app.schemas.ingest import IngestResponse
 from app.services.admin_stats import get_admin_overview
-from app.services.admin_sources import create_admin_source, remove_admin_source
+from app.services.admin_sources import create_admin_source, remove_admin_source, update_admin_source
+from app.services.feed_file_import import import_feed_file_for_source
 from app.services.rss_ingestion import IngestResult, run_rss_ingest_for_source
+from app.models.source import Source
 from app.services.ingest_schedule import (
     ALLOWED_INGEST_INTERVAL_MINUTES,
     get_ingest_interval_minutes,
@@ -94,6 +97,17 @@ async def admin_create_source(
     return await create_admin_source(db, payload)
 
 
+@router.patch("/sources/{source_id}", response_model=AdminSourceStat)
+async def admin_update_source(
+    source_id: int,
+    payload: AdminSourceUpdate,
+    db: AsyncSession = Depends(get_db),
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+) -> AdminSourceStat:
+    _require_admin_key(x_admin_key)
+    return await update_admin_source(db, source_id, payload)
+
+
 @router.delete("/sources/{source_id}", response_model=AdminSourceStat)
 async def admin_remove_source(
     source_id: int,
@@ -117,4 +131,29 @@ async def admin_ingest_source(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    return _ingest_response_from_result(result)
+
+
+@router.post("/sources/{source_id}/import", response_model=IngestResponse)
+async def admin_import_source_file(
+    source_id: int,
+    db: AsyncSession = Depends(get_db),
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+    file: UploadFile = File(...),
+) -> IngestResponse:
+    _require_admin_key(x_admin_key)
+    source = await db.get(Source, source_id)
+    if source is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Source not found.")
+    if source.disabled:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Source is disabled.")
+
+    raw = await file.read()
+    filename = file.filename or "upload.json"
+    try:
+        result = await import_feed_file_for_source(db, source, raw, filename)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    await db.commit()
     return _ingest_response_from_result(result)
