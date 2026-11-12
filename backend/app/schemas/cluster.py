@@ -12,6 +12,13 @@ class ClusterArticleRead(ArticleRead):
     owner_url: str | None = None
     parent_name: str | None = None
     parent_url: str | None = None
+    original_title: str | None = None
+    original_seen_at: datetime | None = None
+    headline_edited_at: datetime | None = None
+    correction_noted: bool = False
+    social_preview_title: str | None = None
+    social_preview_description: str | None = None
+    social_preview_image_url: str | None = None
 
 
 class ClusterRead(BaseModel):

@@ -21,7 +21,7 @@ export default function ProPage() {
 
       <SubscriptionPlanCards onBuyPro={() => setOpen(true)} />
 
-      <section className="mx-auto w-full max-w-4xl space-y-3 lg:max-w-5xl">
+      <section id="free-vs-pro" className="mx-auto w-full max-w-4xl space-y-3 lg:max-w-5xl">
         <h2 className="text-sm font-medium text-zinc-400">Free vs Pro</h2>
         <FeatureMatrixTable />
       </section>

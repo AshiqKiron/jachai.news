@@ -84,6 +84,7 @@ def _format_ingest_summary(result: IngestResult, *, channel: str) -> str:
         f"RSS ingest ({channel})\n"
         f"Sources: {result.sources_processed} | fetched: {result.articles_fetched} | "
         f"created: {result.articles_created} | dup skipped: {result.articles_skipped_duplicate} | "
+        f"titles revised: {result.titles_revised} | "
         f"clusters +{result.clusters_created} ~{result.clusters_updated}{err_note}"
     )
 

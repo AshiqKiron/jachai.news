@@ -1,5 +1,6 @@
 import { enrichArticles, type ArticleWithSource } from "@/lib/coverage";
 import type { Story } from "@/lib/demo-data";
+import { pickClusterWalkback, WALKBACK_PREVIEW_SLUG, type WalkbackSentence } from "@/lib/walkback-line";
 import {
   analyzeSharedOwnership,
   sharedOwnershipCountBn,
@@ -28,7 +29,7 @@ export type StoryShareCardLine = {
 };
 
 export type StoryShareCard = {
-  kind: "reveal" | "mark";
+  kind: "reveal" | "mark" | "walkback";
   accent: string;
   kickerBn: string;
   kickerEn: string;
@@ -45,6 +46,7 @@ export type StoryShareCard = {
 const OWNERSHIP_ACCENT = "#38bdf8";
 const UNNAMED_ACCENT = "#2dd4bf";
 const MARK_ACCENT = "#38bdf8";
+const WALKBACK_ACCENT = "#e7c27a";
 
 /** Ownership wins a tie. It is the rarer structural fact. */
 const KIND_RANK: Record<StoryRevealKind, number> = {
@@ -101,6 +103,19 @@ function ownershipCard(analysis: SharedOwnershipAnalysis): StoryShareCard {
       text: truncate(group.label, 72),
       meta: truncate(group.outlets.join(", "), 96),
     })),
+  };
+}
+
+function walkbackCard(line: WalkbackSentence): StoryShareCard {
+  return {
+    kind: "walkback",
+    accent: WALKBACK_ACCENT,
+    kickerBn: "শিরোনামের নিচের বাক্য",
+    kickerEn: "The line under the headline",
+    countEn: "",
+    countBn: truncate(line.sentence, 220),
+    lineStyle: "quotes",
+    lines: line.sourceName ? [{ text: line.sentence, meta: line.sourceName }] : [],
   };
 }
 
@@ -182,11 +197,24 @@ export function pickSharpestRevealKind(articles: ArticleWithSource[]): StoryReve
 
 /**
  * Square share card for one story.
- * Free cards keep the count (both sentences). Pro cards add names or quoted lines.
- * When no reveal fires, the card is the khatinews mark.
+ * Pro cards lead with the buried walk-back, so a share carries that sentence.
+ * Free cards keep the count (both sentences). Pro cards without a walk-back add
+ * names or quoted lines. When no reveal fires, the card is the khatinews mark.
  */
 export function buildStoryShareCard(story: Story, includeProDetail: boolean): StoryShareCard {
-  const best = revealCandidates(enrichArticles(story))[0];
+  const articles = enrichArticles(story);
+  const walkback = pickClusterWalkback(
+    articles.map((article) => ({
+      sourceName: article.sourceName,
+      headline: article.headline,
+      excerpt: article.excerpt,
+    })),
+  );
+  if (walkback && (includeProDetail || story.slug === WALKBACK_PREVIEW_SLUG)) {
+    return walkbackCard(walkback);
+  }
+
+  const best = revealCandidates(articles)[0];
   if (!best) return storyShareMarkCard();
   if (includeProDetail) return best.card;
   return { ...best.card, lines: [] };

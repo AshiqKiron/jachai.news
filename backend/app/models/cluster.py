@@ -11,7 +11,7 @@ class Cluster(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     slug: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    title: Mapped[str] = mapped_column(String(512))
+    title: Mapped[str] = mapped_column(Text)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 

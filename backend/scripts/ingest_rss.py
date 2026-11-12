@@ -40,6 +40,7 @@ async def _run_sync() -> int:
         f"Fetched: {result.articles_fetched} | "
         f"Created: {result.articles_created} | "
         f"Duplicates skipped: {result.articles_skipped_duplicate} | "
+        f"Titles revised: {result.titles_revised} | "
         f"Clusters created: {result.clusters_created}"
     )
     if result.errors:

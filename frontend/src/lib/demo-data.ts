@@ -32,7 +32,22 @@ export type StoryArticle = {
   imageUrl?: string;
   /** API rumor flag. Non-political coverage puts these in the rumor bucket. */
   isRumor?: boolean;
+  /** When the outlet deleted the page, or it started returning 404. */
+  removedAt?: string;
+  /** First wording kept from the poll that first saw this article. */
+  originalHeadline?: string;
+  originalSeenAt?: string;
+  headlineEditedAt?: string;
+  correctionNoted?: boolean;
+  socialPreview?: {
+    title?: string;
+    description?: string;
+    imageUrl?: string;
+  };
 };
+
+/** Demo cluster whose page was pulled, so the vault is visible on the site. */
+export const TAKEN_DOWN_PREVIEW_SLUG = "desk-pulled-the-page";
 
 function withDemoArticleImages(stories: Story[]): Story[] {
   return stories.map((story) => ({
@@ -155,6 +170,144 @@ export const BD_SOURCES: NewsSource[] = [
 ];
 
 const DEMO_STORIES_BASE: Story[] = [
+  {
+    slug: TAKEN_DOWN_PREVIEW_SLUG,
+    title: "A desk published the resignation, then took the page down",
+    titleBn: "পদত্যাগের খবর ছাপিয়ে ডেস্ক পাতাটা সরিয়ে নিয়েছে",
+    summary:
+      "One outlet published the resignation in the afternoon and removed the page in the evening. The other desks still have the denial.",
+    summaryBn:
+      "এক আউটলেট দুপুরে পদত্যাগের খবর ছাপিয়ে সন্ধ্যায় পাতা সরিয়ে নেয়। অন্য ডেস্কগুলোতে অস্বীকারটাই আছে।",
+    category: "News",
+    categoryBn: "সংবাদ",
+    isBlindspot: false,
+    updatedAt: "2026-11-12T12:40:00Z",
+    perspectiveSummaries: {},
+    articles: [
+      {
+        sourceId: "jugantor",
+        headline: "মন্ত্রী আজ রাতে পদত্যাগ করবেন— দপ্তর ফোনে এ কথা জানিয়েছে",
+        url: "https://www.jugantor.com/news/minister-resignation-tonight",
+        excerpt:
+          "আজ দুপুরের প্রতিবেদনে বলা হয়, প্রতিমন্ত্রী আজ রাতে পদত্যাগপত্র জমা দেবেন। দপ্তরের এক কর্মকর্তা ফোনে এ কথা জানিয়েছেন। চিঠি তৈরি, এবং রাতের মধ্যেই তা পাঠানো হবে।",
+        publishedAt: "2026-11-12T07:12:00Z",
+        removedAt: "2026-11-12T12:40:00Z",
+      },
+      {
+        sourceId: "prothom-alo",
+        headline: "পদত্যাগের খবরটি মন্ত্রণালয় অস্বীকার করেছে",
+        url: "https://www.prothomalo.com/bangladesh/minister-resignation-denial",
+        excerpt: "মন্ত্রণালয় বলেছে, কোনো পদত্যাগপত্র আসেনি। যে সাইটে খবরটি উঠেছিল, সেই পাতা এখন খোলে না।",
+        publishedAt: "2026-11-12T12:05:00Z",
+      },
+      {
+        sourceId: "daily-star",
+        headline: "Ministry denies a resignation report after the page comes down",
+        url: "https://www.thedailystar.net/news/minister-resignation-denial",
+        excerpt: "The ministry says no letter has arrived. The page that carried the claim now returns an error.",
+        publishedAt: "2026-11-12T12:20:00Z",
+      },
+      {
+        sourceId: "samakal",
+        headline: "পাতা সরিয়ে নেওয়ার পরও পদত্যাগের কথা ঘুরছে",
+        url: "https://samakal.com/politics/minister-resignation-page-removed",
+        excerpt: "মন্ত্রণালয় অস্বীকার করেছে। যে পাতা সরে গেছে, সেখানে কী লেখা ছিল তা অন্য কাগজ ছাপেনি।",
+        publishedAt: "2026-11-12T12:28:00Z",
+      },
+    ],
+  },
+  {
+    slug: "walkback-line-preview",
+    title: "Government is delaying the election as the streets erupt",
+    titleBn: "সরকার নির্বাচন পিছিয়ে দিচ্ছে, রাজপথে তোলপাড়",
+    summary:
+      "The headlines lead with the street. One paper's later sentence says the announced schedule is still in force.",
+    summaryBn:
+      "শিরোনাম রাজপথ দিয়ে শুরু। এক কাগজের পরের বাক্য বলছে, ঘোষিত সময়সূচি এখনো বহাল।",
+    category: "Politics",
+    categoryBn: "রাজনীতি",
+    isBlindspot: false,
+    updatedAt: "2026-11-12T04:00:00Z",
+    perspectiveSummaries: {
+      opposition: "Leads with the march and calls the review a delay.",
+      establishment: "Calls the review preparation for a fair vote.",
+      neutral: "Reports the march, then the commission line that the date has not moved.",
+    },
+    articles: [
+      {
+        sourceId: "prothom-alo",
+        headline: "সরকার নির্বাচন পিছিয়ে দিচ্ছে, শাহবাগে তোলপাড়",
+        url: "https://www.prothomalo.com/politics/walkback-line-preview",
+        excerpt:
+          "বিরোধী দলের মিছিল শাহবাগ ছাড়িয়ে প্রেসক্লাব পর্যন্ত গেছে। নেতারা বলছেন, সরকার ভোট আটকে রাখতেই এই পর্যালোচনা। মাঠের খবর অনুসারে আজ সন্ধ্যায় আরও কর্মসূচি। তবে নির্বাচন কমিশন জানিয়েছে, ঘোষিত সময়সূচি এখনো বহাল এবং নতুন তারিখ দেওয়া হয়নি।",
+        publishedAt: "2026-11-12T03:10:00Z",
+        perspective: "neutral",
+      },
+      {
+        sourceId: "samakal",
+        headline: "রাজপথ উত্তাল, তারিখ পেছানোর প্রতিবাদে মিছিল",
+        url: "https://samakal.com/politics/walkback-line-preview",
+        excerpt:
+          "নেতাকর্মীরা বলছেন, এই সিদ্ধান্ত ভোটের ওপর আস্থা ভাঙবে। অন্যদিকে কমিশনের মুখপাত্র বলেন, আসনভিত্তিক প্রস্তুতি শেষ হলেই তারিখ চূড়ান্ত হবে।",
+        publishedAt: "2026-11-12T02:40:00Z",
+      },
+      {
+        sourceId: "jugantor",
+        headline: "সুষ্ঠু ভোটের প্রস্তুতিতেই সময়সূচি পর্যালোচনা",
+        url: "https://www.jugantor.com/politics/walkback-line-preview",
+        excerpt:
+          "সরকারি দলের নেতারা পর্যালোচনাকে সুষ্ঠু ভোটের প্রস্তুতি বলছেন। নাম প্রকাশে অনিচ্ছুক একটি সূত্র জানায়, মন্ত্রিসভা এখনো কোনো তারিখ বদলের সিদ্ধান্ত নেয়নি।",
+        publishedAt: "2026-11-12T02:20:00Z",
+      },
+      {
+        sourceId: "daily-star",
+        headline: "March reaches Press Club as parties dispute the poll date",
+        url: "https://www.thedailystar.net/politics/walkback-line-preview",
+        excerpt: "The commission has not announced a new date. Party leaders still disagree on why the review started.",
+        publishedAt: "2026-11-12T02:05:00Z",
+        perspective: "neutral",
+      },
+    ],
+  },
+  {
+    slug: "first-headline-greptar",
+    title: "A desk softened arrest to whisper, and added no correction",
+    titleBn: "একজন বিএনপি নেতাকে নিয়ে গুঞ্জন",
+    summary:
+      "Sample. The first headline and the share card are kept. Forty minutes later the desk changed গ্রেপ্তার to গুঞ্জন and did not add a correction.",
+    summaryBn:
+      "নমুনা। প্রথম শিরোনাম আর সেই মুহূর্তের শেয়ার কার্ড আটকে রাখা হয়েছে। চল্লিশ মিনিট পর ডেস্ক গ্রেপ্তারকে গুঞ্জন করেছে, সংশোধনী দেয়নি।",
+    category: "News",
+    categoryBn: "সংবাদ",
+    isBlindspot: false,
+    updatedAt: "2026-11-12T04:00:00Z",
+    perspectiveSummaries: {},
+    articles: [
+      {
+        sourceId: "prothom-alo",
+        headline: "একজন বিএনপি নেতাকে নিয়ে গুঞ্জন",
+        url: "https://www.prothomalo.com/bangladesh/first-headline-greptar",
+        excerpt: "পুলিশ এখনো কাউকে আটকের কথা নিশ্চিত করেনি।",
+        publishedAt: "2026-11-12T03:20:00Z",
+        originalHeadline: "একজন বিএনপি নেতাকে গ্রেপ্তার",
+        originalSeenAt: "2026-11-12T03:20:00Z",
+        headlineEditedAt: "2026-11-12T04:00:00Z",
+        correctionNoted: false,
+        socialPreview: {
+          title: "একজন বিএনপি নেতাকে গ্রেপ্তার",
+          description: "পুলিশ একজন বিএনপি নেতাকে গ্রেপ্তার করেছে বলে খবর ছড়িয়েছে।",
+          imageUrl: "/story-placeholder.svg",
+        },
+      },
+      {
+        sourceId: "daily-star",
+        headline: "Police have not confirmed an arrest",
+        url: "https://www.thedailystar.net/news/first-headline-greptar",
+        excerpt: "No station has confirmed that anyone was detained.",
+        publishedAt: "2026-11-12T03:35:00Z",
+      },
+    ],
+  },
   {
     slug: "dhaka-derby-abahani-win",
     title: "Abahani take the Dhaka derby by a single goal",

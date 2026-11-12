@@ -1,6 +1,7 @@
 import type { Story } from "@/lib/demo-data";
 import { STORY_IMAGE_PLACEHOLDER } from "@/lib/article-image-url";
 import { hasBengaliScript } from "@/lib/mixed-script-text";
+import { walkbackForStory } from "@/lib/walkback-line";
 
 const DEFAULT_GITHUB_ISSUES_NEW =
   "https://github.com/AshiqKiron/jachai.news/issues/new";
@@ -67,6 +68,11 @@ export function buildStoryShareTitle(story: Story): string {
 }
 
 export function buildStoryShareDescription(story: Story): string {
+  const walkback = walkbackForStory(story);
+  if (walkback?.sentence.trim()) {
+    return walkback.sentence.trim().slice(0, 280);
+  }
+
   const bullets = story.summaryBullets?.map((b) => b.trim()).filter(Boolean);
   if (bullets && bullets.length > 0) {
     return bullets.slice(0, 2).join(" · ").slice(0, 280);
@@ -167,28 +173,38 @@ export function buildStoryReportIssueHref(slug: string, title: string, pageUrl: 
   return `${DEFAULT_GITHUB_ISSUES_NEW}?title=${issueTitle}&body=${issueBody}`;
 }
 
-export const SOCIAL_SHARE_NETWORKS: {
+const SHARE_NETWORK_COPY: Record<SocialShareNetwork, { labelEn: string; labelBn: string }> = {
+  facebook: { labelEn: "Send image on Facebook", labelBn: "ফেসবুকে ছবি পাঠান" },
+  x: { labelEn: "Send image on X", labelBn: "X-এ ছবি পাঠান" },
+  whatsapp: { labelEn: "Send image on WhatsApp", labelBn: "হোয়াটসঅ্যাপে ছবি পাঠান" },
+  linkedin: { labelEn: "Send image on LinkedIn", labelBn: "লিংকডইনে ছবি পাঠান" },
+  telegram: { labelEn: "Send image on Telegram", labelBn: "টেলিগ্রামে ছবি পাঠান" },
+  reddit: { labelEn: "Send image on Reddit", labelBn: "রেডডিটে ছবি পাঠান" },
+  email: { labelEn: "Send image by email", labelBn: "ইমেইলে ছবি পাঠান" },
+};
+
+function shareNetwork(id: SocialShareNetwork): {
   id: SocialShareNetwork;
   labelEn: string;
   labelBn: string;
-}[] = [
-  { id: "facebook", labelEn: "Share on Facebook", labelBn: "ফেসবুকে শেয়ার" },
-  { id: "x", labelEn: "Share on X", labelBn: "X-এ শেয়ার" },
-  { id: "whatsapp", labelEn: "Send image on WhatsApp", labelBn: "হোয়াটসঅ্যাপে ছবি পাঠান" },
-  { id: "linkedin", labelEn: "Share on LinkedIn", labelBn: "লিংকডইনে শেয়ার" },
-  { id: "telegram", labelEn: "Share on Telegram", labelBn: "টেলিগ্রামে শেয়ার" },
+} {
+  return { id, ...SHARE_NETWORK_COPY[id] };
+}
+
+export const SOCIAL_SHARE_NETWORKS = [
+  shareNetwork("facebook"),
+  shareNetwork("x"),
+  shareNetwork("whatsapp"),
+  shareNetwork("linkedin"),
+  shareNetwork("telegram"),
 ];
 
 /** Story detail toolbar (Ground News–style primary share row). */
-export const STORY_DETAIL_SHARE_NETWORKS: {
-  id: SocialShareNetwork;
-  labelEn: string;
-  labelBn: string;
-}[] = [
-  { id: "whatsapp", labelEn: "Send image on WhatsApp", labelBn: "হোয়াটসঅ্যাপে ছবি পাঠান" },
-  { id: "facebook", labelEn: "Share on Facebook", labelBn: "ফেসবুকে শেয়ার" },
-  { id: "x", labelEn: "Share on X", labelBn: "X-এ শেয়ার" },
-  { id: "linkedin", labelEn: "Share on LinkedIn", labelBn: "লিংকডইনে শেয়ার" },
-  { id: "reddit", labelEn: "Share on Reddit", labelBn: "রেডডিটে শেয়ার" },
-  { id: "email", labelEn: "Share by email", labelBn: "ইমেইলে শেয়ার" },
+export const STORY_DETAIL_SHARE_NETWORKS = [
+  shareNetwork("whatsapp"),
+  shareNetwork("facebook"),
+  shareNetwork("x"),
+  shareNetwork("linkedin"),
+  shareNetwork("reddit"),
+  shareNetwork("email"),
 ];

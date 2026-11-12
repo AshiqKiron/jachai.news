@@ -24,6 +24,13 @@ export type Article = {
   owner_url?: string | null;
   parent_name?: string | null;
   parent_url?: string | null;
+  original_title?: string | null;
+  original_seen_at?: string | null;
+  headline_edited_at?: string | null;
+  correction_noted?: boolean;
+  social_preview_title?: string | null;
+  social_preview_description?: string | null;
+  social_preview_image_url?: string | null;
 };
 
 export type Cluster = {

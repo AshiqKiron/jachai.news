@@ -12,10 +12,13 @@ import { PartialityBanner } from "@/components/PartialityBanner";
 import { PaywallModal } from "@/components/PaywallModal";
 import { SharedOwnershipReveal } from "@/components/SharedOwnershipReveal";
 import { UnnamedSourceReveal } from "@/components/UnnamedSourceReveal";
+import { TakenDownVault } from "@/components/TakenDownVault";
+import { WalkbackPin } from "@/components/WalkbackPin";
+import { FirstHeadlineCards } from "@/components/FirstHeadlineCard";
 import { StoryDetailMetaBar } from "@/components/StoryDetailMetaBar";
 import { applyBlindspotDetection, type BlindspotAxisPerspective } from "@/lib/blindspot";
 import { analyzePartiality } from "@/lib/partiality";
-import type { Story } from "@/lib/demo-data";
+import { TAKEN_DOWN_PREVIEW_SLUG, type Story } from "@/lib/demo-data";
 import {
   readStoryCache,
   storyFingerprint,
@@ -27,7 +30,11 @@ import { enrichArticles } from "@/lib/coverage";
 import { isStoryFollowed, toggleStoryFollowed } from "@/lib/followed-stories";
 import { clusterBiasScore } from "@/lib/partiality";
 import { readingTopicIdForStory, recordStoryRead } from "@/lib/reading-history";
+import { FIRST_HEADLINE_PREVIEW_SLUG } from "@/lib/first-headline";
 import { pickSharpestRevealKind } from "@/lib/story-share-card";
+import { WALKBACK_PREVIEW_SLUG, walkbackForStory } from "@/lib/walkback-line";
+import { etagFromContentFingerprint } from "@/lib/feed-etag";
+import { WalkbackShareTeaser } from "@/components/WalkbackShareTeaser";
 import { coverageSpectrumModeForStory } from "@/lib/story-topics";
 import type { ProOnlyFeatureId } from "@/lib/subscription-features";
 
@@ -103,7 +110,7 @@ export function StoryDetailPanel({ slug, initialStory = null }: Props) {
 
     void (async () => {
       try {
-        const etag = cached ? `"${storyFingerprint(cached)}"` : null;
+        const etag = cached ? etagFromContentFingerprint(storyFingerprint(cached)) : null;
         const response = await fetch(`/api/story/${encodeURIComponent(slug)}`, {
           headers: etag ? { "If-None-Match": etag } : undefined,
         });
@@ -180,11 +187,38 @@ export function StoryDetailPanel({ slug, initialStory = null }: Props) {
   const revealKind = pickSharpestRevealKind(articles);
   const summaryBullets = story.summaryBullets ?? [];
   const subtitle = storySubtitle(story.title, story.titleBn);
+  const walkback = walkbackForStory(story);
+  const showVaultText = story.slug === TAKEN_DOWN_PREVIEW_SLUG || (proKnown && isPro);
   return (
     <>
       {fromApi && story.articles.length === 0 ? <ApiDegradedBanner compact /> : null}
 
       <header className="max-w-3xl space-y-5">
+        <TakenDownVault
+          articles={articles}
+          showOriginal={showVaultText}
+          onLockedClick={() => setPaywallFeature("story_taken_down_vault")}
+        />
+        {walkback ? (
+          <WalkbackPin sentence={walkback.sentence} sourceName={walkback.sourceName} />
+        ) : null}
+        {walkback && (slug === WALKBACK_PREVIEW_SLUG || isPro) ? (
+          <WalkbackShareTeaser
+            slug={slug}
+            sentence={walkback.sentence}
+            isPro={isPro}
+            proKnown={proKnown}
+          />
+        ) : null}
+        {walkback && slug !== WALKBACK_PREVIEW_SLUG && proKnown && !isPro ? (
+          <p className="text-sm text-zinc-500">
+            <span className="font-bengali text-zinc-400">Pro-তে শেয়ার কার্ডে এই বাক্যটিই যায়।</span>
+            {" "}
+            <a href="/pro" className="text-accent hover:underline">
+              Go Pro
+            </a>
+          </p>
+        ) : null}
         <h1 lang={hasBengaliScript(story.titleBn) ? "bn" : "en"} className="page-title-lg story-title-bn">
           {story.titleBn}
         </h1>
@@ -194,10 +228,21 @@ export function StoryDetailPanel({ slug, initialStory = null }: Props) {
         ) : story.summaryBn ? (
           <p className="text-sm leading-relaxed text-zinc-400">{story.summaryBn}</p>
         ) : null}
+        <FirstHeadlineCards
+          articles={story.articles}
+          isPro={isPro}
+          proKnown={proKnown}
+          showFrozenPreview={slug === FIRST_HEADLINE_PREVIEW_SLUG}
+          onLockedClick={() => setPaywallFeature("first_headline")}
+        />
         <StoryDetailMetaBar
           story={story}
           slug={slug}
-          shareTitle={story.title || story.titleBn}
+          shareTitle={
+            isPro && walkback
+              ? walkback.sentence
+              : story.title || story.titleBn
+          }
           titleBn={story.titleBn}
           isPro={isPro}
           proKnown={proKnown}

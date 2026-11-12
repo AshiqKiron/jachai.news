@@ -47,7 +47,7 @@ export function FeatureMatrixTable() {
         <tbody>
           {SUBSCRIPTION_FEATURE_MATRIX.map((row) => {
             return (
-              <tr key={row.id} className="border-b border-zinc-800/80 last:border-0">
+              <tr id={row.id} key={row.id} className="border-b border-zinc-800/80 last:border-0">
                 <td className="px-4 py-3 align-top">
                   <p className="font-medium text-zinc-100">
                     {row.name}

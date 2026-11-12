@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import {
   buildSocialShareUrl,
@@ -176,7 +176,9 @@ function browserCanShareImageFile(): boolean {
 export function StoryShareBar({ slug, shareTitle, variant = "default" }: Props) {
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
-  const [sharingImage, setSharingImage] = useState(false);
+  const [sharingImage, setSharingImage] = useState<SocialShareNetwork | null>(null);
+  const cardFileRef = useRef<{ slug: string; file: File } | null>(null);
+  const sharingLockRef = useRef(false);
 
   const pageUrl = useMemo(() => buildStoryShareUrl(slug), [slug]);
   const reportHref = useMemo(
@@ -214,37 +216,53 @@ export function StoryShareBar({ slug, shareTitle, variant = "default" }: Props) 
     });
   }
 
-  function openWhatsAppLink() {
-    window.open(buildSocialShareUrl("whatsapp", pageUrl, shareTitle), "_blank", "noopener,noreferrer");
+  function openNetworkLink(network: SocialShareNetwork) {
+    const href = buildSocialShareUrl(network, pageUrl, shareTitle);
+    if (network === "email") {
+      window.location.href = href;
+      return;
+    }
+    window.open(href, "_blank", "noopener,noreferrer");
   }
 
-  async function onShareWhatsApp() {
+  async function loadShareCardFile(): Promise<File | null> {
+    if (cardFileRef.current?.slug === slug) return cardFileRef.current.file;
+    const response = await fetch(storyShareCardPath(slug), { credentials: "same-origin" });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    const file = new File([blob], "khatinews-card.png", { type: blob.type || "image/png" });
+    cardFileRef.current = { slug, file };
+    return file;
+  }
+
+  async function onShareNetwork(network: SocialShareNetwork) {
+    if (sharingLockRef.current) return;
     if (!browserCanShareImageFile()) {
-      openWhatsAppLink();
+      openNetworkLink(network);
       return;
     }
 
-    setSharingImage(true);
+    sharingLockRef.current = true;
+    setSharingImage(network);
     try {
-      const response = await fetch(storyShareCardPath(slug), { credentials: "same-origin" });
-      if (!response.ok) {
-        openWhatsAppLink();
+      const file = await loadShareCardFile();
+      if (!file) {
+        openNetworkLink(network);
         return;
       }
-      const blob = await response.blob();
-      const file = new File([blob], "khatinews-card.png", { type: "image/png" });
       const text = `${shareTitle}\n${pageUrl}`;
       const payload = { files: [file], text, title: shareTitle };
       if (!navigator.canShare?.(payload)) {
-        openWhatsAppLink();
+        openNetworkLink(network);
         return;
       }
       await navigator.share(payload);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      openWhatsAppLink();
+      openNetworkLink(network);
     } finally {
-      setSharingImage(false);
+      sharingLockRef.current = false;
+      setSharingImage(null);
     }
   }
 
@@ -264,34 +282,20 @@ export function StoryShareBar({ slug, shareTitle, variant = "default" }: Props) 
         {copied ? "Link copied" : embedCopied ? "Embed code copied" : ""}
       </span>
 
-      {networks.map((network) =>
-        network.id === "whatsapp" ? (
-          <button
-            key={network.id}
-            type="button"
-            onClick={() => void onShareWhatsApp()}
-            disabled={sharingImage}
-            className={`${socialClass} disabled:cursor-wait disabled:opacity-70`}
-            title={`${network.labelEn} · ${network.labelBn}`}
-            aria-label={sharingImage ? "Preparing story card" : network.labelEn}
-            aria-busy={sharingImage}
-          >
-            <SocialIcon network={network.id} className={socialIconSize} />
-          </button>
-        ) : (
-          <a
-            key={network.id}
-            href={buildSocialShareUrl(network.id, pageUrl, shareTitle)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={socialClass}
-            title={`${network.labelEn} · ${network.labelBn}`}
-            aria-label={network.labelEn}
-          >
-            <SocialIcon network={network.id} className={socialIconSize} />
-          </a>
-        ),
-      )}
+      {networks.map((network) => (
+        <button
+          key={network.id}
+          type="button"
+          onClick={() => void onShareNetwork(network.id)}
+          disabled={sharingImage !== null}
+          className={`${socialClass} disabled:cursor-wait disabled:opacity-70`}
+          title={`${network.labelEn} · ${network.labelBn}`}
+          aria-label={sharingImage === network.id ? "Preparing story card" : network.labelEn}
+          aria-busy={sharingImage === network.id}
+        >
+          <SocialIcon network={network.id} className={socialIconSize} />
+        </button>
+      ))}
 
       {variant === "detail" ? (
         <button

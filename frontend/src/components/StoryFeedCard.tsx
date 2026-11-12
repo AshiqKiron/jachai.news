@@ -1,15 +1,19 @@
 import Link from "next/link";
 
 import { ArticleImage } from "@/components/ArticleImage";
+import { headlineEdits } from "@/lib/first-headline";
 import { BlindspotBanner } from "@/components/BlindspotBanner";
 import { resolveStoryLeadImageUrl } from "@/lib/article-image-url";
 import { type BlindspotAxisPerspective } from "@/lib/blindspot";
 import { CoverageBar } from "@/components/CoverageBar";
+import { WalkbackPin } from "@/components/WalkbackPin";
 import { StoryFollowButton } from "@/components/StoryFollowButton";
 import { StoryPartialityTeaser } from "@/components/StoryPartialityTeaser";
 import type { Story } from "@/lib/demo-data";
 import { hasBengaliScript, storySubtitle } from "@/lib/mixed-script-text";
 import { coverageSpectrumModeForStory, topicMetaForStory } from "@/lib/story-topics";
+import { latestRemovalLineEn } from "@/lib/taken-down";
+import { walkbackForStory } from "@/lib/walkback-line";
 
 type StoryFeedCardVariant = "default" | "home";
 
@@ -57,6 +61,9 @@ export function StoryFeedCard({
   const isHome = variant === "home";
   const sourceCount = story.articles.length;
   const subtitle = storySubtitle(story.title, story.titleBn);
+  const firstEdit = headlineEdits(story.articles)[0];
+  const walkback = walkbackForStory(story);
+  const removedLine = latestRemovalLineEn(story.articles);
 
   return (
     <article
@@ -78,7 +85,12 @@ export function StoryFeedCard({
         />
       </Link>
       <div className={isHome ? "p-4" : "p-5"}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+      {walkback ? (
+        <WalkbackPin sentence={walkback.sentence} sourceName={null} compact />
+      ) : null}
+      <div
+        className={`flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3 ${walkback ? "mt-2" : ""}`}
+      >
         {isHome ? (
           <p className="min-w-0 font-bengali text-xs text-zinc-500">
             {topic.labelBn}
@@ -112,6 +124,12 @@ export function StoryFeedCard({
           />
         ) : null}
       </div>
+      {removedLine ? (
+        <p className={`${isHome ? "mt-2" : "mt-3"} text-sm font-medium leading-snug text-amber-800 dark:text-amber-100`}>
+          <span className="font-bengali font-semibold">সরিয়ে নেওয়া হয়েছে</span>
+          <span className="text-amber-900/80 dark:text-amber-100/75"> · {removedLine}</span>
+        </p>
+      ) : null}
       <h2
         lang={hasBengaliScript(story.titleBn) ? "bn" : "en"}
         className={
@@ -122,6 +140,24 @@ export function StoryFeedCard({
       >
         <Link href={`/story/${story.slug}`}>{story.titleBn}</Link>
       </h2>
+      {firstEdit ? (
+        <div className="mt-2 rounded-lg border border-rose-300/70 bg-rose-50 px-2.5 py-2 dark:border-rose-400/25 dark:bg-rose-500/10">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-800 dark:text-rose-200">
+            <span className="font-bengali normal-case tracking-normal">প্রথম শিরোনাম</span>
+            {firstEdit.clock ? <span className="font-bengali normal-case"> · {firstEdit.clock.bn}</span> : null}
+            <span className="font-bengali normal-case">
+              {" "}
+              · {firstEdit.correctionNoted ? "সংশোধনী আছে" : "সংশোধনী নেই"}
+            </span>
+          </p>
+          <p className="story-title-bn mt-1 line-clamp-2 text-sm leading-snug text-rose-950 dark:text-rose-50">
+            {firstEdit.originalHeadline}
+          </p>
+          <p className="story-title-bn line-clamp-2 text-sm leading-snug text-zinc-600 dark:text-zinc-400">
+            {firstEdit.currentHeadline}
+          </p>
+        </div>
+      ) : null}
       {!isHome && subtitle ? (
         <p className="mt-1 line-clamp-1 text-sm text-zinc-500">{subtitle}</p>
       ) : null}

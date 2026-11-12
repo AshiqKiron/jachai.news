@@ -12,6 +12,11 @@ import unicodedata
 from dataclasses import dataclass
 
 _BENGALI = re.compile(r"[\u0980-\u09FF]")
+_LATIN = re.compile(r"[A-Za-z]")
+
+# Headlines longer than this are cut before they are stored. A real desk title
+# is far shorter; the cap only stops a broken feed from writing a huge row.
+TITLE_MAX_LENGTH = 2000
 _BN_CHAR = r"[\u0980-\u09FF]"
 _BN_SUFFIX = r"(?:ের|তে|কে|টির|টার|টি|টা|ে|র|য়|য়)?"
 _BN_DIGITS = str.maketrans("০১২৩৪৫৬৭৮৯", "0123456789")
@@ -78,7 +83,25 @@ def has_bengali(text: str) -> bool:
     return bool(_BENGALI.search(text))
 
 
-def prefer_bangla_title(current: str, incoming: str, *, max_length: int = 512) -> str:
+def title_language(text: str) -> str:
+    """`bn`, `en`, `mixed`, or `unknown`. Stored with each headline for later filters."""
+    has_bn = has_bengali(text)
+    has_en = bool(_LATIN.search(text))
+    if has_bn and has_en:
+        return "mixed"
+    if has_bn:
+        return "bn"
+    if has_en:
+        return "en"
+    return "unknown"
+
+
+def normalize_article_title(title: str) -> str:
+    """Collapse whitespace and cap length. The stored headline and the ledger use this form."""
+    return " ".join(title.split())[:TITLE_MAX_LENGTH]
+
+
+def prefer_bangla_title(current: str, incoming: str, *, max_length: int = TITLE_MAX_LENGTH) -> str:
     """Use a Bangla headline as the story title once one exists. Keep the first Bangla title."""
     incoming_clean = " ".join(incoming.split())
     if incoming_clean and has_bengali(incoming_clean) and not has_bengali(current):

@@ -22,6 +22,7 @@ export type IngestResponse = {
   articles_fetched: number;
   articles_created: number;
   articles_skipped_duplicate: number;
+  titles_revised?: number;
   clusters_created: number;
   clusters_updated: number;
   errors: string[];

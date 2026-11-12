@@ -16,9 +16,11 @@ from app.data.bd_sources_seed import BD_SOURCE_SEED
 from app.models.article import Article
 from app.models.cluster import Cluster
 from app.models.source import Source
+from app.services.article_titles import note_article_title
 from app.services.rss_parser import ParsedFeedItem, fetch_feed_items
+from app.services.social_preview import load_frozen_preview, page_notes_correction, text_notes_correction
 from app.services.source_ingest_mode import source_uses_rss_pull
-from app.services.story_match import cross_lingual_score, prefer_bangla_title
+from app.services.story_match import cross_lingual_score, normalize_article_title, prefer_bangla_title
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +48,7 @@ class IngestResult:
     articles_fetched: int = 0
     articles_created: int = 0
     articles_skipped_duplicate: int = 0
+    titles_revised: int = 0
     clusters_created: int = 0
     clusters_updated: int = 0
     errors: list[str] = field(default_factory=list)
@@ -237,6 +240,38 @@ async def merge_cross_language_clusters(session: AsyncSession, since: datetime) 
     await session.flush()
 
 
+async def _freeze_social_preview(article: Article, *, rss_image_url: str | None) -> None:
+    """Snapshot the share card once. A later edit must not replace it."""
+    if article.social_preview_captured_at is not None:
+        return
+    frozen = await load_frozen_preview(
+        article.url,
+        headline=article.title,
+        excerpt=article.excerpt,
+        rss_image_url=rss_image_url,
+    )
+    article.social_preview_title = frozen.title
+    article.social_preview_description = frozen.description
+    article.social_preview_image_url = frozen.image_url
+    article.social_preview_captured_at = datetime.now(timezone.utc)
+
+
+async def _note_correction(
+    article: Article,
+    title: str,
+    excerpt: str | None,
+    *,
+    fetch_page: bool,
+) -> None:
+    if article.correction_noted:
+        return
+    if text_notes_correction(title) or text_notes_correction(excerpt):
+        article.correction_noted = True
+        return
+    if fetch_page and await page_notes_correction(article.url):
+        article.correction_noted = True
+
+
 async def maybe_refresh_cluster_summary(session: AsyncSession, cluster: Cluster) -> bool:
     """Cluster blurbs are built from RSS excerpts on the frontend — no AI summary."""
     return False
@@ -251,35 +286,49 @@ async def persist_feed_items(
     since = datetime.now(timezone.utc) - timedelta(hours=CLUSTER_LOOKBACK_HOURS)
 
     for item in items:
-        existing = await session.scalar(select(Article.id).where(Article.url == item.url))
-        if existing is not None:
-            result.articles_skipped_duplicate += 1
+        clean_title = normalize_article_title(item.title)
+        if not clean_title:
             continue
 
-        cluster = await find_matching_cluster(session, item.title, since=since)
+        existing = await session.scalar(select(Article).where(Article.url == item.url))
+        if existing is not None:
+            if item.excerpt and item.excerpt != existing.excerpt:
+                existing.excerpt = item.excerpt
+            revised = await note_article_title(session, existing, clean_title)
+            if revised:
+                result.titles_revised += 1
+            else:
+                result.articles_skipped_duplicate += 1
+            await _note_correction(existing, clean_title, item.excerpt, fetch_page=revised)
+            continue
+
+        cluster = await find_matching_cluster(session, clean_title, since=since)
         if cluster is None:
-            slug = await unique_cluster_slug(session, item.title)
-            cluster = Cluster(slug=slug, title=item.title.strip())
+            slug = await unique_cluster_slug(session, clean_title)
+            cluster = Cluster(slug=slug, title=clean_title)
             session.add(cluster)
             await session.flush()
             result.clusters_created += 1
         else:
             result.clusters_updated += 1
-            bangla_title = prefer_bangla_title(cluster.title, item.title)
+            bangla_title = prefer_bangla_title(cluster.title, clean_title)
             if bangla_title != cluster.title:
                 cluster.title = bangla_title
 
-        session.add(
-            Article(
-                source_id=source.id,
-                cluster=cluster,
-                title=item.title,
-                url=item.url,
-                excerpt=item.excerpt,
-                image_url=item.image_url,
-                published_at=item.published_at,
-            )
+        article = Article(
+            source_id=source.id,
+            cluster=cluster,
+            title=clean_title,
+            url=item.url,
+            excerpt=item.excerpt,
+            image_url=item.image_url,
+            published_at=item.published_at,
         )
+        session.add(article)
+        await session.flush()
+        await note_article_title(session, article, clean_title)
+        await _freeze_social_preview(article, rss_image_url=item.image_url)
+        await _note_correction(article, clean_title, item.excerpt, fetch_page=False)
         result.articles_created += 1
         await session.flush()
 

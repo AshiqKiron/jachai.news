@@ -73,6 +73,18 @@ function mapClusterArticles(cluster: Cluster | ClusterDetail): Story["articles"]
     parentName: article.parent_name ?? undefined,
     parentUrl: article.parent_url ?? undefined,
     isRumor: article.is_rumor || undefined,
+    originalHeadline: article.original_title ?? undefined,
+    originalSeenAt: article.original_seen_at ?? undefined,
+    headlineEditedAt: article.headline_edited_at ?? undefined,
+    correctionNoted: article.correction_noted || undefined,
+    socialPreview:
+      article.social_preview_title || article.social_preview_description || article.social_preview_image_url
+        ? {
+            title: article.social_preview_title ?? undefined,
+            description: article.social_preview_description ?? undefined,
+            imageUrl: article.social_preview_image_url ?? undefined,
+          }
+        : undefined,
   }));
 }
 

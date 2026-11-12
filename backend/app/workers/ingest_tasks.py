@@ -42,6 +42,7 @@ async def _run_rss_ingest() -> dict[str, object]:
         "articles_fetched": result.articles_fetched,
         "articles_created": result.articles_created,
         "articles_skipped_duplicate": result.articles_skipped_duplicate,
+        "titles_revised": result.titles_revised,
         "clusters_created": result.clusters_created,
         "clusters_updated": result.clusters_updated,
         "errors": result.errors,

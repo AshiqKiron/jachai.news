@@ -6,6 +6,7 @@ class IngestResponse(BaseModel):
     articles_fetched: int
     articles_created: int
     articles_skipped_duplicate: int
+    titles_revised: int = 0
     clusters_created: int
     clusters_updated: int
     errors: list[str] = Field(default_factory=list)

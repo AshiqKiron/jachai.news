@@ -186,6 +186,10 @@ export function AdminIngestPanel({ initialSchedule = null }: Props) {
             <dd className="text-zinc-100">{result.articles_skipped_duplicate}</dd>
           </div>
           <div>
+            <dt className="text-zinc-500">Headlines revised</dt>
+            <dd className="text-zinc-100">{result.titles_revised ?? 0}</dd>
+          </div>
+          <div>
             <dt className="text-zinc-500">Clusters created</dt>
             <dd className="text-zinc-100">{result.clusters_created}</dd>
           </div>

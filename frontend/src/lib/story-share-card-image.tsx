@@ -41,6 +41,12 @@ function countFontSize(text: string): number {
   return 60;
 }
 
+function walkbackFontSize(text: string): number {
+  if (text.length > 140) return 34;
+  if (text.length > 90) return 40;
+  return 48;
+}
+
 function QuoteLines({
   lines,
   lineStyle,
@@ -103,6 +109,33 @@ function MarkBody() {
   );
 }
 
+function WalkbackBody({ card }: { card: StoryShareCard }) {
+  const outlet = card.lines[0]?.meta ?? "";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+      <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+        <div style={{ fontSize: 26, fontWeight: 700, color: card.accent }}>{card.kickerBn}</div>
+        <div style={{ fontSize: 20, color: "#94a3b8", marginTop: 8 }}>{card.kickerEn}</div>
+        <div
+          style={{
+            fontSize: walkbackFontSize(card.countBn),
+            fontWeight: 700,
+            lineHeight: 1.45,
+            color: "#f8fafc",
+            marginTop: 40,
+          }}
+        >
+          {card.countBn}
+        </div>
+        {outlet ? (
+          <div style={{ fontSize: 24, color: "#94a3b8", marginTop: 28 }}>{outlet}</div>
+        ) : null}
+      </div>
+      <div style={{ paddingTop: 28, fontSize: 24, color: "#64748b" }}>khatinews.com</div>
+    </div>
+  );
+}
+
 function RevealBody({ card }: { card: StoryShareCard }) {
   const stacked = card.lines.length > 0;
   return (
@@ -161,7 +194,13 @@ function storyShareCardElement(card: StoryShareCard) {
           background: card.accent,
         }}
       />
-      {card.kind === "mark" ? <MarkBody /> : <RevealBody card={card} />}
+      {card.kind === "mark" ? (
+        <MarkBody />
+      ) : card.kind === "walkback" ? (
+        <WalkbackBody card={card} />
+      ) : (
+        <RevealBody card={card} />
+      )}
     </div>
   );
 }

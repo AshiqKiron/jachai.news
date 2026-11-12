@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 
@@ -14,13 +15,16 @@ import {
   writeTopStoriesCache,
 } from "@/lib/client-story-cache";
 import { hydrateClientStories } from "@/lib/client-story-hydrate";
-import { DEMO_STORIES, type Story } from "@/lib/demo-data";
+import { DEMO_STORIES, getStoryBySlug, TAKEN_DOWN_PREVIEW_SLUG, type Story } from "@/lib/demo-data";
 import {
   FOLLOWED_STORIES_CHANGED_EVENT,
   readFollowedStorySlugs,
   toggleStoryFollowed,
 } from "@/lib/followed-stories";
 import { HOME_TOP_STORIES_LIMIT } from "@/lib/subscription-features";
+import { FIRST_HEADLINE_PREVIEW_SLUG } from "@/lib/first-headline";
+import { WALKBACK_PREVIEW_SLUG } from "@/lib/walkback-line";
+import { etagFromContentFingerprint } from "@/lib/feed-etag";
 import {
   parseStoryTopicId,
   storyMatchesTopic,
@@ -28,7 +32,31 @@ import {
   type StoryTopicId,
 } from "@/lib/story-topics";
 
-const INITIAL_STORIES = hydrateClientStories(DEMO_STORIES.slice(0, HOME_TOP_STORIES_LIMIT));
+function withWalkbackPreview(stories: Story[]): Story[] {
+  const preview = getStoryBySlug(WALKBACK_PREVIEW_SLUG);
+  if (!preview) return stories;
+  return [preview, ...stories.filter((story) => story.slug !== WALKBACK_PREVIEW_SLUG)];
+}
+
+function withFirstHeadlinePreview(stories: Story[]): Story[] {
+  const preview = getStoryBySlug(FIRST_HEADLINE_PREVIEW_SLUG);
+  if (!preview) return stories;
+  return [preview, ...stories.filter((story) => story.slug !== FIRST_HEADLINE_PREVIEW_SLUG)];
+}
+
+function withVaultPreview(stories: Story[]): Story[] {
+  const preview = getStoryBySlug(TAKEN_DOWN_PREVIEW_SLUG);
+  if (!preview) return stories;
+  return [preview, ...stories.filter((story) => story.slug !== TAKEN_DOWN_PREVIEW_SLUG)];
+}
+
+function withPinnedPreviews(stories: Story[]): Story[] {
+  return withFirstHeadlinePreview(withVaultPreview(withWalkbackPreview(stories)));
+}
+
+const INITIAL_STORIES = hydrateClientStories(
+  withPinnedPreviews(DEMO_STORIES.slice(0, HOME_TOP_STORIES_LIMIT)),
+);
 
 export function HomeStoryGridClient() {
   const searchParams = useSearchParams();
@@ -71,7 +99,9 @@ export function HomeStoryGridClient() {
     void (async () => {
       try {
         const response = await fetch(`/api/feed/top?limit=${HOME_TOP_STORIES_LIMIT}`, {
-          headers: cached?.fingerprint ? { "If-None-Match": `"${cached.fingerprint}"` } : undefined,
+          headers: cached?.fingerprint
+            ? { "If-None-Match": etagFromContentFingerprint(cached.fingerprint) }
+            : undefined,
         });
 
         if (cancelled) return;
@@ -130,11 +160,13 @@ export function HomeStoryGridClient() {
     };
   }, []);
 
-  const visibleTopicIds = useMemo(() => visibleTopicIdsForStories(stories), [stories]);
+  const pinnedStories = useMemo(() => withPinnedPreviews(stories), [stories]);
+
+  const visibleTopicIds = useMemo(() => visibleTopicIdsForStories(pinnedStories), [pinnedStories]);
 
   const filteredStories = useMemo(
-    () => stories.filter((story) => storyMatchesTopic(story, activeTopicId)),
-    [stories, activeTopicId],
+    () => pinnedStories.filter((story) => storyMatchesTopic(story, activeTopicId)),
+    [pinnedStories, activeTopicId],
   );
 
   const followedSet = useMemo(() => new Set(followedSlugs), [followedSlugs]);
@@ -166,18 +198,70 @@ export function HomeStoryGridClient() {
             <HomeStoriesSectionTitle />
             <HomeArchiveLink />
           </div>
+          <div className="mb-4 space-y-2 rounded-lg border border-amber-300/70 bg-amber-50 px-3 py-2.5 text-sm text-amber-950 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-50">
+            <p>
+              <span className="font-bengali font-medium">ডেমো — সরিয়ে নেওয়া খবরের ভল্ট</span>
+              <span className="text-amber-900/80 dark:text-amber-100/75"> · Taken-down vault: </span>
+              <Link
+                href={`/story/${TAKEN_DOWN_PREVIEW_SLUG}`}
+                className="font-medium text-amber-900 underline decoration-amber-600/60 underline-offset-2 hover:text-amber-950 dark:text-amber-100"
+              >
+                open sample story
+              </Link>
+            </p>
+            <p>
+              <span className="font-bengali font-medium">ডেমো — শিরোনামের নিচের বাক্য</span>
+              <span className="text-amber-900/80 dark:text-amber-100/75"> · Walk-back line: </span>
+              <Link
+                href={`/story/${WALKBACK_PREVIEW_SLUG}`}
+                className="font-medium text-amber-900 underline decoration-amber-600/60 underline-offset-2 hover:text-amber-950 dark:text-amber-100"
+              >
+                open sample story
+              </Link>
+            </p>
+            <p>
+              <span className="font-bengali font-medium">ডেমো — প্রথম শিরোনাম</span>
+              <span className="text-amber-900/80 dark:text-amber-100/75">
+                {" "}
+                · First headline (গ্রেপ্তার → গুঞ্জন, ৪০ মিনিট, সংশোধনী নেই):{" "}
+              </span>
+              <Link
+                href={`/story/${FIRST_HEADLINE_PREVIEW_SLUG}`}
+                className="font-medium text-amber-900 underline decoration-amber-600/60 underline-offset-2 hover:text-amber-950 dark:text-amber-100"
+              >
+                open sample story
+              </Link>
+            </p>
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             {filteredStories.map((story) => (
-              <StoryFeedCard
-                key={story.slug}
-                variant="home"
-                story={story}
-                isPro={isPro}
-                proKnown={proKnown}
-                followed={followedSet.has(story.slug)}
-                onToggleFollow={handleToggleFollow}
-                onFollowLocked={() => setPaywallOpen(true)}
-              />
+              <div key={story.slug} className="min-w-0">
+                {story.slug === TAKEN_DOWN_PREVIEW_SLUG ? (
+                  <p className="mb-2 text-xs font-medium text-amber-800 dark:text-amber-200">
+                    <span className="font-bengali">নমুনা · ভল্ট</span>
+                    <span className="text-amber-900/70 dark:text-amber-100/60"> · Vault demo card</span>
+                  </p>
+                ) : story.slug === WALKBACK_PREVIEW_SLUG ? (
+                  <p className="mb-2 text-xs font-medium text-amber-800 dark:text-amber-200">
+                    <span className="font-bengali">নমুনা · ওয়াকব্যাক</span>
+                    <span className="text-amber-900/70 dark:text-amber-100/60"> · Walk-back demo card</span>
+                  </p>
+                ) : story.slug === FIRST_HEADLINE_PREVIEW_SLUG ? (
+                  <p className="mb-2 text-xs font-medium text-rose-800 dark:text-rose-200">
+                    <span className="font-bengali">নমুনা · প্রথম শিরোনাম</span>
+                    <span className="text-rose-900/70 dark:text-rose-100/60"> · First headline demo card</span>
+                  </p>
+                ) : null}
+                <StoryFeedCard
+                  variant="home"
+                  story={story}
+                  isPro={isPro}
+                  proKnown={proKnown}
+                  followed={followedSet.has(story.slug)}
+                  onToggleFollow={handleToggleFollow}
+                  onFollowLocked={() => setPaywallOpen(true)}
+                />
+              </div>
             ))}
           </div>
           {filteredStories.length === 0 ? (

@@ -21,7 +21,10 @@ function canUseStorage(): boolean {
 
 export function storyFingerprint(story: Story): string {
   const articleSig = story.articles
-    .map((a) => `${a.url}:${a.publishedAt}:${a.perspective ?? ""}`)
+    .map(
+      (a) =>
+        `${a.url}:${a.publishedAt}:${a.removedAt ?? ""}:${a.headline}:${a.originalHeadline ?? ""}:${a.headlineEditedAt ?? ""}:${a.excerpt?.slice(0, 120) ?? ""}:${a.perspective ?? ""}`,
+    )
     .sort()
     .join("|");
   const perspectiveSig = Object.keys(story.perspectiveSummaries).sort().join(",");

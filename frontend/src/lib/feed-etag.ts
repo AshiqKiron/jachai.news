@@ -1,12 +1,17 @@
 import type { Story } from "@/lib/demo-data";
 import { storiesListFingerprint, storyFingerprint } from "@/lib/client-story-cache";
+import { weakEtagFromString } from "@/lib/etag-hash";
+
+export function etagFromContentFingerprint(raw: string): string {
+  return weakEtagFromString(raw);
+}
 
 export function etagForStories(stories: Story[]): string {
-  return `"${storiesListFingerprint(stories)}"`;
+  return etagFromContentFingerprint(storiesListFingerprint(stories));
 }
 
 export function etagForStory(story: Story): string {
-  return `"${storyFingerprint(story)}"`;
+  return etagFromContentFingerprint(storyFingerprint(story));
 }
 
 export function ifNoneMatchMatches(header: string | null, etag: string): boolean {

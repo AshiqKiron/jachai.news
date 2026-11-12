@@ -21,6 +21,7 @@ import {
   type ReportingTone,
 } from "@/lib/reporting-spectrum";
 import { buildCoverageDigest, type CoverageDigestFilter } from "@/lib/source-digest";
+import { removalLineEn } from "@/lib/taken-down";
 
 type FilterId = "all" | Perspective | ReportingTone;
 
@@ -72,40 +73,59 @@ function ArticleFeedList({
           ? REPORTING_TONE_META[tone]
           : spectrumCopy(article.perspective, "government");
         const color = tone ? REPORTING_TONE_META[tone].color : PERSPECTIVE_META[article.perspective].color;
+        const removedAt = article.removedAt;
         return (
           <li key={`${article.sourceId}-${article.url}`}>
             <div className="flex gap-3 px-3 py-3 transition hover:bg-zinc-800/35 sm:px-4 sm:py-3.5">
-              <a
-                href={article.url}
-                target="_blank"
-                rel="noreferrer"
-                className="shrink-0"
-              >
-                <ArticleImage
-                  src={resolveArticleImageUrl(article.imageUrl)}
-                  alt=""
-                  className="h-16 w-24 rounded-lg object-cover"
-                />
-              </a>
+              {removedAt ? (
+                <div className="shrink-0 opacity-80">
+                  <ArticleImage
+                    src={resolveArticleImageUrl(article.imageUrl)}
+                    alt=""
+                    className="h-16 w-24 rounded-lg object-cover"
+                  />
+                </div>
+              ) : (
+                <a href={article.url} target="_blank" rel="noreferrer" className="shrink-0">
+                  <ArticleImage
+                    src={resolveArticleImageUrl(article.imageUrl)}
+                    alt=""
+                    className="h-16 w-24 rounded-lg object-cover"
+                  />
+                </a>
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="text-sm font-semibold text-zinc-100">{article.sourceName}</span>
-                  <span
-                    className="rounded-full px-2 py-0.5 text-[10px] font-medium leading-none"
-                    style={{ backgroundColor: `${color}28`, color }}
-                  >
-                    {copy.shortLabelEn}
-                  </span>
+                  {removedAt ? (
+                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium leading-none text-amber-800 dark:text-amber-100">
+                      Removed
+                    </span>
+                  ) : (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-medium leading-none"
+                      style={{ backgroundColor: `${color}28`, color }}
+                    >
+                      {copy.shortLabelEn}
+                    </span>
+                  )}
                 </div>
                 <SourceOwnershipLine ownership={article.mediaOwnership} className="mt-0.5" />
-                <a
-                  href={article.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1.5 block text-sm leading-snug text-zinc-200 line-clamp-3 hover:text-zinc-50"
-                >
-                  {article.headline}
-                </a>
+                {removedAt ? (
+                  <>
+                    <p className="mt-1.5 text-sm leading-snug text-zinc-200 line-clamp-3">{article.headline}</p>
+                    <p className="mt-1 text-sm text-amber-800 dark:text-amber-100">{removalLineEn(removedAt)}</p>
+                  </>
+                ) : (
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1.5 block text-sm leading-snug text-zinc-200 line-clamp-3 hover:text-zinc-50"
+                  >
+                    {article.headline}
+                  </a>
+                )}
               </div>
             </div>
           </li>
