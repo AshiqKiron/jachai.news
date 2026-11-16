@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Supabase
 
-khatinews.com uses Supabase for **auth**, **Pro entitlement**, **user research metadata**, and **planned PayEurasia checkout** — not for articles/clusters or verified claims (those live in backend PostgreSQL).
+khatinews.com uses **one Supabase Postgres** for **auth**, **Pro**, user activity, **and** news data (articles/clusters/verified claims). FastAPI connects via **transaction pooler** (`docs/DATABASE.md`). Optional local Docker Postgres only for offline dev (`npm run stack:up`).
 
 ## Layout
 
@@ -15,6 +15,8 @@ khatinews.com uses Supabase for **auth**, **Pro entitlement**, **user research m
   - `20250301000000_init_profiles_subscriptions.sql` — profiles, subscriptions, payment tables
   - `20250302000000_security_rls_hardening.sql` — `saved_dossiers`, `custom_alerts`, explicit deny INSERT/UPDATE/DELETE on billing tables for anon/authenticated
   - `20251112031500_subscription_plan_day_pass.sql` — adds `subscription_plan` value **`day`** (24-hour Pro pass; checkout still service-role)
+  - `20251112190000_user_story_activity.sql` — `story_follows`, `story_read_events`, `article_click_events` (synced from PWA when signed in)
+- **Hosted project**: [dashboard](https://supabase.com/dashboard/project/xbadshfnetqzpvdavaef) — project ref `xbadshfnetqzpvdavaef` (`supabase link --project-ref xbadshfnetqzpvdavaef`)
 - Frontend types: `frontend/src/lib/database.types.ts` — **keep in sync** when migrations change
 
 ## Apply schema
@@ -41,6 +43,9 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 | `public.payment_transactions` | PayEurasia (default `provider`) charges linked to `subscription_id`; `metadata` jsonb |
 | `public.saved_dossiers` | Per-user research notes + source URLs (full CRUD for owner) |
 | `public.custom_alerts` | Per-user saved search/alert queries (full CRUD for owner) |
+| `public.story_follows` | Pro story follows (`cluster_slug`); client upsert via `story-activity-sync.ts` |
+| `public.story_read_events` | Append-only story opens for signed-in users |
+| `public.article_click_events` | Optional outbound article clicks when tracking pref is on |
 
 ## Row Level Security
 
@@ -48,6 +53,7 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 - **Profiles**: users SELECT/UPDATE own row
 - **Subscriptions / payment agreements / payments**: users SELECT own rows only; **no client INSERT/UPDATE/DELETE** (explicit deny policies in hardening migration) — writes for **service role** only
 - **Dossiers / alerts**: users full CRUD on own rows (`auth.uid() = user_id`)
+- **Story activity** (`20251112190000_user_story_activity.sql`): **`story_follows`** — users SELECT/INSERT/DELETE own rows; **`story_read_events`** / **`article_click_events`** — users SELECT/INSERT own rows (append-only from client)
 - Never use `NEXT_PUBLIC_SUPABASE_ANON_KEY` for subscription writes or admin bootstrap; use server routes with `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Frontend wiring
@@ -57,6 +63,7 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 - Admin bootstrap: `POST /api/admin/register` sets `app_metadata.role=admin` when registration code + service role are configured
 - **Admin Users tab** (`lib/admin-users.ts`, server-only): `auth.admin.listUsers` / create / delete; reads `profiles` + `subscriptions`; **`setAdminUserPlan`** upserts active `subscriptions` rows for manual Pro grants — never expose service role to the browser (proxies under `/api/admin/users*` with legacy admin cookie)
 - **Pro entitlements**: server `getProAccessState()` in `subscription-access.ts` SELECTs own `subscriptions` row (RLS); `subscription-entitlement.ts` implements `isActiveProSubscription`; type helper `SubscriptionEntitlementRow` in `database.types.ts`. Override locally with `NEXT_PUBLIC_MOCK_PRO=true`
+- **Story activity sync** (browser, anon key + session): `lib/story-activity-sync.ts` — fire-and-forget upsert/delete on **`story_follows`**, insert on **`story_read_events`** / **`article_click_events`**; **`components/StoryActivityHydrator.tsx`** in root **`layout.tsx`** merges server follows into **`followed-stories.ts`** localStorage on sign-in
 - Pricing/feature copy stays in `subscription-plans.ts` and `subscription-features.ts` (not in DB)
 
 ## Migrations conventions
