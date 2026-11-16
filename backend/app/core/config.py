@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     database_pooler_url: str | None = None
     # local = SQLAlchemy pool; pgbouncer = NullPool (pooler owns connections)
     database_pool_mode: str = "local"
+    # Local dev only — when TLS interception breaks certifi (omit in production)
+    database_ssl_insecure: bool = False
     database_pool_size: int = 5
     database_max_overflow: int = 10
     database_pool_recycle_seconds: int = 1800

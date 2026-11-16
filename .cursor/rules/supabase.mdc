@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Supabase
 
-khatinews.com uses **one Supabase Postgres** for **auth**, **Pro**, user activity, **and** news data (articles/clusters/verified claims). FastAPI connects via **transaction pooler** (`docs/DATABASE.md`). Optional local Docker Postgres only for offline dev (`npm run stack:up`).
+khatinews.com uses **one Supabase Postgres** for **auth**, **Pro**, user activity, **and** news data (articles/clusters/verified claims). FastAPI connects via **transaction pooler** — **`DATABASE_POOLER_URL`** + **`DATABASE_POOL_MODE=pgbouncer`** (`docs/DATABASE.md`, **`backend/.env.supabase.example`**; helper **`npm run setup:supabase`** → **`scripts/setup-supabase-env.mjs`**). Optional local Docker Postgres: `npm run stack:up`; API+workers only against hosted DB: **`npm run stack:up:supabase`** (`docker-compose.supabase.yml`; see **`docs/SUPABASE_HOSTED.md`**).
 
 ## Layout
 
@@ -70,4 +70,5 @@ npx supabase gen types typescript --local > frontend/src/lib/database.types.ts
 
 - One logical change per migration file; timestamp prefix `YYYYMMDDHHMMSS_name.sql`
 - Prefer explicit RLS policies and comments on tables intended for service-role writes
-- Do not store news/RSS/cluster/verification data here; do not commit service role keys or PayEurasia API secrets
+- **News tables** (`articles`, `clusters`, …) are created by the FastAPI app on the **same** Supabase database via `backend/migrations/*.sql` (not duplicated in `supabase/migrations/`)
+- Do not commit service role keys, database passwords, or PayEurasia API secrets

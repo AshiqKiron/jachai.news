@@ -66,6 +66,11 @@ The always-on file is **`khatinews.mdc`**. Earlier names were **`shorup-news.mdc
 | Prothom Alo feed collector (Chrome) | `chrome-extension.mdc`, upstream **`chrome-extension/prothomalo-feed-collector/README.md`** — Prothom Alo sections, bundled **`lib/bd-sources.js`** (opt-out via **`isFeedEnabled`**), and extra RSS URLs → Downloads JSON; upload in admin **file** mode. Collector catalog is wider than the server seed |
 | Verification pipeline | `khatinews.mdc`, `backend.mdc`, `frontend.mdc` (`verifications.ts`, `/verify/*`) |
 | Supabase auth / Pro / activity | `supabase.mdc`, `frontend.mdc` auth + **`story-activity-sync.ts`** + `database.types.ts` |
+| Hosted Supabase + pooler env | `docs/DATABASE.md`, **`docs/SUPABASE_HOSTED.md`**, **`backend/.env.supabase.example`**, root **`setup:supabase`** (`scripts/setup-supabase-env.mjs`); `khatinews.mdc` repo layout + **`supabase.mdc`** — **`DATABASE_POOLER_URL`**, **`DATABASE_POOL_MODE=pgbouncer`**, **`stack:up:supabase`** |
+| Ingest enrichment + storage (`009`) | `backend.mdc` — **`article_enrichment.py`**, **`article_excerpts.py`**, **`cluster_events.py`**, migration **`009_comprehensive_storage.sql`**; `khatinews.mdc` RSS section |
+| Article availability / taken-down | `backend.mdc` — **`article_availability*.py`**, beat **`scheduled_availability_tick`** → **`articles.removed_at`**; ties to **`taken-down.ts`** / **`TakenDownVault`** row below |
+| Verification job persistence | `backend.mdc` — **`verification_job_store.py`**, `verification_jobs` table; `khatinews.mdc` claim verification |
+| Pro matrix tooltips | `frontend.mdc` — **`subscription-features.ts`** `tooltip` / `tooltipBn`, **`FeatureMatrixTable`** + **`InfoTooltip`** on **`/pro`** |
 
 ## What to update together
 
@@ -80,7 +85,7 @@ When you ship a feature, touch the layers that describe it:
 
 ## Conventions reflected in rules
 
-- **Default:** one Supabase Postgres for news + auth/Pro (`docs/DATABASE.md`); optional local Docker Postgres for offline dev.
+- **Default:** one Supabase Postgres for news + auth/Pro (`docs/DATABASE.md`); API uses **`DATABASE_POOLER_URL`** when set (`backend/app/core/database_url.py`). Optional local Docker Postgres (`npm run stack:up`); hosted-only workers (`npm run stack:up:supabase`). Bootstrap env: **`npm run setup:supabase`**.
 - **Reads** on the frontend may fall back to `demo-data.ts` with `ApiDegradedBanner`; **writes** (verify submit, admin, ingest) must surface real API errors.
 - **Admin**: production host `admin.khatinews.com`; overview may use Supabase admin; sources/ingest/schedule/users proxies still need legacy `shorup_admin` where documented in `frontend.mdc`.
 - **Home**: Bangla hero + **`HeaderBanglaDate`**; topic-filtered grid. **`SiteHeader`**: EN tagline under wordmark (Bangla date lives on `/` hero). **`MobileNav`**: Blindspot, Browse, Bias. **`AuthNav`**: Go Pro + menus.
@@ -88,7 +93,7 @@ When you ship a feature, touch the layers that describe it:
 - **Dark UI**: prefer CSS variables in **`globals.css`** (`.dark` **`--color-ink-*`**, sky accent) over one-off monochrome zinc — existing `text-zinc-*` utilities get dark overrides there.
 - **Pro gates (UI)**: ids in **`PRO_ONLY_FEATURE_IDS`** get **`PaywallModal`** — **`follow_story`** (follow/saved stories), **`track_article_clicks`**, **`story_shared_ownership_alerts`** (story page: free count, Pro owner names via **`SharedOwnershipReveal`**), **`story_unnamed_source`** (story page: free count, Pro sees who hid the name via **`UnnamedSourceReveal`**), **`story_taken_down_vault`** (removal line for everyone, original wording for Pro via **`TakenDownVault`**), **`first_headline`** (free both lines + clock; Pro frozen social preview via **`FirstHeadlineCards`**), **`custom_topic_radar_alerts`** (profile topic + people follows). Client checks **`GET /api/me/pro`** (not backend Postgres). Matrix rows like **`anti_clickbait_summary`** and **`story_walkback_line`** can show on **`/pro`** without being Pro-only.
 - **Profile**: bias dashboard still reads **`reading-history.ts`** localStorage; signed-in users also append **`story_read_events`** / **`article_click_events`** via **`story-activity-sync.ts`** (best-effort). Full server dossiers (**`saved_dossiers`**) not wired yet. Article-click tracking is opt-in via **`TrackArticleClicksSetting`**.
-- **Migrations**: backend SQL under `backend/migrations/` (e.g. pgvector, `sources.disabled`, `app_settings`, `articles.image_url`, **`sources.ingest_mode`**, **`006_sources_ownership.sql`** for **`owner_name`** / **`owner_url`** / **`parent_name`** / **`parent_url`**, **`007_article_titles.sql`**, **`008_article_social_preview.sql`**); Supabase SQL under `supabase/migrations/` (incl. **`subscription_plan` `day`**, **`20251112190000_user_story_activity.sql`**).
+- **Migrations**: backend SQL under `backend/migrations/` (e.g. pgvector, `sources.disabled`, `app_settings`, `articles.image_url`, **`sources.ingest_mode`**, **`006_sources_ownership.sql`**, **`007_article_titles.sql`**, **`008_article_social_preview.sql`**, **`009_comprehensive_storage.sql`** — excerpts, cluster metadata, **`verification_jobs`**); Supabase SQL under `supabase/migrations/` (incl. **`subscription_plan` `day`**, **`20251112190000_user_story_activity.sql`**).
 - **Story language**: Bangla and English papers stay in one story. Readers see a Bangla story title when any Bangla headline exists; each paper’s headline stays in its original language; English-only stories keep the English title. Do not add a language switch or translate every article title.
 - **Clustering**: **`headline_match_score`** is title Jaccard or **`story_match.cross_lingual_score`** (a shared place or topic across Bangla and English). **`prefer_bangla_title`** replaces a Latin cluster title. **`merge_cross_language_clusters`** joins recent clusters that language had split. Keep entity aliases in **`story_match.py`** and **`backend/tests/test_story_match.py`**.
 - **RSS seed**: one `Source` per outlet. Section feeds live in **`additional_feed_urls`** and are pulled with the primary URL; they are not separate source rows. **`SEED_SOURCE_NAMES`** must stay identical to **`BD_SOURCE_SEED`** names. Jugantor, Risingbd, and Weekly Blitz stay in the seed with **`ingest_mode` `file`** so ownership is stored while live pull is skipped. Jagonews24 section feeds stay off the pull list.
@@ -108,6 +113,7 @@ When you ship a feature, touch the layers that describe it:
 - [ ] New top-level packages get a scoped `.mdc` (e.g. **`chrome-extension.mdc`**) and a row in the **File map** above
 - [ ] New **`frontend/src/lib/*`** helpers referenced in `frontend.mdc` domain list when agents should reuse them
 - [ ] Supabase schema changes update `supabase/migrations/`, regenerate **`database.types.ts`**, and extend **`supabase.mdc`** + this doc’s activity row when tables touch follows/reads/clicks
+- [ ] Backend **`009+`** or pooler env changes reflected in **`backend.mdc`**, **`khatinews.mdc`**, and the hosted-Supabase row here; run **`npm run setup:supabase`** only documents templates — never commit real passwords
 - [ ] Home or nav UX changes reflected in `frontend.mdc` and this doc’s product-area table when behavior moves between routes
 - [ ] Story share/OG or detail chrome changes reflected in `frontend.mdc`, `story-share.ts` row here, and `.env.example` when new public env vars are added
 - [ ] Product terms (blindspot, Pro gates, verification) match `khatinews.mdc` vocabulary

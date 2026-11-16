@@ -54,7 +54,7 @@ npx supabase db push
 
 ```env
 # Supabase transaction pooler (recommended for FastAPI + Celery)
-DATABASE_POOLER_URL=postgresql://postgres.xbadshfnetqzpvdavaef:[YOUR-PASSWORD]@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+DATABASE_POOLER_URL=postgresql://postgres.xbadshfnetqzpvdavaef:[YOUR-PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:6543/postgres
 DATABASE_POOL_MODE=pgbouncer
 
 # Optional direct session URL (migrations debugging only — not for app under load)

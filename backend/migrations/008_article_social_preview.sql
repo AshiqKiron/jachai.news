@@ -1,5 +1,5 @@
 -- Freeze the social preview from the first time an article is seen.
--- Later polls may change articles.title; these columns stay put.
+-- Later polls may change articles.title — these columns stay put.
 -- correction_noted flips on only when a later pass finds a correction.
 
 ALTER TABLE articles

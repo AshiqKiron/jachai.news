@@ -15,10 +15,13 @@ alwaysApply: true
 | `frontend/` | Next.js 15 App Router, React 19, TypeScript, Tailwind, PWA (`@ducanh2912/next-pwa`); optional Supabase auth — barrel `src/lib/supabase.ts` re-exports `supabase/client.ts`, `server.ts`, `service.ts`, `config.ts`; session refresh in `supabase/middleware.ts` |
 | `supabase/` | Migrations for profiles, Pro subscriptions, payment tables (PayEurasia checkout planned), user dossiers/alerts (RLS); see `.cursor/rules/supabase.mdc` |
 | `chrome-extension/` | MV3 feed collector (`prothomalo-feed-collector/`) — Prothom Alo sections plus bundled Bangladesh RSS (`lib/bd-sources.js`, on by default) → Downloads JSON/CSV for admin **file** ingest; see `.cursor/rules/chrome-extension.mdc` |
-| Root `package.json` | `dev:frontend`, `dev:backend`, `build:frontend`, `lint:frontend`, **`ingest:backend`**, **`worker:backend`**, **`worker:beat`**, **`worker:verification`**, **`stack:up`** / **`stack:down`** |
+| Root `package.json` | `dev:frontend`, `dev:backend`, `build:frontend`, `lint:frontend`, **`ingest:backend`**, **`worker:backend`**, **`worker:beat`**, **`worker:verification`**, **`stack:up`** / **`stack:up:supabase`** / **`stack:down`**, **`setup:supabase`** |
+| `scripts/setup-supabase-env.mjs` | Writes `backend/.env` pooler URL from **`backend/.env.supabase.example`** — see **`docs/DATABASE.md`** |
+| `docs/SUPABASE_HOSTED.md` | Hosted Supabase as the only Postgres (no local news DB) |
 | `docs/DEPLOYMENT.md` | Production release playbook — deploy order, migrations (backend + Supabase), PWA/chunk reload, rollback, CI hooks |
 | `docs/CURSOR_RULES.md` | How to maintain `.cursorrules` and `.cursor/rules/*.mdc` with the codebase |
-| `docker-compose.yml` | Local stack: Postgres (pgvector), Redis, API, Celery worker, **beat** (minute tick → scheduled RSS when Redis + scheduler enabled) |
+| `docker-compose.yml` | Local stack: Postgres (pgvector), Redis, API, Celery worker, **beat** (minute tick → scheduled RSS + availability checks when Redis + schedulers enabled) |
+| `docker-compose.supabase.yml` | API + Redis + workers against hosted Supabase — **`npm run stack:up:supabase`** |
 
 ## Data on the frontend
 
@@ -35,14 +38,16 @@ alwaysApply: true
 
 - **Service**: `backend/app/services/rss_ingestion.py` — one `Source` per outlet from `bd_sources_seed.py`. **`feed_urls_for_source`** pulls `feed_url` plus that outlet’s **`additional_feed_urls`** (section feeds stay on the same source; they are not extra DB rows). Outlets without a pullable native feed use a Google News search RSS URL. **`fetch_feed_items`** follows redirects and sends a browser User-Agent. Parser extracts optional **`image_url`** per entry. Dedupe by article URL; cluster inside 72h by title Jaccard (~0.42) or, across Bangla and English, by a shared place or topic (`story_match.py`). A Bangla headline replaces a Latin cluster title; each article title stays as published. Every distinct wording is also stored on **`article_titles`** (language + simple full-text index, `007_article_titles.sql`); a later rewrite keeps the old wording and updates the article’s current title without moving the cluster. The same pass merges recent clusters that language had split. Cluster blurbs on the frontend come from RSS excerpts via **`source-digest.ts`** (`applySourceDerivedSummaries` in **`stories.ts`**) — ingest no longer calls **`ai_client.summarize_cluster`**. Jugantor, Risingbd, and Weekly Blitz stay in the seed with **`ingest_mode` `file`** (ownership stored, live pull skipped). Jagonews24 section feeds stay off the pull list.
 - **Ingest mode**: `sources.ingest_mode` **`rss`** \| **`file`** (`005_sources_ingest_mode.sql`; **`source_ingest_mode.py`**). Scheduled and per-source RSS pulls skip **`file`** sources and placeholder URLs (`https://import.shorup.local/...`). **File path**: **`feed_file_import.py`** parses uploaded `.json` / `.rss` / `.xml` / `.csv` (≤15 MB) → **`persist_feed_items`** (same clustering as live RSS). Admin later **`PATCH`**es a real **`feed_url`** to switch to **`rss`** without dropping articles.
-- **CLI**: `npm run ingest:backend` → `backend/scripts/ingest_rss.py` (requires `DATABASE_URL`; ORM tables + SQL migrations on API startup).
+- **Enrichment**: **`article_enrichment.py`** at ingest — perspective hint, rumor regex, topic/category keywords on clusters; **`article_excerpts`** ledger via **`article_excerpts.py`**; **`cluster_events.log_cluster_merge`** on cross-language joins. Migration **`009_comprehensive_storage.sql`** — richer `sources`/`clusters`/`articles`, **`article_excerpts`**, optional cluster embeddings, **`verification_jobs`** Postgres backing.
+- **Taken-down detection**: **`article_availability.py`** + beat **`scheduled_availability_tick`** (`availability_tasks.py`) sets **`removed_at`** when URLs 404 (feeds **`TakenDownVault`** on the frontend).
+- **CLI**: `npm run ingest:backend` → `backend/scripts/ingest_rss.py` (requires **`DATABASE_POOLER_URL`** or **`DATABASE_URL`**; ORM tables + SQL migrations on API startup).
 - **API**: `POST /api/v1/ingest` in `app/api/ingest.py`; optional `INGEST_API_KEY` env → require `X-Ingest-Key` header; async via Celery when `REDIS_URL` + `INGEST_ASYNC_ENABLED`.
 - **Ops hooks**: `app/services/ops_alerts.py` — Healthchecks.io start/success/fail pings and optional Telegram summaries on ingest; wired from `ingest.py` and `scripts/ingest_rss.py`. All no-ops when env vars are unset.
 - **Scheduled ingest**: `app/services/ingest_schedule.py` + `app_settings` (`backend/migrations/003_app_settings.sql`) — admin-set interval (15m–24h); Celery beat task `scheduled_ingest_tick` (every 60s) enqueues or runs ingest when due when `REDIS_URL` + `INGEST_SCHEDULER_ENABLED`; `npm run worker:beat` or compose **`beat`** service.
 
 ## Claim verification (backend + UI)
 
-- **Submit (product)**: `POST /api/v1/verify` (`app/api/verify.py`) — sanitize text/URL, `ai_guardrails`, semantic cache hit → instant result; else queue job (`verification_jobs` + Celery `verification` queue or `BackgroundTasks`).
+- **Submit (product)**: `POST /api/v1/verify` (`app/api/verify.py`) — sanitize text/URL, `ai_guardrails`, semantic cache hit → instant result; else queue job (in-memory + **`verification_job_store.py`** Postgres row when DB available; Celery `verification` queue or `BackgroundTasks`).
 - **API surface**: `app/api/verifications.py` — create/list/search/get by slug, job status, **SSE** (`/jobs/{id}/events`) and **WebSocket** (`/jobs/{id}/ws`) for progress.
 - **Pipeline**: `verification_submit`, `verification_runner`, `verification_pipeline`, `semantic_cache`, `embeddings`; SQL extras in `backend/migrations/001_verified_claims_pgvector_fts.sql` via `db_extensions.apply_sql_migrations`.
 - **Frontend**: `/verify` (`VerifyClaimForm`), `/verify/[slug]`, `/verify/database` (`ClaimSearch`); discoverability via **`AuthNav`** (signed-in menu), not primary links in **`SiteHeader`**.
@@ -64,7 +69,7 @@ alwaysApply: true
 
 - **Schema**: `20250301000000_init_profiles_subscriptions.sql` — `profiles`, `subscriptions`, `bkash_agreements`, `payment_transactions`; `20250302000000_security_rls_hardening.sql` — `saved_dossiers`, `custom_alerts`, explicit deny policies on billing writes; `20251112031500_subscription_plan_day_pass.sql` — `subscription_plan` value **`day`** (24h pass); `20251112190000_user_story_activity.sql` — `story_follows`, `story_read_events`, `article_click_events` (client sync via **`story-activity-sync.ts`**).
 - **Types**: `frontend/src/lib/database.types.ts` (keep in sync with migrations; regenerate with Supabase CLI when schema changes).
-- **One Supabase Postgres** (default): news + verified claims + auth/Pro/user tables; backend uses pooler URL (`docs/DATABASE.md`). Local Docker Postgres is optional for offline dev.
+- **One Supabase Postgres** (default): news + verified claims + auth/Pro/user tables; backend uses **`DATABASE_POOLER_URL`** + **`DATABASE_POOL_MODE=pgbouncer`** (`docs/DATABASE.md`, **`backend/.env.supabase.example`**). Local Docker Postgres is optional (`npm run stack:up`); hosted-only stack: **`npm run stack:up:supabase`**.
 
 ## Product vocabulary
 

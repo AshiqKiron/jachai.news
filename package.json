@@ -13,6 +13,7 @@
     "worker:verification": "cd backend && celery -A app.workers.celery_app worker -Q verification -l info",
     "stack:up": "docker compose up --build",
     "stack:up:supabase": "docker compose -f docker-compose.supabase.yml up --build",
-    "stack:down": "docker compose down"
+    "stack:down": "docker compose down",
+    "setup:supabase": "node scripts/setup-supabase-env.mjs"
   }
 }

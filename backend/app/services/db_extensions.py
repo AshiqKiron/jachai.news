@@ -2,6 +2,7 @@ from pathlib import Path
 import re
 
 from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 _DOLLAR_QUOTE = re.compile(r"\$[A-Za-z0-9_]*\$")
@@ -15,7 +16,20 @@ def _split_sql_statements(sql: str) -> list[str]:
     n = len(sql)
     dollar_end: str | None = None
 
+    in_line_comment = False
+
     while i < n:
+        if in_line_comment:
+            if sql[i] == "\n":
+                in_line_comment = False
+                current.append(sql[i])
+            i += 1
+            continue
+        if dollar_end is None and sql[i : i + 2] == "--":
+            in_line_comment = True
+            current.append("--")
+            i += 2
+            continue
         if dollar_end is None and sql[i] == "$":
             match = _DOLLAR_QUOTE.match(sql, i)
             if match:
@@ -54,4 +68,14 @@ async def apply_sql_migrations(engine: AsyncEngine) -> None:
         for migration_path in paths:
             sql = migration_path.read_text(encoding="utf-8")
             for statement in _split_sql_statements(sql):
-                await conn.execute(text(statement))
+                try:
+                    await conn.execute(text(statement))
+                except DBAPIError as exc:
+                    orig = exc.orig
+                    if getattr(orig, "__class__", type(orig)).__name__ in {
+                        "UniqueViolationError",
+                        "DuplicateObjectError",
+                    } and "pg_extension" in str(orig).lower():
+                        # Supabase may already have pgvector enabled globally.
+                        continue
+                    raise
