@@ -11,12 +11,18 @@ celery_app.conf.task_routes = {
     "app.workers.verification_tasks.*": {"queue": "verification"},
     "app.workers.ingest_tasks.*": {"queue": "ingest"},
 }
-if settings.ingest_scheduler_enabled and settings.redis_url:
-    celery_app.conf.beat_schedule = {
-        "rss-ingest-scheduler-tick": {
+if settings.redis_url:
+    celery_app.conf.beat_schedule = {}
+    if settings.ingest_scheduler_enabled:
+        celery_app.conf.beat_schedule["rss-ingest-scheduler-tick"] = {
             "task": "app.workers.ingest_tasks.scheduled_ingest_tick",
             "schedule": 60.0,
             "options": {"queue": "ingest"},
-        },
-    }
+        }
+    if settings.availability_scheduler_enabled:
+        celery_app.conf.beat_schedule["article-availability-tick"] = {
+            "task": "app.workers.availability_tasks.scheduled_availability_tick",
+            "schedule": settings.availability_check_interval_seconds,
+            "options": {"queue": "ingest"},
+        }
 celery_app.autodiscover_tasks(["app.workers"])

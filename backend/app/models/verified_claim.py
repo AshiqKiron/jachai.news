@@ -19,6 +19,16 @@ class VerifiedClaim(Base):
     cache_source_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("verified_claims.id", ondelete="SET NULL"), nullable=True
     )
+    cluster_id: Mapped[int | None] = mapped_column(
+        ForeignKey("clusters.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    article_id: Mapped[int | None] = mapped_column(
+        ForeignKey("articles.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     # Stored via raw SQL / pipeline (pgvector); ORM does not map the vector column.
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

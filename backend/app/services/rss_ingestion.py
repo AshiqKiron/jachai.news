@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 import unicodedata
+from urllib.parse import urlparse
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
@@ -16,7 +17,17 @@ from app.data.bd_sources_seed import BD_SOURCE_SEED
 from app.models.article import Article
 from app.models.cluster import Cluster
 from app.models.source import Source
+from app.services.article_availability import refresh_article_availability
+from app.services.article_enrichment import (
+    apply_topic_to_cluster,
+    assess_rumor_coverage,
+    infer_story_topic,
+    resolve_article_perspective,
+    stamp_rumor_fields,
+)
+from app.services.article_excerpts import note_article_excerpt
 from app.services.article_titles import note_article_title
+from app.services.cluster_events import log_cluster_merge
 from app.services.rss_parser import ParsedFeedItem, fetch_feed_items
 from app.services.social_preview import load_frozen_preview, page_notes_correction, text_notes_correction
 from app.services.source_ingest_mode import source_uses_rss_pull
@@ -34,9 +45,10 @@ _SEED_ADDITIONAL_FEEDS: dict[str, list[str]] = {
 
 
 def feed_urls_for_source(source: Source) -> list[str]:
-    """Primary feed plus any seed-defined section feeds for the same outlet."""
+    """Primary feed plus stored or seed-defined section feeds for the same outlet."""
     urls = [source.feed_url]
-    for extra in _SEED_ADDITIONAL_FEEDS.get(source.name, []):
+    extras = list(source.additional_feed_urls or []) + _SEED_ADDITIONAL_FEEDS.get(source.name, [])
+    for extra in extras:
         if extra and extra not in urls:
             urls.append(extra)
     return urls
@@ -112,6 +124,34 @@ async def _stamp_ownership_aliases(session: AsyncSession, row: dict) -> None:
         _apply_seed_ownership(alias, row)
 
 
+def _homepage_from_row(row: dict) -> str | None:
+    raw = row.get("homepage_url")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()[:2048]
+    parsed = urlparse(row.get("feed_url", ""))
+    if parsed.scheme and parsed.netloc:
+        return f"{parsed.scheme}://{parsed.netloc}/"
+    return row.get("owner_url")
+
+
+def _apply_seed_fields(source: Source, row: dict) -> None:
+    _apply_seed_ownership(source, row)
+    extras = row.get("additional_feed_urls") or []
+    if isinstance(extras, list) and extras:
+        merged = list(source.additional_feed_urls or [])
+        for url in extras:
+            if url and url not in merged:
+                merged.append(url)
+        source.additional_feed_urls = merged
+    homepage = _homepage_from_row(row)
+    if homepage and not source.homepage_url:
+        source.homepage_url = homepage
+    if row.get("language") and not source.language:
+        source.language = str(row["language"])[:8]
+    if row.get("factuality") and not source.factuality:
+        source.factuality = str(row["factuality"])[:32]
+
+
 async def ensure_sources_seeded(session: AsyncSession) -> None:
     for row in BD_SOURCE_SEED:
         existing = await session.scalar(select(Source).where(Source.name == row["name"]))
@@ -126,13 +166,17 @@ async def ensure_sources_seeded(session: AsyncSession) -> None:
                     owner_url=row.get("owner_url"),
                     parent_name=row.get("parent_name"),
                     parent_url=row.get("parent_url"),
+                    homepage_url=_homepage_from_row(row),
+                    additional_feed_urls=list(row.get("additional_feed_urls") or []),
+                    language=str(row.get("language") or "bn")[:8],
+                    factuality=row.get("factuality"),
                 )
             )
         else:
             if not existing.disabled:
                 existing.feed_url = row["feed_url"]
                 existing.bias_score = row.get("bias_score")
-            _apply_seed_ownership(existing, row)
+            _apply_seed_fields(existing, row)
         await _stamp_ownership_aliases(session, row)
 
 
@@ -232,6 +276,12 @@ async def merge_cross_language_clusters(session: AsyncSession, since: datetime) 
                 continue
             for article in list(other.articles):
                 article.cluster = keeper
+            await log_cluster_merge(
+                session,
+                keeper_cluster_id=keeper.id,
+                other_cluster_id=other.id,
+                payload={"keeper_slug": keeper.slug, "other_slug": other.slug},
+            )
             await session.flush()
             await session.delete(other)
         if title != keeper.title:
@@ -277,35 +327,99 @@ async def maybe_refresh_cluster_summary(session: AsyncSession, cluster: Cluster)
     return False
 
 
+def _touch_cluster(cluster: Cluster, *, at: datetime) -> None:
+    cluster.updated_at = at
+    if cluster.last_article_at is None or at > cluster.last_article_at:
+        cluster.last_article_at = at
+
+
+def _apply_item_fields(
+    article: Article,
+    item: ParsedFeedItem,
+    source: Source,
+    *,
+    ingest_feed_url: str | None,
+    now: datetime,
+) -> None:
+    if item.rss_guid and not article.rss_guid:
+        article.rss_guid = item.rss_guid
+    if item.author and not article.author:
+        article.author = item.author
+    if item.section and not article.section:
+        article.section = item.section
+    if item.body_text and not article.body_text:
+        article.body_text = item.body_text
+    if item.image_url and not article.image_url:
+        article.image_url = item.image_url
+    if ingest_feed_url:
+        article.ingest_feed_url = ingest_feed_url
+    article.perspective = resolve_article_perspective(source)
+    stamp_rumor_fields(article, assess_rumor_coverage(article.title, article.excerpt))
+    article.last_ingested_at = now
+    article.updated_at = now
+    if article.first_seen_at is None:
+        article.first_seen_at = item.published_at or now
+    if article.availability_status == "unknown":
+        article.availability_status = "ok"
+
+
 async def persist_feed_items(
     session: AsyncSession,
     source: Source,
     items: list[ParsedFeedItem],
     result: IngestResult,
+    *,
+    ingest_feed_url: str | None = None,
 ) -> None:
     since = datetime.now(timezone.utc) - timedelta(hours=CLUSTER_LOOKBACK_HOURS)
 
-    for item in items:
+    for index, item in enumerate(items):
         clean_title = normalize_article_title(item.title)
         if not clean_title:
             continue
+        now = datetime.now(timezone.utc)
+        topic_guess = infer_story_topic(
+            title=clean_title,
+            section=item.section,
+            tags=item.tags,
+            feed_url=ingest_feed_url,
+        )
 
         existing = await session.scalar(select(Article).where(Article.url == item.url))
         if existing is not None:
             if item.excerpt and item.excerpt != existing.excerpt:
+                await note_article_excerpt(session, existing, existing.excerpt)
                 existing.excerpt = item.excerpt
+                await note_article_excerpt(session, existing, item.excerpt)
+            elif item.excerpt:
+                await note_article_excerpt(session, existing, item.excerpt)
             revised = await note_article_title(session, existing, clean_title)
             if revised:
                 result.titles_revised += 1
             else:
                 result.articles_skipped_duplicate += 1
+            _apply_item_fields(existing, item, source, ingest_feed_url=ingest_feed_url, now=now)
             await _note_correction(existing, clean_title, item.excerpt, fetch_page=revised)
+            if existing.cluster is not None:
+                _touch_cluster(existing.cluster, at=now)
+                apply_topic_to_cluster(existing.cluster, topic_guess)
+            if revised or index % 25 == 0:
+                await refresh_article_availability(existing)
             continue
 
         cluster = await find_matching_cluster(session, clean_title, since=since)
         if cluster is None:
             slug = await unique_cluster_slug(session, clean_title)
-            cluster = Cluster(slug=slug, title=clean_title)
+            cluster = Cluster(
+                slug=slug,
+                title=clean_title,
+                topic_id=topic_guess.topic_id,
+                category=topic_guess.category,
+                category_bn=topic_guess.category_bn,
+                created_at=now,
+                updated_at=now,
+                last_article_at=now,
+            )
             session.add(cluster)
             await session.flush()
             result.clusters_created += 1
@@ -314,6 +428,8 @@ async def persist_feed_items(
             bangla_title = prefer_bangla_title(cluster.title, clean_title)
             if bangla_title != cluster.title:
                 cluster.title = bangla_title
+            apply_topic_to_cluster(cluster, topic_guess)
+            _touch_cluster(cluster, at=now)
 
         article = Article(
             source_id=source.id,
@@ -323,9 +439,14 @@ async def persist_feed_items(
             excerpt=item.excerpt,
             image_url=item.image_url,
             published_at=item.published_at,
+            first_seen_at=item.published_at or now,
+            availability_status="ok",
         )
         session.add(article)
         await session.flush()
+        _apply_item_fields(article, item, source, ingest_feed_url=ingest_feed_url, now=now)
+        if item.excerpt:
+            await note_article_excerpt(session, article, item.excerpt)
         await note_article_title(session, article, clean_title)
         await _freeze_social_preview(article, rss_image_url=item.image_url)
         await _note_correction(article, clean_title, item.excerpt, fetch_page=False)
@@ -353,7 +474,7 @@ async def ingest_source(session: AsyncSession, source: Source, result: IngestRes
             continue
 
         result.articles_fetched += len(items)
-        await persist_feed_items(session, source, items, result)
+        await persist_feed_items(session, source, items, result, ingest_feed_url=feed_url)
 
 
 async def run_rss_ingest_for_source(session: AsyncSession, source_id: int) -> IngestResult:

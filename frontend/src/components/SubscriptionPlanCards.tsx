@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTooltip } from "@/components/InfoTooltip";
 import {
   FREE_TIER_TAGLINE,
   PRO_TIER_TAGLINE,
@@ -55,9 +56,20 @@ function PlanFeatureList({ plan }: { plan: "free" | "pro" }) {
         return (
           <li key={row.id} className="flex items-start gap-2.5">
             <PlanFeatureStatusIcon included={included} />
-            <p className={`text-sm font-medium ${included ? "text-zinc-100" : "text-zinc-500"}`}>
-              {row.name}
-            </p>
+            <div className="flex min-w-0 flex-1 items-start gap-1">
+              {row.tooltip ? (
+                <InfoTooltip
+                  className="mt-0.5 shrink-0"
+                  message={row.tooltip}
+                  messageBn={row.tooltipBn}
+                />
+              ) : null}
+              <p
+                className={`min-w-0 text-sm font-medium ${included ? "text-zinc-100" : "text-zinc-500"}`}
+              >
+                {row.name}
+              </p>
+            </div>
           </li>
         );
       })}
@@ -128,7 +140,7 @@ export function SubscriptionPlanCards({ onBuyPro }: Props) {
             <button
               type="button"
               onClick={onBuyPro}
-              className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-dark"
+              className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent-dark dark:!bg-red-600 dark:hover:!bg-red-700 dark:!text-white dark:hover:!text-white"
             >
               Buy Pro
             </button>

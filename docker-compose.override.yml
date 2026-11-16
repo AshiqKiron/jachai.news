@@ -1,0 +1,11 @@
+# When another stack uses 5432 / 6379 / 3001. API: http://127.0.0.1:3002
+services:
+  postgres:
+    ports: !override
+      - "5433:5432"
+  redis:
+    ports: !override
+      - "6380:6379"
+  api:
+    ports: !override
+      - "3002:8000"

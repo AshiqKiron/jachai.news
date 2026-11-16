@@ -1,3 +1,5 @@
+import { syncStoryFollowToServer } from "@/lib/story-activity-sync";
+
 export const FOLLOWED_STORIES_CHANGED_EVENT = "shorup:followed-stories-changed";
 
 const STORAGE_KEY_V2 = "shorup_followed_stories_v2";
@@ -110,6 +112,7 @@ export function setStoryFollowed(slug: string, followed: boolean, titleBn?: stri
   const without = current.filter((record) => record.slug !== slug);
   if (!followed) {
     writeRecordsRaw(without);
+    syncStoryFollowToServer(slug, false);
     return without.map((record) => record.slug);
   }
   const prev = current.find((record) => record.slug === slug);
@@ -118,6 +121,7 @@ export function setStoryFollowed(slug: string, followed: boolean, titleBn?: stri
     titleBn: titleBn ?? prev?.titleBn,
   };
   writeRecordsRaw([nextRecord, ...without]);
+  syncStoryFollowToServer(slug, true);
   return readFollowedStorySlugs();
 }
 

@@ -27,10 +27,32 @@ class Article(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    rss_guid: Mapped[str | None] = mapped_column(String(512), nullable=True, index=True)
+    author: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    section: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    body_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    perspective: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    rumor_flag_reason: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    rumor_marked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    first_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_ingested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    availability_status: Mapped[str] = mapped_column(String(16), default="unknown", server_default="unknown")
+    last_availability_check: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    removed_headline: Mapped[str | None] = mapped_column(Text, nullable=True)
+    removed_excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    archive_snapshot_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    ingest_feed_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
 
     source: Mapped["Source"] = relationship(back_populates="articles")
     cluster: Mapped["Cluster | None"] = relationship(back_populates="articles")
     titles: Mapped[list["ArticleTitle"]] = relationship(
+        back_populates="article",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    excerpts: Mapped[list["ArticleExcerpt"]] = relationship(
         back_populates="article",
         cascade="all, delete-orphan",
         passive_deletes=True,

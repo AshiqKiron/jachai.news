@@ -12,6 +12,7 @@
     "worker:beat": "cd backend && celery -A app.workers.celery_app beat -l info",
     "worker:verification": "cd backend && celery -A app.workers.celery_app worker -Q verification -l info",
     "stack:up": "docker compose up --build",
+    "stack:up:supabase": "docker compose -f docker-compose.supabase.yml up --build",
     "stack:down": "docker compose down"
   }
 }

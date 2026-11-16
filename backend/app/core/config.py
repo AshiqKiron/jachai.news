@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.database_url import normalize_async_database_url
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
@@ -51,6 +53,13 @@ class Settings(BaseSettings):
     # Celery beat tick enqueues ingest when interval elapsed (requires REDIS_URL)
     ingest_scheduler_enabled: bool = True
 
+    # Celery beat — HEAD recent article URLs for taken-down vault (requires REDIS_URL)
+    availability_scheduler_enabled: bool = True
+    availability_check_interval_seconds: float = 900.0
+    availability_check_batch_size: int = 40
+    availability_stale_hours: int = 6
+    availability_lookback_days: int = 14
+
     # Object storage for exports, dossiers, screenshots (optional)
     object_storage_backend: str = "none"  # none | supabase
     object_storage_bucket: str = "shorup-assets"
@@ -74,7 +83,8 @@ class Settings(BaseSettings):
 
     @property
     def resolved_database_url(self) -> str:
-        return self.database_pooler_url or self.database_url
+        raw = self.database_pooler_url or self.database_url
+        return normalize_async_database_url(raw)
 
     @property
     def ingest_uses_queue(self) -> bool:

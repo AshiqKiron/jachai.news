@@ -9,6 +9,7 @@ import {
   topicIdForStory,
 } from "@/lib/story-topics";
 import { readTrackArticleClicksEnabled } from "@/lib/track-article-clicks-pref";
+import { syncArticleClickToServer, syncStoryReadToServer } from "@/lib/story-activity-sync";
 import type { Story } from "@/lib/demo-data";
 
 const STORAGE_KEY = "shorup_reading_history_v1";
@@ -129,6 +130,7 @@ export function recordStoryRead(input: {
   const withoutDup = history.storyReads.filter((row) => row.slug !== input.slug);
   const storyReads = [entry, ...withoutDup].slice(0, MAX_STORY_READS);
   writeRaw({ ...history, storyReads });
+  syncStoryReadToServer(input.slug);
 }
 
 export function recordArticleClick(input: {
@@ -156,6 +158,11 @@ export function recordArticleClick(input: {
   );
   const articleClicks = [entry, ...withoutDup].slice(0, MAX_ARTICLE_CLICKS);
   writeRaw({ ...history, articleClicks });
+  syncArticleClickToServer({
+    storySlug: input.storySlug,
+    url: input.url,
+    sourceId: input.sourceId,
+  });
 }
 
 function countBuckets(

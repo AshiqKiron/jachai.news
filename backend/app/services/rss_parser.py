@@ -31,6 +31,11 @@ class ParsedFeedItem:
     excerpt: str | None
     image_url: str | None
     published_at: datetime | None
+    rss_guid: str | None = None
+    author: str | None = None
+    section: str | None = None
+    tags: tuple[str, ...] = ()
+    body_text: str | None = None
 
 
 def _normalize_image_url(url: str | None) -> str | None:
@@ -99,6 +104,65 @@ def extract_entry_image_url(entry: Any, excerpt: str | None) -> str | None:
     return _image_from_html(excerpt)
 
 
+def _entry_author(entry: Any) -> str | None:
+    author = getattr(entry, "author", None)
+    if isinstance(author, str) and author.strip():
+        return author.strip()[:512]
+    authors = getattr(entry, "authors", None) or []
+    if authors and isinstance(authors[0], dict):
+        name = authors[0].get("name") or authors[0].get("email")
+        if isinstance(name, str) and name.strip():
+            return name.strip()[:512]
+    return None
+
+
+def _entry_tags(entry: Any) -> tuple[str, ...]:
+    tags: list[str] = []
+    for tag in getattr(entry, "tags", None) or []:
+        if not isinstance(tag, dict):
+            continue
+        term = tag.get("term") or tag.get("label")
+        if isinstance(term, str) and term.strip():
+            tags.append(term.strip()[:120])
+    return tuple(tags[:12])
+
+
+def _entry_section(entry: Any) -> str | None:
+    tags = getattr(entry, "tags", None) or []
+    for tag in tags:
+        if not isinstance(tag, dict):
+            continue
+        label = tag.get("label")
+        if isinstance(label, str) and label.strip():
+            return label.strip()[:255]
+    category = getattr(entry, "category", None)
+    if isinstance(category, str) and category.strip():
+        return category.strip()[:255]
+    return None
+
+
+def _entry_guid(entry: Any) -> str | None:
+    guid = getattr(entry, "id", None) or getattr(entry, "guid", None)
+    if isinstance(guid, str) and guid.strip():
+        return guid.strip()[:512]
+    return None
+
+
+def _entry_body_text(entry: Any, excerpt: str | None) -> str | None:
+    from app.services.article_enrichment import strip_html_to_text
+
+    content = getattr(entry, "content", None) or []
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        value = block.get("value")
+        if isinstance(value, str) and value.strip():
+            parsed = strip_html_to_text(value)
+            if parsed:
+                return parsed
+    return strip_html_to_text(excerpt)
+
+
 async def fetch_feed_items(feed_url: str) -> list[ParsedFeedItem]:
     async with httpx.AsyncClient(
         timeout=settings.rss_fetch_timeout_seconds,
@@ -134,6 +198,11 @@ async def fetch_feed_items(feed_url: str) -> list[ParsedFeedItem]:
                 excerpt=excerpt_text,
                 image_url=extract_entry_image_url(entry, excerpt_text),
                 published_at=published_at,
+                rss_guid=_entry_guid(entry),
+                author=_entry_author(entry),
+                section=_entry_section(entry),
+                tags=_entry_tags(entry),
+                body_text=_entry_body_text(entry, excerpt_text),
             )
         )
     return items

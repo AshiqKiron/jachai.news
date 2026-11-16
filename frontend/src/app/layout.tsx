@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Newsreader, Noto_Sans_Bengali } from "next/font/google";
 
 import { InstallPWA } from "@/components/InstallPWA";
+import { StoryActivityHydrator } from "@/components/StoryActivityHydrator";
 import { MobileNav } from "@/components/MobileNav";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
         <ThemeProvider>
+          <StoryActivityHydrator />
           <SiteHeader />
           <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-6 sm:py-8 md:py-10">{children}</main>
           <MobileNav />

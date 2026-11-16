@@ -31,14 +31,35 @@ export type Article = {
   social_preview_title?: string | null;
   social_preview_description?: string | null;
   social_preview_image_url?: string | null;
+  author?: string | null;
+  section?: string | null;
+  perspective?: PerspectiveApi | null;
+  rumor_flag_reason?: string | null;
+  rumor_marked_at?: string | null;
+  first_seen_at?: string | null;
+  updated_at?: string | null;
+  last_ingested_at?: string | null;
+  availability_status?: string | null;
+  last_availability_check?: string | null;
+  removed_at?: string | null;
+  removed_headline?: string | null;
+  removed_excerpt?: string | null;
+  archive_snapshot_url?: string | null;
 };
+
+export type PerspectiveApi = "neutral" | "establishment" | "opposition" | "international";
 
 export type Cluster = {
   id: number;
   slug: string;
   title: string;
   summary: string | null;
+  topic_id?: string;
+  category?: string | null;
+  category_bn?: string | null;
   created_at: string;
+  updated_at?: string | null;
+  last_article_at?: string | null;
   articles?: Article[];
 };
 

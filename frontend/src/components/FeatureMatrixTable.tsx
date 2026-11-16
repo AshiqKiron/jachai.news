@@ -1,3 +1,4 @@
+import { InfoTooltip } from "@/components/InfoTooltip";
 import {
   SUBSCRIPTION_FEATURE_MATRIX,
   type TierAvailability,
@@ -49,9 +50,17 @@ export function FeatureMatrixTable() {
             return (
               <tr id={row.id} key={row.id} className="border-b border-zinc-800/80 last:border-0">
                 <td className="px-4 py-3 align-top">
-                  <p className="font-medium text-zinc-100">
-                    {row.name}
-                  </p>
+                  <div className="flex items-start gap-1.5">
+                    {row.tooltip ? (
+                      <InfoTooltip
+                        className="mt-0.5 shrink-0"
+                        message={row.tooltip}
+                        messageBn={row.tooltipBn}
+                        placement="below"
+                      />
+                    ) : null}
+                    <p className="min-w-0 font-medium text-zinc-100">{row.name}</p>
+                  </div>
                   <p className="font-bengali text-xs text-zinc-500">{row.nameBn}</p>
                 </td>
                 <td className="px-4 py-3 align-top">

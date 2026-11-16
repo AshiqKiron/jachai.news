@@ -1,5 +1,5 @@
-# Local / staging stack: stateless API + queue workers + pooled dependencies.
-# News data: `postgres` service. Auth/Pro (production): use Supabase with its pooler separately.
+# Local all-in-one stack (Postgres + Redis + API + workers).
+# For hosted Supabase as the only Postgres, use: npm run stack:up:supabase (see docs/DATABASE.md).
 
 services:
   postgres:

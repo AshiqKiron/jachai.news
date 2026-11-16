@@ -47,12 +47,12 @@ function storyShellFromCluster(cluster: Cluster, articles: Story["articles"]): S
     titleBn: deriveTitleBn(cluster.title, articles),
     summary: "",
     summaryBn: "",
-    category: "News",
-    categoryBn: "সংবাদ",
+    category: cluster.category ?? "News",
+    categoryBn: cluster.category_bn ?? "সংবাদ",
     isBlindspot: false,
     perspectiveSummaries: {},
     articles,
-    updatedAt: cluster.created_at,
+    updatedAt: cluster.last_article_at ?? cluster.updated_at ?? cluster.created_at,
   });
 }
 
@@ -73,6 +73,8 @@ function mapClusterArticles(cluster: Cluster | ClusterDetail): Story["articles"]
     parentName: article.parent_name ?? undefined,
     parentUrl: article.parent_url ?? undefined,
     isRumor: article.is_rumor || undefined,
+    perspective: article.perspective ?? undefined,
+    removedAt: article.removed_at ?? undefined,
     originalHeadline: article.original_title ?? undefined,
     originalSeenAt: article.original_seen_at ?? undefined,
     headlineEditedAt: article.headline_edited_at ?? undefined,

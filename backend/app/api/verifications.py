@@ -18,6 +18,7 @@ from app.schemas.verification import (
 from app.services.semantic_cache import find_semantic_cache_hit
 from app.services.verification_job_stream import watch_verification_job
 from app.services.verification_jobs import create_job, enqueue_verification_task, get_job
+from app.services.verification_job_store import load_verification_job, persist_verification_job
 from app.services.verification_pipeline import get_claim_by_slug, persist_cache_hit_row
 from app.services.verification_runner import execute_verification_job
 
@@ -51,6 +52,9 @@ async def create_verification(
         )
 
     job_id = create_job(claim_text=claim_text)
+    job_payload = get_job(job_id)
+    if job_payload:
+        await persist_verification_job(db, job_payload)
     if not enqueue_verification_task(job_id):
         background_tasks.add_task(execute_verification_job, job_id)
 
@@ -58,8 +62,10 @@ async def create_verification(
 
 
 @router.get("/jobs/{job_id}", response_model=VerificationJobRead)
-async def get_verification_job(job_id: str) -> VerificationJobRead:
+async def get_verification_job(job_id: str, db: AsyncSession = Depends(get_db)) -> VerificationJobRead:
     job = get_job(job_id)
+    if not job:
+        job = await load_verification_job(db, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return VerificationJobRead(

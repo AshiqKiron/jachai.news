@@ -1,4 +1,5 @@
 from sqlalchemy import Boolean, Float, String
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -17,5 +18,13 @@ class Source(Base):
     owner_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     parent_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     parent_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    homepage_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    language: Mapped[str] = mapped_column(String(8), default="bn", server_default="bn")
+    factuality: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    additional_feed_urls: Mapped[list[str]] = mapped_column(
+        ARRAY(String(2048)),
+        default=list,
+        server_default="{}",
+    )
 
     articles: Mapped[list["Article"]] = relationship(back_populates="source")

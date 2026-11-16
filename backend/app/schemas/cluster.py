@@ -28,7 +28,12 @@ class ClusterRead(BaseModel):
     slug: str
     title: str
     summary: str | None = None
+    topic_id: str = "news"
+    category: str | None = None
+    category_bn: str | None = None
     created_at: datetime
+    updated_at: datetime | None = None
+    last_article_at: datetime | None = None
 
 
 class ClusterDetail(ClusterRead):

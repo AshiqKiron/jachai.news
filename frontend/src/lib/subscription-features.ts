@@ -12,6 +12,9 @@ export type SubscriptionFeatureRow = {
   pro: TierAvailability;
   freeNote?: string;
   proNote?: string;
+  /** Shown in the /pro info-icon tooltip. */
+  tooltip?: string;
+  tooltipBn?: string;
 };
 
 export const FREE_TIER_TAGLINE =
@@ -47,6 +50,9 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     pro: "yes",
     freeNote: "Home highlights + full browse archive",
     proNote: "Priority loading on home",
+    tooltip:
+      "Headline clusters on home (24 stories) and the full archive on Browse for every reader.",
+    tooltipBn: "হোমে শীর্ষ ক্লাস্টার; সবাই /browse-এ পুরো আর্কাইভ পায়।",
   },
   {
     id: "headline_clash",
@@ -56,6 +62,9 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     nameBn: "শিরোনাম clash (পাশাপাশি)",
     free: "yes",
     pro: "yes",
+    tooltip:
+      "On a story page, see each outlet's headline next to the others — same event, different framing.",
+    tooltipBn: "গল্পের পাতায় একই ঘটনার বিভিন্ন শিরোনাম পাশাপাশি।",
   },
   {
     id: "anti_clickbait_summary",
@@ -65,6 +74,9 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     nameBn: "বিভিন্ন উৎস থেকে দ্রুত সারসংক্ষেপ",
     free: "yes",
     pro: "yes",
+    tooltip:
+      "Up to three neutral bullets from RSS excerpts and headlines — rules only, no AI rewrite.",
+    tooltipBn: "RSS থেকে দ্রুত সারসংক্ষেপ; AI দিয়ে পুনর্লিখন নয়।",
   },
   {
     id: "my_news_bias_dashboard",
@@ -76,6 +88,9 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     pro: "yes",
     freeNote: "Personal weekly reading habit tracker",
     proNote: "Personal weekly reading habit tracker",
+    tooltip:
+      "Profile shows left/center/right-style reading mix from stories you open on this device.",
+    tooltipBn: "প্রোফাইলে এই ডিভাইসে যে খবর খুলেছেন তার ভিত্তিতে পড়ার ঝোঁক।",
   },
   {
     id: "media_spin_digest",
@@ -87,6 +102,8 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     pro: "yes",
     freeNote: "Automated summary briefing",
     proNote: "Automated summary briefing",
+    tooltip: "Periodic digest of how outlets framed the week's big stories.",
+    tooltipBn: "সপ্তাহের বড় খবরে মিডিয়ার ফ্রেমিং সংক্ষেপ।",
   },
   {
     id: "source_ownership_labels",
@@ -98,6 +115,8 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     pro: "yes",
     freeNote: "On story detail source lists",
     proNote: "On story detail source lists",
+    tooltip: "Who owns or controls each paper on the story's source list.",
+    tooltipBn: "গল্পের উৎস তালিকায় প্রকাশকের মালিকানা লেবেল।",
   },
   {
     id: "story_shared_ownership_alerts",
@@ -110,6 +129,10 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     freeNote: "Outlet and owner count on the story page",
     proNote:
       "Names the shared owner or parent when coverage looks multi-source but outlets belong to the same group",
+    tooltip:
+      "When two or more outlets in one cluster share an owner, we flag it on the story page.",
+    tooltipBn:
+      "এক ক্লাস্টারে এক মালিকের একাধিক গণমাধ্যম থাকলে সতর্কতা দেখায়।",
   },
   {
     id: "story_unnamed_source",
@@ -121,6 +144,10 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     pro: "yes",
     freeNote: "How many outlets attribute the story to someone they don't name",
     proNote: "Which papers hid the name, and which outlet printed one",
+    tooltip:
+      "Detects anonymous sourcing (সূত্র, sources say, etc.) and shows who hid names vs who printed one.",
+    tooltipBn:
+      "নামহীন সূত্র চিহ্নিত করে — কে নাম গোপন করেছে, কে নাম দিয়েছে।",
   },
   {
     id: "story_taken_down_vault",
@@ -132,6 +159,10 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     pro: "yes",
     freeNote: "Removed from their site at 6:40pm. The card stays up",
     proNote: "Original headline and text: this is what it said at 1:12pm",
+    tooltip:
+      "If an outlet removes a page, the card stays with removal time; Pro can see what we captured from RSS.",
+    tooltipBn:
+      "আউটলেট পাতা সরালে কার্ড থাকে; Pro-তে RSS থেকে সংরক্ষিত মূল লেখা।",
   },
   {
     id: "story_walkback_line",
@@ -143,6 +174,10 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     pro: "yes",
     freeNote: "The buried sentence, above the headline",
     proNote: "That sentence is the line on the share card",
+    tooltip:
+      "Finds a buried তবে / অন্যদিকে-style line after a sensational headline and pins it above the title.",
+    tooltipBn:
+      "উত্তেজনাপূর্ণ শিরোনামের পর দাব মৃদু করার বাক্য শিরোনামের উপরে দেখায়।",
   },
   {
     id: "first_headline",
@@ -154,6 +189,10 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     pro: "yes",
     freeNote: "Both lines and the clock when a desk edits and adds no correction",
     proNote: "The social preview frozen the moment the story appeared",
+    tooltip:
+      "When a desk edits a headline without a correction, see the first wording, today's line, and the clock.",
+    tooltipBn:
+      "শিরোনাম বদলালে প্রথম ও বর্তমান লাইন ও সময় — সংশোধনী ছাড়া এডিটেও।",
   },
   {
     id: "follow_story",
@@ -164,6 +203,8 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     free: "locked",
     pro: "yes",
     proNote: "We’ll notify you when new outlets pick up the story or the framing changes.",
+    tooltip: "Save a story on home or detail; get alerts when coverage or framing shifts (Pro).",
+    tooltipBn: "খবর ফলো করুন; কভারেজ বা ফ্রেম বদলালে অ্যালার্ট (Pro)।",
   },
   {
     id: "track_article_clicks",
@@ -174,6 +215,10 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     free: "locked",
     pro: "yes",
     proNote: "Counts which outlet links you open for your personal bias dashboard.",
+    tooltip:
+      "Optional: count outbound article clicks on this device to refine My News Bias (Pro, opt-in).",
+    tooltipBn:
+      "আউটলেট লিংক ক্লিক গোনা — My News Bias-এর জন্য (Pro, ইচ্ছামতো)।",
   },
   {
     id: "custom_topic_radar_alerts",
@@ -184,6 +229,8 @@ export const SUBSCRIPTION_FEATURE_MATRIX: SubscriptionFeatureRow[] = [
     free: "locked",
     pro: "yes",
     proNote: "Keyword tracking & webhooks",
+    tooltip: "Follow topics and public figures on Profile for custom radar alerts (Pro).",
+    tooltipBn: "প্রোফাইলে টপিক ও ব্যক্তি ফলো — কাস্টম রাডার (Pro)।",
   },
 ];
 

@@ -152,6 +152,68 @@ export type Database = {
         };
         Relationships: [];
       };
+      story_follows: {
+        Row: {
+          id: string;
+          user_id: string;
+          cluster_slug: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          cluster_slug: string;
+          created_at?: string;
+        };
+        Update: {
+          cluster_slug?: string;
+        };
+        Relationships: [];
+      };
+      story_read_events: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          cluster_slug: string;
+          read_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          cluster_slug: string;
+          read_at?: string;
+        };
+        Update: {
+          cluster_slug?: string;
+          read_at?: string;
+        };
+        Relationships: [];
+      };
+      article_click_events: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          cluster_slug: string;
+          article_url: string;
+          source_id: string | null;
+          clicked_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          cluster_slug: string;
+          article_url: string;
+          source_id?: string | null;
+          clicked_at?: string;
+        };
+        Update: {
+          cluster_slug?: string;
+          article_url?: string;
+          source_id?: string | null;
+          clicked_at?: string;
+        };
+        Relationships: [];
+      };
       payment_transactions: {
         Row: {
           id: string;

@@ -6,7 +6,7 @@ Stack: FastAPI backend (RSS + clustering) and Next.js App Router frontend with o
 
 ## Architecture
 
-khatinews.com splits **news intelligence** (clusters, articles, verified claims) in **backend PostgreSQL** from **user accounts and billing** in **Supabase**. The Next.js app talks to FastAPI for feeds and verification, and to Supabase for auth and Pro entitlements.
+**Default:** one **Supabase PostgreSQL** database holds news (`articles`, `clusters`, `verified_claims`), auth (`profiles`), and Pro (`subscriptions`). FastAPI connects via the **transaction pooler**; Next.js uses Supabase Auth with the anon key. Setup: **`docs/DATABASE.md`**. Optional local Docker Postgres: `npm run stack:up`.
 
 ```mermaid
 flowchart LR
@@ -28,8 +28,7 @@ flowchart LR
   end
 
   subgraph data [Data]
-    PG[(PostgreSQL + pgvector / FTS)]
-    SB[(Supabase: profiles, subscriptions)]
+    SB[(Supabase Postgres: news + auth + Pro)]
   end
 
   subgraph frontend [Next.js PWA]
@@ -38,12 +37,12 @@ flowchart LR
   end
 
   PA --> ING
-  ING --> PG
-  VER --> PG
+  ING --> SB
+  VER --> SB
   ING -.-> W1
   VER -.-> W2
-  W1 --> PG
-  W2 --> PG
+  W1 --> SB
+  W2 --> SB
   UI --> PROXY
   PROXY --> API
   UI --> SB
@@ -168,19 +167,27 @@ Optional Supabase auth: set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE
 | Yearly | ৳399 / year |
 
 - **Payment (planned):** [PayEurasia](https://payeurasia.com/api/docs) — REST checkout (bKash, Nagad, bank in BD) with HMAC-signed webhooks for renewals.
-- **Database (planned):** Supabase (auth, subscription status, payment/agreement records). News API data stays in backend PostgreSQL.
+- **Database:** Supabase Postgres (auth, subscriptions, and news tables). See `docs/DATABASE.md`.
 
 Product copy and plan constants: `frontend/src/lib/subscription-plans.ts`. Checkout is not implemented yet.
 
-## Scalable local stack (Docker Compose)
+## Local stack (Docker Compose)
 
-Stateless API, Redis-backed Celery workers (RSS ingest + verification jobs), and Postgres for news data:
+**Supabase as the only database** (configure `backend/.env` first — see `docs/DATABASE.md`):
+
+```bash
+npm run stack:up:supabase
+```
+
+**All-in-one local Postgres** (no Supabase required for news):
 
 ```bash
 npm run stack:up
-# API: http://localhost:3001  |  start workers are included as `worker` service
+# API: http://localhost:3001
 npm run stack:down
 ```
+
+Stateless API + Redis-backed Celery workers (ingest + verification queues).
 
 Production pattern: autoscale **API** replicas on CPU/RPS; scale **workers** on queue depth (`ingest`, `verification`). Set `REDIS_URL` so `POST /api/v1/ingest` returns **202** and runs on workers. Without Redis, ingest runs synchronously in the API process (fine for local dev).
 
@@ -188,8 +195,7 @@ Production pattern: autoscale **API** replicas on CPU/RPS; scale **workers** on 
 
 ### Database pooling
 
-- **News Postgres** (backend `DATABASE_URL`): tune `DATABASE_POOL_SIZE` / `DATABASE_MAX_OVERFLOW` per API replica, or set `DATABASE_POOLER_URL` + `DATABASE_POOL_MODE=pgbouncer` when using a transaction pooler.
-- **Supabase** (auth / Pro): use the [connection pooler](https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler) from Next.js server code; news clusters stay in backend Postgres.
+Use Supabase **[transaction pooler](https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler)** (`DATABASE_POOLER_URL`, `DATABASE_POOL_MODE=pgbouncer`) for FastAPI, Celery, and `ingest:backend`. Copy `postgresql://` URIs from the dashboard — the API upgrades them to `asyncpg` automatically.
 
 ### Object storage
 

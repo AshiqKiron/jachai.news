@@ -9,8 +9,7 @@ How to ship new features to **khatinews.com** without breaking the site. Use thi
 | **Frontend** | Next.js PWA — `khatinews.com`, `admin.khatinews.com` (same deployment) | Broken UI, stale JS chunks after deploy |
 | **Backend API** | FastAPI — `/api/v1`, `GET /health` | 5xx, wrong JSON shapes |
 | **Celery workers** | Queues `ingest`, `verification` | Ingest / verify jobs fail |
-| **News Postgres** | Clusters, articles, verified claims (+ pgvector) | Migrations block API startup |
-| **Supabase** | Auth, Pro subscriptions, billing (RLS) | Schema / types mismatch with frontend |
+| **Supabase Postgres** | **One DB:** news (`articles`, `clusters`, `verified_claims` + pgvector) **and** auth/Pro (`profiles`, `subscriptions`, RLS) | Enable `vector` extension; use pooler URL for API/workers |
 
 Reads are designed to **degrade** (demo stories, `ApiDegradedBanner`) when the news API is unreachable. **Writes** (verify submit, admin, ingest) must surface real errors — do not rely on demo fallback for those paths.
 
@@ -48,17 +47,15 @@ Default for a full-stack feature: **migrations → API → workers → frontend*
 
 ## Database migrations
 
-### Backend Postgres (news data)
+### Database (single Supabase Postgres)
 
-- SQL files: `backend/migrations/*.sql` — keep statements **idempotent** (safe to re-run).
-- Applied on API startup: `app/services/db_extensions.py` → `apply_sql_migrations` (after ORM `create_all` in `app/main.py` lifespan).
-- **Expand → deploy → contract**: add nullable columns / new tables first; drop old columns only after nothing reads them.
-- Take backups before risky migrations; rollback is usually **redeploy old app**, not revert SQL.
+Setup guide: **`docs/DATABASE.md`**.
 
-### Supabase (auth / Pro)
+1. **User/auth schema:** `supabase/migrations/` — `supabase db push` or SQL editor (profiles, subscriptions, `story_follows`, …).
+2. **News + claims schema:** `backend/migrations/*.sql` — applied on API startup (`apply_sql_migrations` after ORM `create_all`). Run `CREATE EXTENSION IF NOT EXISTS vector` on Supabase once first.
+3. **Expand → deploy → contract** for backend SQL; keep `frontend/src/lib/database.types.ts` in sync with Supabase migrations.
 
-- SQL: `supabase/migrations/` — apply via Supabase CLI (`supabase db push`) or dashboard SQL editor **before** frontend that depends on new schema/RLS.
-- Keep `frontend/src/lib/database.types.ts` in sync with migrations.
+Local-only alternative: `npm run stack:up` uses Docker pgvector Postgres instead of hosted Supabase for news.
 
 ## Frontend & PWA
 

@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.article import Article
 from app.models.verified_claim import VerifiedClaim
 from app.services.ai_client import ai_client
 from app.services.ai_guardrails import assess_user_content
@@ -10,8 +11,15 @@ from app.services.ai_input_sanitizer import InputValidationError, sanitize_plain
 from app.services.embeddings import embed_text, embedding_to_pgvector_literal
 from app.services.semantic_cache import find_semantic_cache_hit
 from app.services.verification_fetch import fetch_claim_source_text
-from app.services.verification_jobs import update_job
+from app.services.verification_jobs import get_job, update_job
+from app.services.verification_job_store import persist_verification_job
 from app.services.verification_slug import slugify_claim
+
+
+async def _persist_job_snapshot(session: AsyncSession, job_id: str) -> None:
+    payload = get_job(job_id)
+    if payload:
+        await persist_verification_job(session, payload)
 
 
 async def resolve_submission_claim_text(claim_text: str, source_url: str | None) -> tuple[str, bool]:
@@ -38,6 +46,7 @@ async def run_verification_pipeline(
         update_job(job_id, status="processing", progress=8, message="Fetching source URL")
     else:
         update_job(job_id, status="processing", progress=10, message="Preparing claim")
+    await _persist_job_snapshot(session, job_id)
 
     full_text, _ = await resolve_submission_claim_text(claim_text, source_url)
     sanitized = sanitize_plain_text(full_text)
@@ -49,10 +58,12 @@ async def run_verification_pipeline(
             progress=100,
             message="; ".join(guard.reasons) or "Submission blocked by safety checks.",
         )
+        await _persist_job_snapshot(session, job_id)
         raise InputValidationError("Guardrail blocked submission.")
 
     normalized = sanitized.text.strip()
     update_job(job_id, progress=18, message="Checking semantic cache")
+    await _persist_job_snapshot(session, job_id)
     cache_hit = await find_semantic_cache_hit(session, normalized)
     if cache_hit:
         row = await persist_cache_hit_row(session, normalized, cache_hit)
@@ -64,10 +75,14 @@ async def run_verification_pipeline(
             message="Returned from semantic cache",
             cached=True,
         )
+        await _persist_job_snapshot(session, job_id)
         return row.slug
 
     slug = slugify_claim(normalized)
     now = datetime.now(UTC)
+    article_row = None
+    if source_url:
+        article_row = await session.scalar(select(Article).where(Article.url == source_url))
     claim = VerifiedClaim(
         slug=slug,
         claim_text=normalized,
@@ -75,14 +90,18 @@ async def run_verification_pipeline(
         status="processing",
         created_at=now,
         updated_at=now,
+        article_id=article_row.id if article_row else None,
+        cluster_id=article_row.cluster_id if article_row else None,
     )
     session.add(claim)
     await session.flush()
 
     update_job(job_id, progress=40, message="Running AI analysis")
+    await _persist_job_snapshot(session, job_id)
     result = await ai_client.verify_claim(normalized)
 
     update_job(job_id, progress=75, message="Indexing for search")
+    await _persist_job_snapshot(session, job_id)
     embedding = await embed_text(normalized)
     vector_literal = embedding_to_pgvector_literal(embedding)
 
@@ -106,6 +125,7 @@ async def run_verification_pipeline(
         slug=slug,
         message="Verification complete",
     )
+    await _persist_job_snapshot(session, job_id)
     return slug
 
 

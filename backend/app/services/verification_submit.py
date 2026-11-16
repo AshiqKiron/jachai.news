@@ -5,7 +5,8 @@ from app.schemas.verify import VerifyResponse
 from app.services.ai_guardrails import assess_user_content
 from app.services.ai_input_sanitizer import InputValidationError, sanitize_plain_text, validate_http_url
 from app.services.semantic_cache import find_semantic_cache_hit
-from app.services.verification_jobs import create_job, enqueue_verification_task
+from app.services.verification_jobs import create_job, enqueue_verification_task, get_job
+from app.services.verification_job_store import persist_verification_job
 from app.services.verification_pipeline import persist_cache_hit_row
 from app.services.verification_runner import execute_verification_job
 
@@ -64,6 +65,9 @@ async def submit_verify_request(
             )
 
     job_id = create_job(claim_text=normalized_text, source_url=source_url)
+    job_payload = get_job(job_id)
+    if job_payload:
+        await persist_verification_job(db, job_payload)
     if not enqueue_verification_task(job_id):
         background_tasks.add_task(execute_verification_job, job_id)
 
